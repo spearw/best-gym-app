@@ -1,9 +1,15 @@
 import zoneinfo
 
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.exceptions import ValidationError
 from django.db import models
 
-TIMEZONE_CHOICES = [(tz, tz) for tz in sorted(zoneinfo.available_timezones())]
+
+def validate_timezone(value):
+    """Checked at validation time rather than baked into the migration as choices,
+    because the available zone list depends on the machine's tzdata version."""
+    if value not in zoneinfo.available_timezones():
+        raise ValidationError(f"{value!r} is not a known time zone")
 
 
 class UserManager(BaseUserManager):
@@ -37,7 +43,7 @@ class User(AbstractUser):
     last_name = None
     email = models.EmailField("email address", unique=True)
     name = models.CharField(max_length=150, blank=True)
-    timezone = models.CharField(max_length=64, choices=TIMEZONE_CHOICES, default="UTC")
+    timezone = models.CharField(max_length=64, default="UTC", validators=[validate_timezone])
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

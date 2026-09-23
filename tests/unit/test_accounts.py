@@ -41,3 +41,15 @@ def test_seed_demo_is_idempotent():
     dana = User.objects.get(email="dana@ironridge.example")
     assert dana.name == "Dana Whitfield" and dana.is_staff
     assert dana.check_password("demo-password-123")
+
+
+def test_timezone_is_validated_not_enumerated():
+    from django.core.exceptions import ValidationError
+
+    user = User(email="tz@example.com", timezone="Mars/Olympus_Mons")
+    with pytest.raises(ValidationError):
+        user.full_clean(exclude=["password"])
+    user.timezone = "Europe/London"
+    user.full_clean(exclude=["password"])  # no error
+    field = User._meta.get_field("timezone")
+    assert not field.choices, "choices would bake the machine's tzdata into the migration"

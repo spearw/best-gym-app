@@ -4,6 +4,7 @@ from django.views.generic import RedirectView
 from apps.accounts import coach_views
 from apps.accounts import views as account_views
 from apps.exercises import tracked_views
+from apps.programs import views as week_type_views
 from apps.workouts import question_views as qv
 
 from . import views
@@ -64,6 +65,11 @@ urlpatterns = [
     # Settings and invites.
     path("settings/", account_views.settings_page, name="settings"),
     path("settings/lifts/", tracked_views.card, name="tracked"),
+    path("settings/week-types/add/", week_type_views.add, name="week_type_add"),
+    path("settings/week-types/<int:pk>/update/", week_type_views.update, name="week_type_update"),
+    path("settings/week-types/<int:pk>/move/<str:direction>/", week_type_views.move, name="week_type_move"),
+    path("settings/week-types/<int:pk>/remove/", week_type_views.remove, name="week_type_remove"),
+    path("settings/week-types/<int:pk>/restore/", week_type_views.restore, name="week_type_restore"),
     path("settings/lifts/add/", tracked_views.add, name="tracked_add"),
     path("settings/lifts/<int:pk>/remove/", tracked_views.remove, name="tracked_remove"),
     path("settings/lifts/<int:pk>/move/<str:direction>/", tracked_views.move, name="tracked_move"),

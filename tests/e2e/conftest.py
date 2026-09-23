@@ -27,3 +27,13 @@ def sign_in(live_server):
         )
 
     return do
+
+
+def htmx_idle(page):
+    """Wait until HTMX has finished every request, swap and settle, so freshly swapped
+    content has its listeners. Call it after an action that redraws something and
+    before typing into what was redrawn. People are far slower than this window; tests aren't."""
+    page.wait_for_function(
+        "() => window.htmx && !document.querySelector("
+        "'.htmx-request, .htmx-swapping, .htmx-settling, .htmx-added')"
+    )

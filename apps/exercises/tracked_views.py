@@ -29,7 +29,7 @@ def render_card(request, message=None, kind=""):
         request,
         "exercises/_tracked_lifts.html",
         {
-            "tracked": TrackedLift.objects.filter(gym=gym).select_related("exercise"),
+            "tracked": TrackedLift.objects.filter(gym=gym).select_related("exercise__category"),
             "trackable": trackable(gym),
             "max_tracked": MAX_TRACKED_LIFTS,
         },

@@ -9,7 +9,9 @@ from django.utils import timezone
 from apps.accounts import units
 from apps.accounts.models import Athlete, BodyweightEntry, Gym, Invite, InviteStatus, MaxEntry
 from apps.exercises.models import Exercise
-from apps.exercises.starter import STARTER_EXERCISES, install_starter_library
+from apps.exercises.starter import install_pack
+
+from ..conftest import cat
 
 pytestmark = pytest.mark.django_db
 
@@ -22,33 +24,43 @@ def test_units_round_trip_and_display():
     assert units.display(None, "kg") == ""
 
 
-def test_starter_library_is_idempotent_and_maps_percent_of(gym):
-    install_starter_library(gym)  # second run (fixture already ran it once)
-    assert Exercise.objects.filter(gym=gym).count() == len(STARTER_EXERCISES) == 24
+def test_installing_a_pack_twice_changes_nothing(gym):
+    install_pack(gym, "weightlifting")  # second run (fixture already ran it once)
+    assert Exercise.objects.filter(gym=gym).count() == 24
+    assert gym.categories.count() == 8 and gym.tags.count() == 13 and gym.week_types.count() == 6
     fsq = Exercise.objects.get(gym=gym, key="fsq")
     assert fsq.max_source.key == "bsq"
     snatch = Exercise.objects.get(gym=gym, key="sn")
     assert snatch.percent_of is None and snatch.max_source == snatch
 
 
-def test_starter_library_leaves_coach_exercises_alone(gym):
-    mine = Exercise.objects.create(gym=gym, name="Sandbag carry", category="accessory")
-    install_starter_library(gym)
+def test_reinstalling_never_undoes_a_coaches_edits(gym):
+    fsq = Exercise.objects.get(gym=gym, key="fsq")
+    fsq.name, fsq.percent_of = "Front Squat (own max)", None
+    fsq.save()
+    fsq.tags.clear()
+    mine = Exercise.objects.create(gym=gym, name="Sandbag carry", category=cat(gym, "Accessory"))
+    install_pack(gym, "weightlifting")
+    fsq.refresh_from_db()
+    assert fsq.name == "Front Squat (own max)" and fsq.percent_of is None and not fsq.tags.exists()
     mine.refresh_from_db()
     assert mine.name == "Sandbag carry" and mine.key == ""
 
 
 def test_exercise_key_unique_per_gym_but_blank_keys_repeat(gym):
     other = Gym.objects.create(name="Other")
-    install_starter_library(other)  # same keys in another gym are fine
-    Exercise.objects.create(gym=gym, name="A", category="accessory")
-    Exercise.objects.create(gym=gym, name="B", category="accessory")  # two blank keys are fine
+    install_pack(other, "weightlifting")  # same keys in another gym are fine
+    accessory = cat(gym, "Accessory")
+    Exercise.objects.create(gym=gym, name="A", category=accessory)
+    Exercise.objects.create(gym=gym, name="B", category=accessory)  # two blank keys are fine
     with pytest.raises(IntegrityError):
-        Exercise.objects.create(gym=gym, name="Snatch again", category="snatch", key="sn")
+        Exercise.objects.create(gym=gym, name="Snatch again", category=cat(gym, "Snatch"), key="sn")
 
 
-def test_exercise_tags_must_come_from_the_fixed_list(gym):
-    ex = Exercise(gym=gym, name="Weird", category="accessory", tags=["strength", "made-up"])
+def test_an_exercise_must_use_its_own_gyms_category(gym):
+    other = Gym.objects.create(name="Other")
+    install_pack(other, "empty")
+    ex = Exercise(gym=gym, name="Crossed", category=cat(other, "Strength"))
     with pytest.raises(ValidationError):
         ex.full_clean()
 
@@ -84,18 +96,6 @@ def test_archived_athlete_is_not_an_athlete_profile(athlete):
     athlete.save()
     athlete.user.refresh_from_db()
     assert athlete.user.athlete_profile is None
-
-
-def test_week_type_colour_overrides_are_validated(gym):
-    gym.week_type_colours = {"accum": "#123456"}
-    gym.full_clean()
-    assert next(w for w in gym.week_types() if w["key"] == "accum")["colour"] == "#123456"
-    gym.week_type_colours = {"accum": "red"}
-    with pytest.raises(ValidationError):
-        gym.full_clean()
-    gym.week_type_colours = {"nope": "#123456"}
-    with pytest.raises(ValidationError):
-        gym.full_clean()
 
 
 def test_invite_usability(coach):

@@ -68,7 +68,7 @@ Server-rendered Django with HTMX for partial updates, one Postgres database, one
 | Drag and drop | SortableJS (CDN) posting the new order via HTMX | Reordering prescriptions within a day and moving between days |
 | Charts | Server-generated inline SVG (port the mockup's sparkline helper to a template tag) | No chart library; the mockup already draws them this way |
 | Auth | Django auth with a custom User (email login); no role column, a user is a coach or athlete by having that profile; `django-allauth` only if social login is wanted later | A coach can log their own training as an athlete of themselves |
-| Database | Postgres everywhere, including locally (Docker Compose) | Tags use ArrayField and custom fields use JSON queries, both Postgres-only; SQLite would hide bugs until deploy |
+| Database | Postgres everywhere, including locally (Docker Compose) | Custom fields use JSON queries and names are unique ignoring case through functional constraints; SQLite would hide differences until deploy |
 | Static files | WhiteNoise, `collectstatic` at build | No CDN or S3 needed for CSS/JS |
 | Media (form videos) | S3-compatible bucket (Cloudflare R2 or Backblaze B2) via `django-storages`; direct-to-bucket upload with a presigned URL | Render's disk is not for user uploads; videos are large |
 | Email | Transactional provider (Resend or Postmark) via `django-anymail` | Invites, password reset, weekly digest |
@@ -129,7 +129,7 @@ Read top-down: the gym owns libraries, libraries are copied onto an athlete's pr
 | Model | Key fields | Notes |
 | --- | --- | --- |
 | User | email (login), password, name, timezone | Custom `AbstractUser`, set before the first migration. No role column: a Coach row makes a coach, an Athlete row makes an athlete, and one user can have both. After login the coach app wins when both exist, with a switcher |
-| Gym | name, units (kg / lb), week_type_colours (JSON), timezone | Owns the exercise library, templates and default check-in questions. Created with the first coach account |
+| Gym | name, units (kg / lb), timezone | Owns the exercise library, categories, tags, week types, templates and default check-in questions. Created with the first coach account, who picks a starter pack (see below) |
 | Coach | user, gym, title | |
 | Athlete | user, coach, gym, weight_class, competition_name, competition_date, height_cm, years_training, units (defaults from gym), joined_at, archived_at | Archive, never delete, so session history survives. Bodyweight and maxes are history tables below, not columns here. The athlete's time zone is `User.timezone`, defaulted from the gym when they join |
 | Invite | coach, email, token, starting_template, status, expires_at, accepted_by | Backs the invite link and onboarding |
@@ -145,11 +145,20 @@ Read top-down: the gym owns libraries, libraries are copied onto an athlete's pr
 
 | Model | Key fields | Notes |
 | --- | --- | --- |
-| Exercise | gym, name, category (choice), tags (ArrayField of slugs), measure (reps / time / distance), reps_per_rep (1, or 2 for a "1+1" complex), percent_of (self FK, nullable), youtube_url, cue, archived | `percent_of` names the max a percentage is worked from: front squat from back squat, power snatch from snatch, an accessory from nothing (percentage loads then show as-is). Tags stay the fixed list of 13 until a coach asks for more |
-| Category | Snatch, Clean & Jerk, Squat, Pull, Press, Accessory, Conditioning, Mobility | Choice list |
+| Exercise | gym, key, name, category (FK Category), tags (M2M Tag), measure (reps / time / distance), reps_per_rep (1, or 2 for a "1+1" complex), percent_of (self FK, nullable), youtube_url, cue, archived | `percent_of` names the max a percentage is worked from: front squat from back squat, power snatch from snatch, an accessory from nothing (percentage loads then show as-is) |
+| Category | gym, name (≤40), order | The gym's own categories, ordered by the coach, names unique per gym ignoring case. Deleting one that has exercises (archived included) asks which category to move them to first |
+| Tag | gym, name (≤24) | The gym's own tags, unique per gym ignoring case. Deleting one removes it from exercises; the exercises stay |
 | TrackedLift | gym, exercise, order | The gym-wide, ordered list of lifts whose maxes are tracked: asked at onboarding, shown on the Metrics tab and athlete header, listed in reminders. Edited in Settings, at most 6. Only active, rep-measured exercises of the gym. New gyms start with snatch, clean & jerk and back squat. Archiving an exercise untracks it; recorded maxes are kept |
 
 Exercises are archived rather than deleted. An archived exercise can then be deleted permanently after a warning that lists what goes with it (athletes' max entries, and exercises that take percentages from it, which fall back to their own max). `apps/exercises/deletion.py` is the one place that knows everything pointing at an exercise; every later model with a foreign key to Exercise must be added there, and a test fails until it is. Starter-library exercises carry a `key`, used only to refresh the library without duplicates; no feature may depend on it.
+
+### Week types and starter packs
+
+| Model | Key fields | Notes |
+| --- | --- | --- |
+| WeekType | gym, name (≤30), description, colour (#RRGGBB), order, archived | The gym's own week types, edited in Settings. They colour the program editor, week strip and session cards through inline CSS variables. One that anything uses is archived instead of deleted, so past weeks keep it; "in use" is counted from every model pointing at WeekType, so new ones count automatically |
+
+At sign-up the coach picks a starter pack: **Olympic weightlifting** (the mockup's 24 exercises, 8 categories, 13 tags, 6 week types; tracks snatch, clean & jerk, back squat), **General strength** (30 exercises across squat, hinge, push, pull, single-leg, core, carry, conditioning, mobility; week types Hypertrophy, Strength, Power, Deload, Testing; tracks back squat, bench press, deadlift), or **Start empty** (no exercises; four categories and three week types to build from). Everything a pack adds is the gym's own and editable. Installing a pack only adds what's missing and never changes what a coach edited. Starter exercises ship without demo links.
 
 ### Shared prescription fields
 
@@ -176,9 +185,9 @@ One `Template` model with a `kind` field replaces the mockup's three lists (temp
 | Model | Key fields | Notes |
 | --- | --- | --- |
 | Template | gym, created_by, kind (program / week / session), name, description, sessions_per_week | |
-| TemplateWeek | template, order, week_type, focus_note | Week types: accumulation, intensification, comp prep, deload, cutting, technique |
+| TemplateWeek | template, order, week_type (FK WeekType), focus_note | |
 | TemplateSession | week, order, name | |
-| TemplateSlot | session, order, kind (exercise / tag), exercise, tags (Array), default_exercise, plus every PrescriptionBase field | Tag slots need tags plus default_exercise |
+| TemplateSlot | session, order, kind (exercise / tag), exercise, tags (M2M Tag), default_exercise, plus every PrescriptionBase field | Tag slots need tags plus default_exercise |
 | TemplateSlotSet | slot, set_number, reps, load_value | Per-set overrides |
 | TemplateHabit | template, name, emoji, cadence, note | Copied to the athlete on apply |
 
@@ -187,10 +196,10 @@ One `Template` model with a `kind` field replaces the mockup's three lists (temp
 | Model | Key fields | Notes |
 | --- | --- | --- |
 | Program | athlete, block_name, active, source_template, created_at | One active program per athlete, enforced by a partial unique index; old ones are kept for history |
-| ProgramWeek | program, order, week_type, start_date (Monday), focus_note, published | The coach's "focus this week" note lives here. The athlete app reads published weeks only; the label ("Wk 3") is derived |
+| ProgramWeek | program, order, week_type (FK WeekType), start_date (Monday), focus_note, published | The coach's "focus this week" note lives here. The athlete app reads published weeks only; the label ("Wk 3") is derived |
 | ProgramDay | week, date, is_rest | Unique on (week, date). No status column: done, missed and today are worked out from session logs and the date (see derived values) |
 | ProgramSession | day, order, name, source_template_session | Usually one per day; a second one covers morning and evening sessions. The mockup shows one, so the UI adds a second only on demand |
-| Prescription | session, order, exercise, tag_slot_tags (Array, empty when fixed), plus every PrescriptionBase field | |
+| Prescription | session, order, exercise, tag_slot_tags (M2M Tag, empty when fixed), plus every PrescriptionBase field | Tags are rows, not strings, so renaming a tag updates slots and prescriptions too |
 | PrescribedSet | prescription, set_number, reps, load_value | Per-set overrides |
 | EditHistory | program_week, coach, created_at, snapshot (JSON) | One row per board mutation; undo restores the latest and deletes it. Pruned to the last 50 per week |
 | Habit | athlete, name, emoji, cadence (daily / training days / 3x / 5x), note, source_template, archived | |
@@ -200,7 +209,7 @@ One `Template` model with a `kind` field replaces the mockup's three lists (temp
 
 | Model | Key fields | Notes |
 | --- | --- | --- |
-| SessionLog | athlete, program_session (nullable), started_at, finished_at, name, week_type, checkin_skipped, session_rpe, comment | One per workout; a paused session has no finished_at. Nullable link so an athlete can log an unprogrammed session |
+| SessionLog | athlete, program_session (nullable), started_at, finished_at, name, week_type (FK WeekType), checkin_skipped, session_rpe, comment | One per workout; a paused session has no finished_at. Nullable link so an athlete can log an unprogrammed session |
 | SessionExercise | session_log, prescription (nullable), exercise, order | Holds "asked for X" beside "did Y". The link survives later edits to the prescription, and the coach's Sessions tab shows both |
 | SetLog | session_exercise, set_number, load_kg (Decimal 6,2), reps, duration_seconds, rir, done, logged_at | Loads always in kg, exact; a complex logs one rep of the complex; timed work logs seconds and null reps |
 | CheckinQuestion | owner (gym defaults or one athlete), order, type (scale / multiple choice), text, low_label, high_label, options (JSON), archived | Each athlete gets a copy on join; "push defaults" overwrites copies. Archive rather than delete so old answers keep their question |
@@ -328,7 +337,7 @@ gymtrainer/
 - Copy the CSS wholesale first, then delete rules as screens are rebuilt; do not restyle while porting.
 - The CSS-mask icon set stays; move it to its own file.
 - The `.view` and `.cpanel` show/hide classes go away; those become URLs.
-- Keep the week-type palette as CSS variables and generate the legend from the `WEEK_TYPES` choices in Python so the two never drift.
+- Week type colours come from each gym's WeekType rows and are applied as inline CSS variables (`--wkc`, `--wkl`) that the mockup's `.wk-pill`, `.wk-tab` and `.rx-item` styles already read.
 - Fonts: keep Inter from Google Fonts or self-host it in `static/fonts` (self-hosting avoids the external request on the athlete's phone).
 
 ### Seed data
@@ -467,6 +476,15 @@ The review settled most of the original list. What remains is below; decide the 
 - Time zones: UTC in the database; "today" is computed in the athlete's zone, the dashboard in the gym's.
 - Deleting an athlete: archive only.
 
+### Decided (23 September, while building phase 2)
+
+- Tracked lifts are a gym-wide ordered list in Settings, not fixed. Archiving a tracked lift untracks it and keeps its history.
+- Bodyweight, height and years training stay fixed metrics for every gym; custom metrics can come later.
+- Archived exercises can be deleted permanently after a warning listing what goes with them.
+- Categories, tags and week types are per gym and editable. Tag names are at most 24 characters.
+- Deleting a category that has exercises offers to move them to another category.
+- A new gym chooses a starter pack: Olympic weightlifting, General strength, or Start empty (no exercises, basic categories and week types).
+
 ### Still open
 
 - [ ] Product name and domain (the mockup says "Platform"; the repo is GymTrainer).
@@ -475,7 +493,6 @@ The review settled most of the original list. What remains is below; decide the 
 - [ ] Should the athlete be able to edit a session after finishing it? Suggest yes for 24 hours.
 - [ ] Do athletes pay, does the gym pay, or is billing out of scope for now? Affects whether Stripe goes in the plan.
 - [ ] Video: YouTube links only for demos (as in the mockup), and athlete uploads in phase 8, or defer uploads entirely?
-- [ ] Custom exercise tags per gym, or the fixed list of 13?
 - [ ] Can an athlete have two coaches at the same gym? The plan assumes one.
 
 ### Risks

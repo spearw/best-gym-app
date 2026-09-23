@@ -1,0 +1,12 @@
+{% extends "base_coach.html" %}
+{% block title %}Categories & tags{% endblock %}
+{% block page_title %}Programming{% endblock %}
+{% block topbar_actions %}<a class="btn btn--soft btn--sm" href="{% url 'coach:exercises' %}">← Exercises</a>{% endblock %}
+{% block content %}
+{% include "coach/programming/_tabs.html" %}
+<p class="tiny muted" style="margin:0 0 12px;max-width:760px">Your gym's own categories and tags. Categories group the exercise library; tags let you filter it and, later, build tag-based slots in templates. Changes apply to every exercise straight away.</p>
+<div class="dash-grid" style="grid-template-columns:1fr 1fr;align-items:start">
+  {% include "exercises/_categories_card.html" %}
+  {% include "exercises/_tags_card.html" %}
+</div>
+{% endblock %}

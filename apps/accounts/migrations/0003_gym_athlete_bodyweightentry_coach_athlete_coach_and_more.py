@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=120)),
                 ('units', models.CharField(choices=[('kg', 'kilograms'), ('lb', 'pounds')], default='kg', max_length=2)),
                 ('timezone', models.CharField(default='UTC', max_length=64, validators=[apps.accounts.models.validate_timezone])),
-                ('week_type_colours', models.JSONField(blank=True, default=dict, validators=[apps.accounts.models.validate_week_type_colours])),
+                ('week_type_colours', models.JSONField(blank=True, default=dict)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
             ],
         ),

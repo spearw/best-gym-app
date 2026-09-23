@@ -21,7 +21,7 @@ from apps.accounts.models import (
     MeasurementSource,
     User,
 )
-from apps.exercises.starter import install_starter_library, track_default_lifts
+from apps.exercises.starter import install_pack
 from apps.workouts.models import CheckinQuestion, copy_defaults_to, install_default_questions
 
 DEMO_PASSWORD = "demo-password-123"
@@ -116,8 +116,7 @@ class Command(BaseCommand):
     @transaction.atomic
     def handle(self, *args, **options):
         gym, _ = Gym.objects.update_or_create(name=GYM_NAME, defaults={"timezone": TZ, "units": "kg"})
-        exercises = install_starter_library(gym)
-        track_default_lifts(gym)
+        exercises = install_pack(gym, "weightlifting")
         install_default_questions(gym)
         today = gym.today()
 

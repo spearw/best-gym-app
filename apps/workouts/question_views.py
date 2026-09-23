@@ -49,6 +49,28 @@ class Scope:
     def question(self, qid):
         return get_object_or_404(self.questions.filter(archived=False), pk=qid)
 
+    def save_pending_edits(self, post):
+        """Every builder request carries the wording currently on screen (text_<id>,
+        low_label_<id>, high_label_<id>). Save it before acting, so a quick
+        edit-then-click can't lose the edit whatever order the requests arrive in."""
+        for q in self.questions.filter(archived=False):
+            changed = []
+            if f"text_{q.pk}" in post:
+                text = " ".join(post[f"text_{q.pk}"].split())[:200]
+                if text and text != q.text:
+                    q.text = text
+                    changed.append("text")
+            if q.type == QuestionType.SCALE:
+                for name in ("low_label", "high_label"):
+                    key = f"{name}_{q.pk}"
+                    if key in post:
+                        value = post[key].strip()[:60]
+                        if value != getattr(q, name):
+                            setattr(q, name, value)
+                            changed.append(name)
+            if changed:
+                q.save(update_fields=changed)
+
     def render(self, message=None, kind=""):
         response = TemplateResponse(
             self.request,
@@ -66,7 +88,10 @@ class Scope:
 def _scope(view):
     @coach_required
     def wrapped(request, *args, athlete_pk=None, **kwargs):
-        return view(request, Scope(request, athlete_pk), *args, **kwargs)
+        scope = Scope(request, athlete_pk)
+        if request.method == "POST" and view.__name__ != "update":
+            scope.save_pending_edits(request.POST)
+        return view(request, scope, *args, **kwargs)
 
     wrapped.__name__ = view.__name__
     return wrapped
@@ -91,7 +116,7 @@ def add(request, scope, qtype):
 @_scope
 def update(request, scope, qid):
     q = scope.question(qid)
-    text = " ".join(request.POST.get("text", q.text).split())[:200]
+    text = " ".join(request.POST.get(f"text_{q.pk}", q.text).split())[:200]
     if not text:
         # Put the old wording back on screen.
         return hx.retarget(
@@ -99,8 +124,8 @@ def update(request, scope, qid):
         )
     q.text = text
     if q.type == QuestionType.SCALE:
-        q.low_label = request.POST.get("low_label", q.low_label).strip()[:60]
-        q.high_label = request.POST.get("high_label", q.high_label).strip()[:60]
+        q.low_label = request.POST.get(f"low_label_{q.pk}", q.low_label).strip()[:60]
+        q.high_label = request.POST.get(f"high_label_{q.pk}", q.high_label).strip()[:60]
     q.save()
     # The edited text is already on screen, so nothing is redrawn. Redrawing here would
     # drop any click (move, delete) queued behind this save.
@@ -140,7 +165,7 @@ def move(request, scope, qid, direction):
 @_scope
 def add_option(request, scope, qid):
     q = scope.question(qid)
-    option = " ".join(request.POST.get("option", "").split())[:80]
+    option = " ".join(request.POST.get(f"option_{q.pk}", "").split())[:80]
     if q.type != QuestionType.CHOICE or not option:
         return scope.render("Type the option first", "bad" if q.type == QuestionType.CHOICE else "")
     if option in q.options:

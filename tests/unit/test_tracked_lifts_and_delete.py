@@ -6,7 +6,7 @@ import pytest
 from apps.accounts.metrics import metric_specs, save_metrics
 from apps.accounts.models import Coach, Gym, MaxEntry
 from apps.exercises.models import MAX_TRACKED_LIFTS, Exercise, TrackedLift, tracked_exercises
-from apps.exercises.starter import install_starter_library, track_default_lifts
+from apps.exercises.starter import install_pack
 
 from ..conftest import lift_field
 
@@ -31,7 +31,7 @@ def names(gym):
 
 def test_new_gyms_track_the_three_default_lifts(gym):
     assert names(gym) == ["Snatch", "Clean & Jerk", "Back Squat"]
-    track_default_lifts(gym)  # idempotent: never overwrites an existing list
+    install_pack(gym, "weightlifting")  # idempotent: never overwrites an existing list
     assert TrackedLift.objects.filter(gym=gym).count() == 3
 
 
@@ -67,7 +67,7 @@ def test_archived_and_other_gyms_exercises_cannot_be_tracked(coach_client, gym):
     archived.archived = True
     archived.save()
     other = Gym.objects.create(name="Elsewhere")
-    install_starter_library(other)
+    install_pack(other, "weightlifting")
     for pk in [archived.pk, ex(other, "fsq").pk]:
         assert (
             toast(coach_client.post("/coach/settings/lifts/add/", {"exercise": pk}, **HX))
@@ -85,8 +85,7 @@ def test_cap_on_tracked_lifts(coach_client, gym):
 
 def test_other_gyms_tracked_lifts_are_404(coach_client, make_user):
     other = Gym.objects.create(name="Elsewhere")
-    install_starter_library(other)
-    track_default_lifts(other)
+    install_pack(other, "weightlifting")
     theirs = TrackedLift.objects.filter(gym=other).first()
     assert coach_client.post(f"/coach/settings/lifts/{theirs.pk}/remove/", **HX).status_code == 404
     assert coach_client.post(f"/coach/settings/lifts/{theirs.pk}/move/up/", **HX).status_code == 404
@@ -140,7 +139,7 @@ def test_metrics_tab_and_header_follow_the_list_and_keep_history(coach_client, a
 
 def test_save_metrics_ignores_lifts_the_gym_does_not_track(athlete, general_gym):
     other = Gym.objects.create(name="Elsewhere")
-    install_starter_library(other)
+    install_pack(other, "weightlifting")
     save_metrics(
         athlete,
         {
@@ -222,7 +221,7 @@ def test_delete_removes_history_and_resets_dependents(coach_client, gym, athlete
 
 def test_delete_other_gyms_exercise_is_404(coach_client, make_user):
     other = Gym.objects.create(name="Elsewhere")
-    install_starter_library(other)
+    install_pack(other, "weightlifting")
     Coach.objects.create(user=make_user("o@example.com"), gym=other)
     theirs = archive(other, "rdl")
     assert coach_client.post(f"/coach/programming/exercises/{theirs.pk}/delete/", **HX).status_code == 404
@@ -236,6 +235,7 @@ def test_deletion_handles_every_model_that_points_at_an_exercise():
         ("accounts", "maxentry", "exercise"),
         ("exercises", "exercise", "percent_of"),
         ("exercises", "trackedlift", "exercise"),
+        ("exercises", "exercise_tags", "exercise"),  # tag links go with the exercise automatically
     }
     pointing = {
         (f.related_model._meta.app_label, f.related_model._meta.model_name, f.field.name)

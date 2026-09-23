@@ -35,6 +35,7 @@ def test_new_gyms_get_the_mockup_defaults(client):
             "email": "s@example.com",
             "password": PASSWORD,
             "gym_name": "G",
+            "starter": "weightlifting",
             "units": "kg",
             "browser_timezone": "UTC",
         },
@@ -65,7 +66,11 @@ def test_add_edit_move_and_archive_defaults(coach_client, gym, defaults):
     new = CheckinQuestion.objects.gym_defaults(gym).active().last()
     response = coach_client.post(
         f"{base}{new.pk}/update/",
-        {"text": "  How was   sleep? ", "low_label": "awful", "high_label": "great"},
+        {
+            f"text_{new.pk}": "  How was   sleep? ",
+            f"low_label_{new.pk}": "awful",
+            f"high_label_{new.pk}": "great",
+        },
         **HX,
     )
     assert "push them to update existing athletes" in toast(response)
@@ -83,7 +88,9 @@ def test_add_edit_move_and_archive_defaults(coach_client, gym, defaults):
 
 def test_blank_wording_is_refused(coach_client, defaults):
     q = defaults[0]
-    response = coach_client.post(f"/coach/programming/questions/{q.pk}/update/", {"text": "   "}, **HX)
+    response = coach_client.post(
+        f"/coach/programming/questions/{q.pk}/update/", {f"text_{q.pk}": "   "}, **HX
+    )
     assert "needs some wording" in toast(response)
     q.refresh_from_db()
     assert q.text == "How recovered do you feel today?"
@@ -92,10 +99,10 @@ def test_blank_wording_is_refused(coach_client, defaults):
 def test_options(coach_client, defaults):
     mc = defaults[1]
     base = f"/coach/programming/questions/{mc.pk}/options/"
-    coach_client.post(f"{base}add/", {"option": "Travelling"}, **HX)
+    coach_client.post(f"{base}add/", {f"option_{mc.pk}": "Travelling"}, **HX)
     mc.refresh_from_db()
     assert mc.options[-1] == "Travelling"
-    assert "already there" in toast(coach_client.post(f"{base}add/", {"option": "Travelling"}, **HX))
+    assert "already there" in toast(coach_client.post(f"{base}add/", {f"option_{mc.pk}": "Travelling"}, **HX))
     coach_client.post(f"{base}0/remove/", **HX)
     mc.refresh_from_db()
     assert mc.options[0] == "Legs are sore"
@@ -110,7 +117,7 @@ def test_athlete_copy_is_independent_of_defaults(coach_client, maya, defaults):
     theirs = CheckinQuestion.objects.for_athlete(maya).active().first()
     response = coach_client.post(
         f"/coach/athletes/{maya.pk}/questions/{theirs.pk}/update/",
-        {"text": "Energy today?", "low_label": "", "high_label": ""},
+        {f"text_{theirs.pk}": "Energy today?", f"low_label_{theirs.pk}": "", f"high_label_{theirs.pk}": ""},
         **HX,
     )
     assert toast(response) == "Updated — live from Maya's next session"
@@ -126,7 +133,9 @@ def test_athlete_copy_is_independent_of_defaults(coach_client, maya, defaults):
 
 def test_reset_archives_the_athletes_old_questions(coach_client, maya):
     old = CheckinQuestion.objects.for_athlete(maya).active().first()
-    coach_client.post(f"/coach/athletes/{maya.pk}/questions/{old.pk}/update/", {"text": "Changed"}, **HX)
+    coach_client.post(
+        f"/coach/athletes/{maya.pk}/questions/{old.pk}/update/", {f"text_{old.pk}": "Changed"}, **HX
+    )
     coach_client.post(f"/coach/athletes/{maya.pk}/questions/reset/", **HX)
     old.refresh_from_db()
     assert old.archived and old.text == "Changed"  # kept for past answers

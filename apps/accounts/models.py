@@ -1,5 +1,4 @@
 import datetime
-import re
 import secrets
 import zoneinfo
 
@@ -9,24 +8,12 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
-from apps.programs.week_types import WEEK_TYPES
-
 
 def validate_timezone(value):
     """Checked at validation time rather than baked into the migration as choices,
     because the available zone list depends on the machine's tzdata version."""
     if value not in zoneinfo.available_timezones():
         raise ValidationError(f"{value!r} is not a known time zone")
-
-
-def validate_week_type_colours(value):
-    if not isinstance(value, dict):
-        raise ValidationError("Week type colours must be a mapping")
-    for key, colour in value.items():
-        if key not in WEEK_TYPES:
-            raise ValidationError(f"Unknown week type {key!r}")
-        if not isinstance(colour, str) or not re.fullmatch(r"#[0-9A-Fa-f]{6}", colour):
-            raise ValidationError(f"{colour!r} is not a #RRGGBB colour")
 
 
 class Units(models.TextChoices):
@@ -120,7 +107,6 @@ class Gym(models.Model):
     name = models.CharField(max_length=120)
     units = models.CharField(max_length=2, choices=Units.choices, default=Units.KG)
     timezone = models.CharField(max_length=64, default="UTC", validators=[validate_timezone])
-    week_type_colours = models.JSONField(default=dict, blank=True, validators=[validate_week_type_colours])
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -129,18 +115,6 @@ class Gym(models.Model):
     def today(self):
         """The date in the gym's zone; the coach dashboard counts days in this."""
         return timezone.localdate(timezone=zoneinfo.ZoneInfo(self.timezone))
-
-    def week_types(self):
-        """Every week type with this gym's colour applied (override or default)."""
-        return [
-            {
-                "key": key,
-                **wt,
-                "colour": self.week_type_colours.get(key, wt["colour"]),
-                "is_custom": key in self.week_type_colours,
-            }
-            for key, wt in WEEK_TYPES.items()
-        ]
 
 
 class Coach(models.Model):

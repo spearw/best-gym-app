@@ -1,0 +1,37 @@
+<div class="card" style="padding:20px" id="weekTypes" hx-sync="#weekTypes:queue all" hx-include="#weekTypes [name*=_]">
+  <h4 style="font-size:.95rem">Week types</h4>
+  <p class="tiny muted">Week types colour-code the program editor, the athlete's week strip, and every session card, so a training phase is recognisable at a glance. Edit a name, description or colour and it saves as you go.</p>
+  <div class="stack" style="gap:8px;margin-top:10px">
+    {% for wt in active %}
+      <div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px">
+        <form class="row" style="gap:8px;flex-wrap:nowrap" hx-post="{% url 'coach:week_type_update' wt.pk %}" hx-trigger="change" hx-swap="none" onsubmit="return false">
+          <input class="colour-input" type="color" name="colour_{{ wt.pk }}" value="{{ wt.colour }}" aria-label="Colour for {{ wt.name }}">
+          <input class="input" name="name_{{ wt.pk }}" value="{{ wt.name }}" maxlength="{{ name_max }}" style="max-width:170px" aria-label="Name of week type {{ wt.name }}">
+          <input class="input" name="description_{{ wt.pk }}" value="{{ wt.description }}" maxlength="{{ description_max }}" placeholder="What this week is for" aria-label="Description of {{ wt.name }}">
+        </form>
+        <div class="spread" style="margin-top:8px">
+          {% include "programs/_week_type_pill.html" %}
+          <span class="row" style="gap:4px">
+            {% if wt.uses %}<span class="tiny muted">used by {{ wt.uses }} week{{ wt.uses|pluralize }}</span>{% endif %}
+            {% if not forloop.first %}<button class="iconbtn" type="button" aria-label="Move {{ wt.name }} up" hx-post="{% url 'coach:week_type_move' wt.pk 'up' %}" hx-target="#weekTypes" hx-swap="outerHTML">↑</button>{% endif %}
+            {% if not forloop.last %}<button class="iconbtn" type="button" aria-label="Move {{ wt.name }} down" hx-post="{% url 'coach:week_type_move' wt.pk 'down' %}" hx-target="#weekTypes" hx-swap="outerHTML">↓</button>{% endif %}
+            <button class="iconbtn" type="button" aria-label="Remove week type {{ wt.name }}" hx-post="{% url 'coach:week_type_remove' wt.pk %}" hx-target="#weekTypes" hx-swap="outerHTML"
+                    hx-confirm="{% if wt.uses %}“{{ wt.name }}” is used by {{ wt.uses }} week{{ wt.uses|pluralize }}, so it will be archived: it leaves the pickers and those weeks keep it.{% else %}Delete the week type “{{ wt.name }}”?{% endif %}"><span class="svgi svgi--trash"></span></button>
+          </span>
+        </div>
+      </div>
+    {% empty %}
+      <p class="tiny muted" style="margin:0">No week types. Add one before building programs.</p>
+    {% endfor %}
+  </div>
+  <form class="row" style="margin-top:12px;flex-wrap:nowrap" hx-post="{% url 'coach:week_type_add' %}" hx-target="#weekTypes" hx-swap="outerHTML">
+    <input class="colour-input" type="color" name="colour" value="#6B7280" aria-label="New week type colour">
+    <input class="input" name="name" placeholder="New week type, e.g. Peaking" maxlength="{{ name_max }}" aria-label="New week type name">
+    <button class="btn btn--soft" type="submit">Add</button>
+  </form>
+  {% if archived %}
+    <div style="margin-top:14px"><span class="tiny muted">Archived — kept on the weeks that use them:</span>
+      <div class="row" style="gap:6px;margin-top:6px">{% for wt in archived %}<span class="wk-pill" style="{{ wt.css_vars }};opacity:.6">{{ wt.name }}</span><button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:week_type_restore' wt.pk %}" hx-target="#weekTypes" hx-swap="outerHTML">Restore</button>{% endfor %}</div>
+    </div>
+  {% endif %}
+</div>

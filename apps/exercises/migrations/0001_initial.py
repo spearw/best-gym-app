@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('key', models.CharField(blank=True, help_text="Stable id for starter-library exercises (e.g. 'sn'), so code can find the snatch even if a coach renames it. Blank for exercises a coach creates.", max_length=20)),
                 ('name', models.CharField(max_length=120)),
                 ('category', models.CharField(choices=[('snatch', 'Snatch'), ('clean_jerk', 'Clean & Jerk'), ('squat', 'Squat'), ('pull', 'Pull'), ('press', 'Press'), ('accessory', 'Accessory'), ('conditioning', 'Conditioning'), ('mobility', 'Mobility')], max_length=20)),
-                ('tags', django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=30), blank=True, default=list, size=None, validators=[apps.exercises.models.validate_tags])),
+                ('tags', django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=30), blank=True, default=list, size=None)),
                 ('measure', models.CharField(choices=[('reps', 'Reps'), ('time', 'Time'), ('distance', 'Distance')], default='reps', max_length=10)),
                 ('reps_per_rep', models.PositiveSmallIntegerField(default=1, help_text='2 for a "1+1" complex')),
                 ('youtube_url', models.URLField(blank=True)),

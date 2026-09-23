@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import CharField, F, Func, Q, Value
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
@@ -10,22 +10,35 @@ from apps.accounts.access import coach_required
 
 from .deletion import CannotDelete, check_deletable, delete_exercise, deletion_impact
 from .forms import ExerciseForm
-from .models import TAGS, Exercise, TrackedLift
+from .models import Exercise, Tag, TrackedLift
 
 
 def _filtered(request):
     gym = request.coach.gym
     q = request.GET.get("q", "").strip()
-    tags = [t for t in request.GET.getlist("tag") if t in TAGS]
+    tag_ids = {t for t in request.GET.getlist("tag") if t.isdigit()}
+    tags = list(Tag.objects.filter(gym=gym, pk__in=tag_ids))
     show_archived = request.GET.get("archived") == "1"
-    exercises = Exercise.objects.filter(gym=gym, archived=show_archived).select_related("percent_of")
+    exercises = (
+        Exercise.objects.filter(gym=gym, archived=show_archived)
+        .select_related("percent_of", "category")
+        .prefetch_related("tags")
+    )
     if q:
-        exercises = exercises.annotate(
-            tag_text=Func(F("tags"), Value(" "), function="array_to_string", output_field=CharField())
-        ).filter(Q(name__icontains=q) | Q(tag_text__icontains=q) | Q(cue__icontains=q))
+        exercises = exercises.filter(
+            Q(name__icontains=q)
+            | Q(tags__name__icontains=q)
+            | Q(cue__icontains=q)
+            | Q(category__name__icontains=q)
+        ).distinct()
     for tag in tags:
-        exercises = exercises.filter(tags__contains=[tag])
-    return exercises.order_by("category", "name"), {"q": q, "tags": tags, "show_archived": show_archived}
+        exercises = exercises.filter(tags=tag)
+    return exercises.order_by("category__order", "name"), {
+        "q": q,
+        "tags": tags,
+        "tag_ids": {t.pk for t in tags},
+        "show_archived": show_archived,
+    }
 
 
 @coach_required
@@ -38,7 +51,7 @@ def exercise_list(request):
         "ptab": "exercises",
         "title": "Programming",
         "exercises": exercises,
-        "all_tags": TAGS,
+        "all_tags": Tag.objects.filter(gym=request.coach.gym),
         **filters,
     }
     # The search box and tag chips re-request this URL with HX-Target=exlibResults.

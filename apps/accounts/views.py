@@ -9,8 +9,9 @@ from django.views.decorators.http import require_POST
 
 from apps import hx
 from apps.exercises.models import MAX_TRACKED_LIFTS, TrackedLift
-from apps.exercises.starter import install_starter_library, track_default_lifts
+from apps.exercises.starter import install_pack
 from apps.exercises.tracked_views import trackable
+from apps.programs.views import card_context as week_type_card_context
 from apps.workouts.models import copy_defaults_to, install_default_questions
 
 from .access import athlete_required, coach_required, home_url_for
@@ -60,8 +61,7 @@ def signup(request):
         tz = clean_browser_timezone(data["browser_timezone"], "UTC")
         with transaction.atomic():
             gym = Gym.objects.create(name=data["gym_name"], units=data["units"], timezone=tz)
-            install_starter_library(gym)
-            track_default_lifts(gym)
+            install_pack(gym, data["starter"])
             install_default_questions(gym)
             user = User.objects.create_user(data["email"], data["password"], name=data["name"], timezone=tz)
             Coach.objects.create(user=user, gym=gym)
@@ -197,13 +197,12 @@ def settings_page(request):
         "timezone": gym.timezone,
         "units": gym.units,
     }
-    form = GymSettingsForm(request.POST or None, initial=initial, gym=gym)
+    form = GymSettingsForm(request.POST or None, initial=initial)
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
         gym.name = data["gym_name"]
         gym.timezone = data["timezone"]
         gym.units = data["units"]
-        gym.week_type_colours = {} if "reset_colours" in request.POST else form.colour_overrides()
         gym.full_clean()
         gym.save()
         request.coach.title = data["coach_title"]
@@ -217,8 +216,8 @@ def settings_page(request):
             "panel": "settings",
             "title": "Settings",
             "form": form,
-            "week_types": gym.week_types(),
-            "tracked": TrackedLift.objects.filter(gym=gym).select_related("exercise"),
+            **week_type_card_context(gym),
+            "tracked": TrackedLift.objects.filter(gym=gym).select_related("exercise__category"),
             "trackable": trackable(gym),
             "max_tracked": MAX_TRACKED_LIFTS,
         },

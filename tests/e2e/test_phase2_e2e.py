@@ -7,6 +7,8 @@ from apps.accounts.models import MaxEntry
 from apps.exercises.models import Exercise
 from apps.workouts.models import CheckinQuestion, copy_defaults_to, install_default_questions
 
+from .conftest import htmx_idle
+
 pytestmark = pytest.mark.django_db(transaction=True)
 
 
@@ -81,6 +83,7 @@ def test_question_builder_edits_an_athletes_copy(page: Page, base, coach, athlet
     builder.get_by_label("New option").press("Enter")
     expect(builder).to_contain_text("Travelling")
     expect(page.locator("#toastStack")).to_contain_text("live from Maya's next session")
+    htmx_idle(page)
 
     wording = builder.get_by_label("Question 1 wording")
     wording.fill("How ready do you feel?")
@@ -110,8 +113,10 @@ def test_tracked_lifts_then_archive_and_delete(page: Page, base, coach, athlete,
     card.get_by_label("Lift to track").select_option(label="Front Squat")
     card.get_by_role("button", name="Track", exact=True).click()
     expect(card).to_contain_text("4 of 6")
+    htmx_idle(page)
     for _ in range(3):
         card.get_by_role("button", name="Move Front Squat up").click()
+        htmx_idle(page)
     expect(card.locator(".spread b").first).to_have_text("Front Squat")
 
     # The athlete's Metrics tab follows the new list.

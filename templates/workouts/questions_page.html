@@ -7,7 +7,7 @@
 <div class="card" style="padding:16px 18px;max-width:720px">
   {% include "workouts/_question_builder.html" %}
   <div class="row" style="margin-top:12px;justify-content:flex-end">
-    <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:questions_push' %}" hx-target="#{{ builder_id }}" hx-swap="outerHTML" hx-confirm="Replace the check-in questions of all {{ athlete_count }} of your athletes with these defaults? Their past answers are kept.">Push defaults to all my athletes ({{ athlete_count }})</button>
+    <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:questions_push' %}" hx-include="#{{ builder_id }}" hx-target="#{{ builder_id }}" hx-swap="outerHTML" hx-confirm="Replace the check-in questions of all {{ athlete_count }} of your athletes with these defaults? Their past answers are kept.">Push defaults to all my athletes ({{ athlete_count }})</button>
   </div>
 </div>
 {% endblock %}

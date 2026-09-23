@@ -4,7 +4,9 @@ import pytest
 
 from apps.accounts.models import Coach, Gym, MaxEntry
 from apps.exercises.models import Exercise
-from apps.exercises.starter import install_starter_library
+from apps.exercises.starter import install_pack
+
+from ..conftest import cat, tag_ids
 
 pytestmark = pytest.mark.django_db
 HX = {"HTTP_HX_REQUEST": "true"}
@@ -30,7 +32,7 @@ def test_search_matches_name_tag_or_cue(coach_client):
 
 
 def test_tag_filters_combine_with_and(coach_client):
-    html = results(coach_client, tag=["overhead", "strength"]).content.decode()
+    html = results(coach_client, tag=tag_ids(Gym.objects.get(), "overhead", "strength")).content.decode()
     assert "Push Press" in html and "Strict Press" in html
     assert "Overhead Squat" not in html  # overhead but not strength
     assert "2 exercises" in html
@@ -41,10 +43,10 @@ def test_create_exercise(coach_client, coach):
         "/coach/programming/exercises/new/",
         {
             "name": "  Snatch   Pull + Snatch ",
-            "category": "snatch",
+            "category": cat(coach.gym, "Snatch").pk,
             "measure": "reps",
             "percent_of": Exercise.objects.get(gym=coach.gym, key="sn").pk,
-            "tags": ["technique", "speed"],
+            "tags": tag_ids(coach.gym, "technique", "speed"),
             "youtube_url": "youtube.com/watch?v=abc",
             "cue": "Stay over it",
         },
@@ -54,14 +56,15 @@ def test_create_exercise(coach_client, coach):
     assert trigger["exercisesChanged"] is True and "added to the library" in trigger["toast"]["message"]
     assert response.content == b""  # empties #modal, i.e. closes it
     ex = Exercise.objects.get(gym=coach.gym, name="Snatch Pull + Snatch")
-    assert ex.tags == ["technique", "speed"] and ex.percent_of.key == "sn" and ex.key == ""
+    assert sorted(t.name for t in ex.tags.all()) == ["speed", "technique"]
+    assert ex.percent_of.key == "sn" and ex.key == "" and ex.category.name == "Snatch"
     assert ex.youtube_url == "https://youtube.com/watch?v=abc"
 
 
 def test_duplicate_names_are_rejected_case_insensitively(coach_client):
     html = coach_client.post(
         "/coach/programming/exercises/new/",
-        {"name": "back squat", "category": "squat", "measure": "reps"},
+        {"name": "back squat", "category": cat(Gym.objects.get(), "Squat").pk, "measure": "reps"},
         **HX,
     ).content.decode()
     assert "already has an exercise with this name" in html
@@ -73,7 +76,12 @@ def test_percent_of_must_be_a_base_lift_and_not_itself(coach_client, coach):
     # Front squat is not a base lift (it points at back squat), so it isn't offered.
     html = coach_client.post(
         f"/coach/programming/exercises/{bsq.pk}/edit/",
-        {"name": "Back Squat", "category": "squat", "measure": "reps", "percent_of": fsq.pk},
+        {
+            "name": "Back Squat",
+            "category": cat(coach.gym, "Squat").pk,
+            "measure": "reps",
+            "percent_of": fsq.pk,
+        },
         **HX,
     ).content.decode()
     assert "errorlist" in html
@@ -81,7 +89,12 @@ def test_percent_of_must_be_a_base_lift_and_not_itself(coach_client, coach):
     sn = Exercise.objects.get(gym=coach.gym, key="sn")
     html = coach_client.post(
         f"/coach/programming/exercises/{bsq.pk}/edit/",
-        {"name": "Back Squat", "category": "squat", "measure": "reps", "percent_of": sn.pk},
+        {
+            "name": "Back Squat",
+            "category": cat(coach.gym, "Squat").pk,
+            "measure": "reps",
+            "percent_of": sn.pk,
+        },
         **HX,
     ).content.decode()
     assert "must keep its own max" in html
@@ -91,7 +104,12 @@ def test_edit_keeps_the_starter_key(coach_client, coach):
     sn = Exercise.objects.get(gym=coach.gym, key="sn")
     coach_client.post(
         f"/coach/programming/exercises/{sn.pk}/edit/",
-        {"name": "Full Snatch", "category": "snatch", "measure": "reps", "tags": ["speed"]},
+        {
+            "name": "Full Snatch",
+            "category": cat(coach.gym, "Snatch").pk,
+            "measure": "reps",
+            "tags": tag_ids(coach.gym, "speed"),
+        },
         **HX,
     )
     sn.refresh_from_db()
@@ -115,7 +133,7 @@ def test_archive_and_restore(coach_client, coach, athlete):
 
 def test_other_gyms_exercises_are_invisible(coach_client, make_user):
     other = Gym.objects.create(name="Elsewhere")
-    install_starter_library(other)
+    install_pack(other, "weightlifting")
     Coach.objects.create(user=make_user("x@example.com"), gym=other)
     theirs = Exercise.objects.get(gym=other, key="sn")
     assert coach_client.get(f"/coach/programming/exercises/{theirs.pk}/edit/", **HX).status_code == 404

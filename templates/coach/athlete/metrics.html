@@ -6,7 +6,7 @@
 </div>
 {% include "coach/athlete/_metrics_panel.html" %}
 <div class="spread" style="margin:22px 0 10px"><h4 style="font-size:.95rem">Check-in questions for {{ athlete.user.get_short_name }}</h4>
-  <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:athlete_questions_reset' athlete.pk %}" hx-target="#qBuilder" hx-swap="outerHTML" hx-confirm="Replace {{ athlete.user.get_short_name }}'s questions with your gym's defaults?">Reset to defaults</button></div>
+  <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:athlete_questions_reset' athlete.pk %}" hx-include="#qBuilder" hx-target="#qBuilder" hx-swap="outerHTML" hx-confirm="Replace {{ athlete.user.get_short_name }}'s questions with your gym's defaults?">Reset to defaults</button></div>
 <div class="card" style="padding:16px 18px;max-width:720px">
   {% include "workouts/_question_builder.html" %}
   <p class="tiny muted" style="margin:12px 0 0">This athlete's own copy — changes are live from their next session. The defaults live under Programming › Check-in questions.</p>

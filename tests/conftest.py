@@ -3,7 +3,7 @@
 import pytest
 
 from apps.accounts.models import Athlete, Coach, Gym, User
-from apps.exercises.starter import install_starter_library, track_default_lifts
+from apps.exercises.starter import install_pack
 
 PASSWORD = "correct-horse-battery-9"
 
@@ -11,8 +11,7 @@ PASSWORD = "correct-horse-battery-9"
 @pytest.fixture
 def gym(db):
     gym = Gym.objects.create(name="Iron Ridge Weightlifting", timezone="America/New_York")
-    install_starter_library(gym)
-    track_default_lifts(gym)  # snatch, clean & jerk, back squat, as a new gym gets
+    install_pack(gym, "weightlifting")  # the mockup's library; tracks snatch, C&J, back squat
     return gym
 
 
@@ -52,3 +51,18 @@ def lift_field(gym, key):
     from apps.exercises.models import Exercise
 
     return f"lift_{Exercise.objects.get(gym=gym, key=key).pk}"
+
+
+def cat(gym, name):
+    """A gym's category by name (case-insensitive)."""
+    from apps.exercises.models import Category
+
+    return Category.objects.get(gym=gym, name__iexact=name)
+
+
+def tag_ids(gym, *names):
+    """Primary keys of a gym's tags by name, in the order given."""
+    from apps.exercises.models import Tag
+
+    by_name = {t.name.lower(): t.pk for t in Tag.objects.filter(gym=gym)}
+    return [by_name[n.lower()] for n in names]

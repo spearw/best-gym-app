@@ -4,7 +4,7 @@ from decimal import Decimal
 from django import forms
 from django.contrib.auth import password_validation
 
-from apps.programs.week_types import WEEK_TYPES
+from apps.exercises.starter import PACK_CHOICES, PACKS
 
 from .metrics import metric_specs
 from .models import Units, User, YearsTraining
@@ -58,8 +58,22 @@ class NewAccountFields(InputClassMixin, forms.Form):
 class CoachSignupForm(NewAccountFields):
     gym_name = forms.CharField(max_length=120, label="Gym or team name")
     units = forms.ChoiceField(choices=Units.choices, initial=Units.KG, widget=forms.RadioSelect)
+    starter = forms.ChoiceField(
+        choices=PACK_CHOICES,
+        widget=forms.RadioSelect,
+        label="Start with",
+        error_messages={"required": "Pick how you'd like to start."},
+    )
 
-    field_order = ["name", "email", "password", "gym_name", "units", "browser_timezone"]
+    field_order = ["name", "email", "password", "gym_name", "units", "starter", "browser_timezone"]
+
+    def starter_options(self):
+        """Radio options with each pack's description, for the template."""
+        chosen = self["starter"].value()
+        return [
+            {"key": p.key, "label": p.label, "description": p.description, "checked": p.key == chosen}
+            for p in PACKS.values()
+        ]
 
 
 class JoinForm(NewAccountFields):
@@ -147,25 +161,7 @@ class GymSettingsForm(InputClassMixin, forms.Form):
     timezone = forms.ChoiceField(label="Gym time zone")
     units = forms.ChoiceField(choices=Units.choices, widget=forms.RadioSelect)
 
-    def __init__(self, *args, gym=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["timezone"].choices = timezone_choices()
         self.fields["timezone"].help_text = "The coach dashboard counts days in this zone."
-        for key, wt in WEEK_TYPES.items():
-            default = wt["colour"]
-            self.fields[f"colour_{key}"] = forms.RegexField(
-                regex=r"^#[0-9A-Fa-f]{6}$",
-                required=False,
-                label=wt["label"],
-                widget=forms.TextInput(attrs={"type": "color", "class": "colour-input"}),
-                initial=(gym.week_type_colours.get(key, default) if gym else default),
-            )
-
-    def colour_overrides(self):
-        """Only colours that differ from the defaults are stored."""
-        overrides = {}
-        for key, wt in WEEK_TYPES.items():
-            value = (self.cleaned_data.get(f"colour_{key}") or "").upper()
-            if value and value != wt["colour"].upper():
-                overrides[key] = value
-        return overrides

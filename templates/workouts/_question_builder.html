@@ -1,26 +1,26 @@
 {# One builder for gym defaults and for an athlete's own copy. Every action re-renders this block. #}
-<div id="{{ builder_id }}" class="stack" hx-sync="#{{ builder_id }}:queue all">
+<div id="{{ builder_id }}" class="stack" hx-sync="#{{ builder_id }}:queue all" hx-include="#{{ builder_id }}">
   {% for q in questions %}
     <div class="q-row">
       <form class="stack" style="gap:8px" hx-post="{{ builder_prefix }}{{ q.pk }}/update/" hx-trigger="change" hx-swap="none" onsubmit="return false">
         <div class="qhead">
           <span class="chip {% if q.type == 'scale' %}chip--brand{% else %}chip--good{% endif %}">{% if q.type == 'scale' %}1–10 scale{% else %}multiple choice{% endif %}</span>
-          <input class="input" name="text" value="{{ q.text }}" maxlength="200" aria-label="Question {{ forloop.counter }} wording">
+          <input class="input" name="text_{{ q.pk }}" value="{{ q.text }}" maxlength="200" aria-label="Question {{ forloop.counter }} wording">
         </div>
         {% if q.type == 'scale' %}
           <div class="row tiny muted" style="gap:8px">
-            <span>1 =</span><input class="input" name="low_label" value="{{ q.low_label }}" maxlength="60" style="width:150px;padding:5px 9px" aria-label="Label for 1">
+            <span>1 =</span><input class="input" name="low_label_{{ q.pk }}" value="{{ q.low_label }}" maxlength="60" style="width:150px;padding:5px 9px" aria-label="Label for 1">
             <span>·</span>
-            <span>10 =</span><input class="input" name="high_label" value="{{ q.high_label }}" maxlength="60" style="width:150px;padding:5px 9px" aria-label="Label for 10">
+            <span>10 =</span><input class="input" name="high_label_{{ q.pk }}" value="{{ q.high_label }}" maxlength="60" style="width:150px;padding:5px 9px" aria-label="Label for 10">
           </div>
         {% endif %}
       </form>
       {% if q.type == 'choice' %}
         <div class="row" style="gap:5px">
           {% for option in q.options %}<span class="chip">{{ option }} <button type="button" style="font-weight:700" aria-label="Remove option {{ option }}" hx-post="{{ builder_prefix }}{{ q.pk }}/options/{{ forloop.counter0 }}/remove/" hx-target="#{{ builder_id }}" hx-swap="outerHTML">✕</button></span>{% endfor %}
-          <input class="input" id="opt-{{ builder_id }}-{{ q.pk }}" name="option" placeholder="New option" maxlength="80" style="width:150px;padding:5px 9px" aria-label="New option"
+          <input class="input" id="opt-{{ builder_id }}-{{ q.pk }}" name="option_{{ q.pk }}" placeholder="New option" maxlength="80" style="width:150px;padding:5px 9px" aria-label="New option"
                  hx-post="{{ builder_prefix }}{{ q.pk }}/options/add/" hx-trigger="keydown[key=='Enter']" hx-target="#{{ builder_id }}" hx-swap="outerHTML">
-          <button class="btn btn--sm btn--soft" type="button" hx-post="{{ builder_prefix }}{{ q.pk }}/options/add/" hx-include="#opt-{{ builder_id }}-{{ q.pk }}" hx-target="#{{ builder_id }}" hx-swap="outerHTML">+ option</button>
+          <button class="btn btn--sm btn--soft" type="button" hx-post="{{ builder_prefix }}{{ q.pk }}/options/add/" hx-target="#{{ builder_id }}" hx-swap="outerHTML">+ option</button>
         </div>
       {% endif %}
       <div class="row" style="gap:4px;justify-content:flex-end">

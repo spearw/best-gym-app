@@ -1,17 +1,6 @@
-from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
-
-
-class Category(models.TextChoices):
-    SNATCH = "snatch", "Snatch"
-    CLEAN_JERK = "clean_jerk", "Clean & Jerk"
-    SQUAT = "squat", "Squat"
-    PULL = "pull", "Pull"
-    PRESS = "press", "Press"
-    ACCESSORY = "accessory", "Accessory"
-    CONDITIONING = "conditioning", "Conditioning"
-    MOBILITY = "mobility", "Mobility"
+from django.db.models.functions import Lower
 
 
 class Measure(models.TextChoices):
@@ -20,28 +9,43 @@ class Measure(models.TextChoices):
     DISTANCE = "distance", "Distance"
 
 
-# The fixed tag list from the mockup. A Tag model only if coaches ask for custom tags.
-TAGS = [
-    "high-impact",
-    "low-impact",
-    "competition-lift",
-    "technique",
-    "speed",
-    "strength",
-    "hypertrophy",
-    "overhead",
-    "posterior-chain",
-    "unilateral",
-    "no-equipment",
-    "high-CNS",
-    "recovery",
-]
+TAG_MAX_LENGTH = 24
 
 
-def validate_tags(value):
-    unknown = [t for t in value if t not in TAGS]
-    if unknown:
-        raise ValidationError(f"Unknown tags: {', '.join(unknown)}")
+class Category(models.Model):
+    """A gym's own exercise categories (e.g. Snatch, Squat, Hinge). Ordered by the coach.
+    Deleting one that has exercises moves them to another category first."""
+
+    gym = models.ForeignKey("accounts.Gym", on_delete=models.CASCADE, related_name="categories")
+    name = models.CharField(max_length=40)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "id"]
+        verbose_name_plural = "categories"
+        constraints = [
+            models.UniqueConstraint(Lower("name"), "gym", name="unique_category_name_per_gym"),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class Tag(models.Model):
+    """A gym's own exercise tags, used to filter the library and for tag-based
+    template slots. Names are at most TAG_MAX_LENGTH characters."""
+
+    gym = models.ForeignKey("accounts.Gym", on_delete=models.CASCADE, related_name="tags")
+    name = models.CharField(max_length=TAG_MAX_LENGTH)
+
+    class Meta:
+        ordering = [Lower("name")]
+        constraints = [
+            models.UniqueConstraint(Lower("name"), "gym", name="unique_tag_name_per_gym"),
+        ]
+
+    def __str__(self):
+        return self.name
 
 
 class Exercise(models.Model):
@@ -56,8 +60,8 @@ class Exercise(models.Model):
         "Nothing else may depend on it: features use the gym's own settings, e.g. TrackedLift.",
     )
     name = models.CharField(max_length=120)
-    category = models.CharField(max_length=20, choices=Category.choices)
-    tags = ArrayField(models.CharField(max_length=30), default=list, blank=True, validators=[validate_tags])
+    category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="exercises")
+    tags = models.ManyToManyField(Tag, blank=True, related_name="exercises")
     measure = models.CharField(max_length=10, choices=Measure.choices, default=Measure.REPS)
     reps_per_rep = models.PositiveSmallIntegerField(default=1, help_text='2 for a "1+1" complex')
     percent_of = models.ForeignKey(
@@ -83,6 +87,10 @@ class Exercise(models.Model):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        if self.category_id and self.gym_id and self.category.gym_id != self.gym_id:
+            raise ValidationError({"category": "Pick one of your gym's categories."})
 
     @property
     def max_source(self):

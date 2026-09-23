@@ -94,3 +94,47 @@ def test_question_builder_edits_an_athletes_copy(page: Page, base, coach, athlet
     assert texts == ["Anything affecting today's session?", "How ready do you feel?"]
     defaults = CheckinQuestion.objects.gym_defaults(coach.gym).active()
     assert defaults.first().text == "How recovered do you feel today?"  # defaults untouched
+
+
+def test_tracked_lifts_then_archive_and_delete(page: Page, base, coach, athlete, sign_in):
+    from apps.exercises.models import TrackedLift
+
+    snatch = Exercise.objects.get(gym=coach.gym, key="sn")
+    MaxEntry.objects.create(athlete=athlete, exercise=snatch, date="2026-09-01", kg=80, source="coach")
+    sign_in(page, coach.user)
+
+    # Settings: track Front Squat, move it to the top.
+    page.goto(base + "/coach/settings/")
+    card = page.locator("#trackedLifts")
+    expect(card).to_contain_text("3 of 6")
+    card.get_by_label("Lift to track").select_option(label="Front Squat")
+    card.get_by_role("button", name="Track", exact=True).click()
+    expect(card).to_contain_text("4 of 6")
+    for _ in range(3):
+        card.get_by_role("button", name="Move Front Squat up").click()
+    expect(card.locator(".spread b").first).to_have_text("Front Squat")
+
+    # The athlete's Metrics tab follows the new list.
+    page.goto(base + f"/coach/athletes/{athlete.pk}/metrics/")
+    expect(page.locator(".metric .l").nth(2)).to_have_text("Front Squat 1RM")
+
+    # Archive the snatch: warned that it's tracked, and it's untracked.
+    page.goto(base + "/coach/programming/exercises/?q=snatch")
+    dialog_text = []
+    page.once("dialog", lambda d: (dialog_text.append(d.message), d.accept()))
+    page.get_by_role("button", name="Archive Snatch", exact=True).click()
+    expect(page.locator("#toastStack")).to_contain_text("removed from tracked lifts")
+    assert "also a tracked lift" in dialog_text[0]
+    assert not TrackedLift.objects.filter(exercise=snatch).exists()
+
+    # Delete it for good from the archived list, after reading the impact.
+    page.get_by_label("Show archived").check()
+    page.get_by_role("button", name="Delete…").click()
+    modal = page.locator(".modal.open")
+    expect(modal).to_contain_text("1 max entry from the history of Maya Torres")
+    expect(modal).to_contain_text("Power Snatch")
+    modal.get_by_role("button", name="Delete permanently").click()
+    expect(page.locator(".modal.open")).to_have_count(0)
+    expect(page.locator("#toastStack")).to_contain_text("“Snatch” deleted along with 1 max entry")
+    expect(page.locator("#exlibResults")).to_contain_text("No archived exercises")
+    assert not Exercise.objects.filter(pk=snatch.pk).exists()

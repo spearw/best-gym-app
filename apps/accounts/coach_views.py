@@ -17,7 +17,7 @@ from . import units
 from .access import coach_required
 from .emails import send_metrics_reminder
 from .forms import InputClassMixin
-from .metrics import METRICS, current_metrics, missing_metrics, save_metrics
+from .metrics import current_metrics, metric_specs, missing_metrics, save_metrics, spec_for
 from .models import Athlete, MeasurementSource, YearsTraining
 from .views import _invite_list_context
 
@@ -55,10 +55,15 @@ def roster(request):
 
 def _header_context(request, athlete):
     gym_units = request.coach.gym.units
-    metrics = current_metrics(athlete)
+    specs = metric_specs(athlete.gym)
+    metrics = current_metrics(athlete, specs)
     stats = [
-        (label, units.from_kg(metrics[key]["kg"], gym_units).normalize() if metrics[key]["kg"] else None)
-        for key, label in [("sn", "Snatch"), ("cj", "C&J"), ("bsq", "Back squat")]
+        (
+            m.exercise.name,
+            units.from_kg(metrics[m.key]["kg"], gym_units).normalize() if metrics[m.key]["kg"] else None,
+        )
+        for m in specs
+        if m.exercise is not None
     ]
     return {
         "athlete": athlete,
@@ -86,9 +91,11 @@ def athlete_detail(request, pk, tab="overview"):
 
 def _metric_cards(request, athlete):
     gym_units = request.coach.gym.units
-    current = current_metrics(athlete)
+    specs = metric_specs(athlete.gym)
+    current = current_metrics(athlete, specs)
     cards = []
-    for key, label, kind in METRICS:
+    for spec in specs:
+        key, label, kind = spec.key, spec.label, spec.kind
         m = current[key]
         if kind == "weight" and m["kg"] is not None:
             value, unit = units.from_kg(m["kg"], gym_units).normalize(), gym_units
@@ -127,11 +134,8 @@ def _metrics_context(request, athlete):
         }
         for what, e in recent
     ]
-    return {
-        "cards": _metric_cards(request, athlete),
-        "history": history,
-        "missing_count": sum(1 for c in _metric_cards(request, athlete) if c["missing"]),
-    }
+    cards = _metric_cards(request, athlete)
+    return {"cards": cards, "history": history, "missing_count": sum(1 for c in cards if c["missing"])}
 
 
 def athlete_metrics(request, athlete):
@@ -178,10 +182,10 @@ class MetricEditForm(InputClassMixin, forms.Form):
 @coach_required
 def metric_edit(request, pk, key):
     athlete = coach_athlete(request, pk)
-    spec = {k: (label, kind) for k, label, kind in METRICS}.get(key)
-    if spec is None:
+    spec = spec_for(athlete.gym, key)
+    if spec is None:  # not a metric this gym has (e.g. an untracked lift)
         return HttpResponse(status=404)
-    label, kind = spec
+    label, kind = spec.label, spec.kind
     unit = {"weight": request.coach.gym.units, "height": "cm", "years": ""}[kind]
     form = MetricEditForm(request.POST or None, kind=kind, unit=unit, athlete=athlete)
     if request.method == "POST" and form.is_valid():

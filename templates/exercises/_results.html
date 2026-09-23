@@ -14,9 +14,10 @@
             <td><span class="rowact">
               {% if ex.archived %}
                 <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:exercise_restore' ex.pk %}" hx-target="#exlibResults" hx-swap="none">Restore</button>
+                <button class="btn btn--danger btn--sm" type="button" hx-get="{% url 'coach:exercise_delete' ex.pk %}" hx-target="#modal" hx-swap="innerHTML">Delete…</button>
               {% else %}
                 <button class="iconbtn tip" type="button" data-tip="Edit" aria-label="Edit {{ ex.name }}" hx-get="{% url 'coach:exercise_edit' ex.pk %}" hx-target="#modal" hx-swap="innerHTML"><span class="svgi svgi--pencil"></span></button>
-                <button class="iconbtn tip" type="button" data-tip="Archive" aria-label="Archive {{ ex.name }}" hx-post="{% url 'coach:exercise_archive' ex.pk %}" hx-target="#exlibResults" hx-swap="none" hx-confirm="Archive “{{ ex.name }}”? It disappears from the library but past sessions keep it. You can restore it later."><span class="svgi svgi--trash"></span></button>
+                <button class="iconbtn tip" type="button" data-tip="Archive" aria-label="Archive {{ ex.name }}" hx-post="{% url 'coach:exercise_archive' ex.pk %}" hx-target="#exlibResults" hx-swap="none" hx-confirm="Archive “{{ ex.name }}”? It disappears from the library but past sessions keep it. You can restore it later.{% if ex.pk in tracked_ids %} It's also a tracked lift: it will be removed from onboarding and the Metrics tab (maxes already recorded are kept). Restoring it won't track it again automatically.{% endif %}"><span class="svgi svgi--trash"></span></button>
               {% endif %}
             </span></td>
           </tr>

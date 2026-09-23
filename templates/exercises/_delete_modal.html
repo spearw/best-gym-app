@@ -1,0 +1,32 @@
+{% extends "partials/modal.html" %}
+{% block modal_attrs %}style="width:min(94vw,460px)"{% endblock %}
+{% block modal_title %}Delete “{{ exercise.name }}” permanently?{% endblock %}
+{% block modal_content %}
+<div class="modal-body">
+  {% if problem %}
+    <div class="form-errors">{{ problem }}</div>
+  {% else %}
+    <p style="margin:0">This can't be undone, and the exercise can't be restored afterwards.</p>
+    <div class="apply-preview">
+      <b>What gets removed</b>
+      <ul style="margin:6px 0 0;padding-left:18px">
+        {% if impact.max_entries %}
+          <li>{{ impact.max_entries }} max entr{{ impact.max_entries|pluralize:"y,ies" }} from the history of {{ impact.athletes|join:", " }}.</li>
+        {% else %}
+          <li>No athlete has a max recorded for it.</li>
+        {% endif %}
+        {% if impact.dependents %}
+          <li>{{ impact.dependents|join:", " }} take{{ impact.dependents|length|pluralize:"s," }} percentages from it and will use {{ impact.dependents|length|pluralize:"its,their" }} own max instead.</li>
+        {% endif %}
+        <li>The exercise itself, with its tags, demo link and cue.</li>
+      </ul>
+    </div>
+  {% endif %}
+</div>
+<div class="modal-foot">
+  <button class="btn btn--ghost" type="button" onclick="closeModal()">{% if problem %}Close{% else %}Keep it archived{% endif %}</button>
+  {% if not problem %}
+    <button class="btn btn--danger" type="button" hx-post="{% url 'coach:exercise_delete' exercise.pk %}" hx-target="#modal" hx-swap="innerHTML">Delete permanently</button>
+  {% endif %}
+</div>
+{% endblock %}

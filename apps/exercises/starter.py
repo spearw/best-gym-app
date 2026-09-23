@@ -253,8 +253,9 @@ STARTER_EXERCISES = [
     ),
 ]
 
-# The three maxes onboarding asks for, in order.
-ONBOARDING_MAX_KEYS = [("sn", "Snatch"), ("cj", "Clean & Jerk"), ("bsq", "Back Squat")]
+# A new gym starts out tracking these lifts (Settings › Tracked lifts). Only a
+# starting point: after that the gym's TrackedLift rows are the source of truth.
+DEFAULT_TRACKED_KEYS = ["sn", "cj", "bsq"]
 
 
 @transaction.atomic
@@ -283,3 +284,20 @@ def install_starter_library(gym):
             by_key[key].percent_of = target
             by_key[key].save(update_fields=["percent_of"])
     return by_key
+
+
+def track_default_lifts(gym):
+    """Give a gym the default tracked lifts, unless it already has a list."""
+    from .models import TrackedLift
+
+    if TrackedLift.objects.filter(gym=gym).exists():
+        return
+    by_key = {
+        e.key: e for e in Exercise.objects.filter(gym=gym, key__in=DEFAULT_TRACKED_KEYS, archived=False)
+    }
+    TrackedLift.objects.bulk_create(
+        [
+            TrackedLift(gym=gym, exercise=by_key[k], order=i)
+            for i, k in enumerate(k for k in DEFAULT_TRACKED_KEYS if k in by_key)
+        ]
+    )

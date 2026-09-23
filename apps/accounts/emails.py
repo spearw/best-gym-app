@@ -21,9 +21,9 @@ def send_invite_email(request, invite):
 
 
 def send_metrics_reminder(request, athlete, missing_keys):
-    from .metrics import METRICS
+    from .metrics import metric_specs
 
-    labels = [label for key, label, _kind in METRICS if key in missing_keys]
+    labels = [m.label for m in metric_specs(athlete.gym) if m.key in missing_keys]
     context = {
         "athlete": athlete,
         "coach": athlete.coach,

@@ -6,6 +6,7 @@ from django.contrib.auth import password_validation
 
 from apps.programs.week_types import WEEK_TYPES
 
+from .metrics import metric_specs
 from .models import Units, User, YearsTraining
 
 
@@ -69,64 +70,64 @@ class JoinForm(NewAccountFields):
 
 
 class MetricsForm(InputClassMixin, forms.Form):
-    """Onboarding numbers. Every field is optional: blank means skipped, and the
-    coach can fill it in later."""
+    """The athlete's numbers: bodyweight, height, the gym's tracked lifts, years
+    training. Every field is optional: blank means skipped, and the coach can fill
+    it in later. `only` limits the form to some metric keys (e.g. just the missing ones)."""
 
-    bodyweight = forms.DecimalField(
-        required=False, min_value=Decimal("20"), max_value=Decimal("600"), decimal_places=2
-    )
-    height_cm = forms.DecimalField(
-        required=False,
-        min_value=Decimal("100"),
-        max_value=Decimal("250"),
-        decimal_places=1,
-        label="Height (cm)",
-    )
-    sn = forms.DecimalField(
-        required=False, min_value=Decimal("1"), max_value=Decimal("1000"), decimal_places=2
-    )
-    cj = forms.DecimalField(
-        required=False, min_value=Decimal("1"), max_value=Decimal("1000"), decimal_places=2
-    )
-    bsq = forms.DecimalField(
-        required=False, min_value=Decimal("1"), max_value=Decimal("1000"), decimal_places=2
-    )
-    years_training = forms.ChoiceField(
-        required=False, choices=[("", "Select…"), *YearsTraining.choices], label="Years training"
-    )
-
-    def __init__(self, *args, units="kg", only=None, **kwargs):
+    def __init__(self, *args, gym, units="kg", only=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.units = units
-        if only is not None:
-            for name in list(self.fields):
-                if name not in only:
-                    del self.fields[name]
-        labels = {
-            "bodyweight": f"Bodyweight ({units})",
-            "sn": f"Snatch 1RM ({units})",
-            "cj": f"Clean & Jerk 1RM ({units})",
-            "bsq": f"Back Squat 1RM ({units})",
-        }
-        placeholders = {
-            "bodyweight": "e.g. 64" if units == "kg" else "e.g. 141",
-            "height_cm": "e.g. 168",
-            "sn": "best single",
-        }
-        for name, field in self.fields.items():
-            if name in labels:
-                field.label = labels[name]
-            if name in placeholders:
-                field.widget.attrs["placeholder"] = placeholders[name]
-            if name != "years_training":
-                field.widget.attrs["inputmode"] = "decimal"
-                field.widget.attrs["step"] = "any"
+        for metric in metric_specs(gym):
+            if only is not None and metric.key not in only:
+                continue
+            self.fields[metric.key] = self._field(metric, units)
         for field in self.fields.values():
             # "skip" (Alpine) clears and disables the input; disabled inputs aren't submitted.
             field.widget.attrs["x-ref"] = "i"
             field.widget.attrs[":disabled"] = "skipped"
             field.widget.attrs[":placeholder"] = "skipped ? 'skipped — coach can fill in' : $el.dataset.ph"
             field.widget.attrs["data-ph"] = field.widget.attrs.get("placeholder", "")
+
+    @staticmethod
+    def _field(metric, units):
+        if metric.kind == "years":
+            return forms.ChoiceField(
+                required=False,
+                choices=[("", "Select…"), *YearsTraining.choices],
+                label=metric.label,
+                widget=forms.Select(attrs={"class": "input"}),
+            )
+        if metric.kind == "height":
+            field = forms.DecimalField(
+                required=False,
+                min_value=Decimal("100"),
+                max_value=Decimal("250"),
+                decimal_places=1,
+                label="Height (cm)",
+            )
+            placeholder = "e.g. 168"
+        elif metric.key == "bodyweight":
+            field = forms.DecimalField(
+                required=False,
+                min_value=Decimal("20"),
+                max_value=Decimal("600"),
+                decimal_places=2,
+                label=f"Bodyweight ({units})",
+            )
+            placeholder = "e.g. 64" if units == "kg" else "e.g. 141"
+        else:
+            field = forms.DecimalField(
+                required=False,
+                min_value=Decimal("1"),
+                max_value=Decimal("1000"),
+                decimal_places=2,
+                label=f"{metric.label} ({units})",
+            )
+            placeholder = "best single"
+        field.widget.attrs.update(
+            {"class": "input", "placeholder": placeholder, "inputmode": "decimal", "step": "any"}
+        )
+        return field
 
     def skipped_count(self):
         return sum(1 for name in self.fields if self.cleaned_data.get(name) in (None, ""))

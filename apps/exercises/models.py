@@ -51,8 +51,9 @@ class Exercise(models.Model):
     key = models.CharField(
         max_length=20,
         blank=True,
-        help_text="Stable id for starter-library exercises (e.g. 'sn'), so code can find the "
-        "snatch even if a coach renames it. Blank for exercises a coach creates.",
+        help_text="Marks exercises that came from the starter library (e.g. 'sn'), so the "
+        "library can be refreshed without duplicates. Blank for exercises a coach creates. "
+        "Nothing else may depend on it: features use the gym's own settings, e.g. TrackedLift.",
     )
     name = models.CharField(max_length=120)
     category = models.CharField(max_length=20, choices=Category.choices)
@@ -87,3 +88,38 @@ class Exercise(models.Model):
     def max_source(self):
         """The exercise whose max a percentage load is taken from."""
         return self.percent_of or self
+
+
+MAX_TRACKED_LIFTS = 6
+
+
+class TrackedLift(models.Model):
+    """The lifts a gym records maxes for: asked at onboarding, shown on the Metrics
+    tab and in the athlete header. An ordered, gym-wide list the coach edits in
+    Settings. Archiving the exercise removes it from the list; history is kept."""
+
+    gym = models.ForeignKey("accounts.Gym", on_delete=models.CASCADE, related_name="tracked_lifts")
+    exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name="tracked_by")
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["gym", "exercise"], name="unique_tracked_lift_per_gym"),
+        ]
+
+    def __str__(self):
+        return f"{self.gym}: {self.exercise}"
+
+    def clean(self):
+        if self.exercise.gym_id != self.gym_id:
+            raise ValidationError("A gym can only track its own exercises.")
+        if self.exercise.archived:
+            raise ValidationError("Archived exercises can't be tracked.")
+        if self.exercise.measure != Measure.REPS:
+            raise ValidationError("Only lifts measured in reps have a max to track.")
+
+
+def tracked_exercises(gym):
+    """The gym's tracked lifts, in order, as Exercise objects."""
+    return [t.exercise for t in TrackedLift.objects.filter(gym=gym).select_related("exercise")]

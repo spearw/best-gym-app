@@ -131,7 +131,7 @@ Read top-down: the gym owns libraries, libraries are copied onto an athlete's pr
 | User | email (login), password, name, timezone | Custom `AbstractUser`, set before the first migration. No role column: a Coach row makes a coach, an Athlete row makes an athlete, and one user can have both. After login the coach app wins when both exist, with a switcher |
 | Gym | name, units (kg / lb), week_type_colours (JSON), timezone | Owns the exercise library, templates and default check-in questions. Created with the first coach account |
 | Coach | user, gym, title | |
-| Athlete | user, coach, gym, weight_class, competition_name, competition_date, years_training, units (defaults from gym), timezone (defaults from gym), joined_at, archived_at | Archive, never delete, so session history survives. Bodyweight and maxes are history tables below, not columns here |
+| Athlete | user, coach, gym, weight_class, competition_name, competition_date, height_cm, years_training, units (defaults from gym), joined_at, archived_at | Archive, never delete, so session history survives. Bodyweight and maxes are history tables below, not columns here. The athlete's time zone is `User.timezone`, defaulted from the gym when they join |
 | Invite | coach, email, token, starting_template, status, expires_at, accepted_by | Backs the invite link and onboarding |
 
 ### Athlete measurements (history, not single fields)
@@ -147,6 +147,9 @@ Read top-down: the gym owns libraries, libraries are copied onto an athlete's pr
 | --- | --- | --- |
 | Exercise | gym, name, category (choice), tags (ArrayField of slugs), measure (reps / time / distance), reps_per_rep (1, or 2 for a "1+1" complex), percent_of (self FK, nullable), youtube_url, cue, archived | `percent_of` names the max a percentage is worked from: front squat from back squat, power snatch from snatch, an accessory from nothing (percentage loads then show as-is). Tags stay the fixed list of 13 until a coach asks for more |
 | Category | Snatch, Clean & Jerk, Squat, Pull, Press, Accessory, Conditioning, Mobility | Choice list |
+| TrackedLift | gym, exercise, order | The gym-wide, ordered list of lifts whose maxes are tracked: asked at onboarding, shown on the Metrics tab and athlete header, listed in reminders. Edited in Settings, at most 6. Only active, rep-measured exercises of the gym. New gyms start with snatch, clean & jerk and back squat. Archiving an exercise untracks it; recorded maxes are kept |
+
+Exercises are archived rather than deleted. An archived exercise can then be deleted permanently after a warning that lists what goes with it (athletes' max entries, and exercises that take percentages from it, which fall back to their own max). `apps/exercises/deletion.py` is the one place that knows everything pointing at an exercise; every later model with a foreign key to Exercise must be added there, and a test fails until it is. Starter-library exercises carry a `key`, used only to refresh the library without duplicates; no feature may depend on it.
 
 ### Shared prescription fields
 

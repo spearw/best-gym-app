@@ -1,0 +1,28 @@
+<div class="card" style="padding:20px" id="trackedLifts" hx-sync="#trackedLifts:queue all">
+  <div class="spread"><h4 style="font-size:.95rem">Tracked lifts</h4><span class="tiny muted">{{ tracked|length }} of {{ max_tracked }}</span></div>
+  <p class="tiny muted">The maxes you program percentages from. Athletes are asked for these when they join, and they appear on each athlete's Metrics tab and header, in this order. Bodyweight, height and years training are always included.</p>
+  <div class="stack" style="gap:6px;margin-top:10px">
+    {% for t in tracked %}
+      <div class="spread" style="border:1px solid var(--line);border-radius:10px;padding:8px 12px">
+        <span><b style="font-size:.88rem">{{ t.exercise.name }}</b> <span class="tiny muted">{{ t.exercise.get_category_display }}</span></span>
+        <span class="row" style="gap:4px">
+          {% if not forloop.first %}<button class="iconbtn" type="button" aria-label="Move {{ t.exercise.name }} up" hx-post="{% url 'coach:tracked_move' t.pk 'up' %}" hx-target="#trackedLifts" hx-swap="outerHTML">↑</button>{% endif %}
+          {% if not forloop.last %}<button class="iconbtn" type="button" aria-label="Move {{ t.exercise.name }} down" hx-post="{% url 'coach:tracked_move' t.pk 'down' %}" hx-target="#trackedLifts" hx-swap="outerHTML">↓</button>{% endif %}
+          <button class="iconbtn" type="button" aria-label="Stop tracking {{ t.exercise.name }}" hx-post="{% url 'coach:tracked_remove' t.pk %}" hx-target="#trackedLifts" hx-swap="outerHTML" hx-confirm="Stop tracking {{ t.exercise.name }}? New athletes won't be asked for it and it leaves the Metrics tab. Maxes already recorded stay in each athlete's history."><span class="svgi svgi--trash"></span></button>
+        </span>
+      </div>
+    {% empty %}
+      <p class="tiny muted" style="margin:0">No lifts tracked. Athletes will only be asked for bodyweight, height and years training.</p>
+    {% endfor %}
+  </div>
+  {% if tracked|length < max_tracked %}
+    <div class="row" style="margin-top:12px;flex-wrap:nowrap">
+      <select class="input" name="exercise" id="trackAdd" aria-label="Lift to track">
+        <option value="">Add a lift…</option>
+        {% for ex in trackable %}<option value="{{ ex.pk }}">{{ ex.name }}</option>{% endfor %}
+      </select>
+      <button class="btn btn--soft" type="button" hx-post="{% url 'coach:tracked_add' %}" hx-include="#trackAdd" hx-target="#trackedLifts" hx-swap="outerHTML">Track</button>
+    </div>
+    <p class="tiny muted" style="margin:6px 0 0">Only lifts measured in reps can be tracked. Archived exercises are never tracked.</p>
+  {% endif %}
+</div>

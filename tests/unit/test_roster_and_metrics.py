@@ -9,6 +9,8 @@ from django.utils import timezone
 from apps.accounts.models import Athlete, BodyweightEntry, Coach, MaxEntry
 from apps.exercises.models import Exercise
 
+from ..conftest import lift_field
+
 pytestmark = pytest.mark.django_db
 HX = {"HTTP_HX_REQUEST": "true"}
 
@@ -64,7 +66,7 @@ def test_other_coaches_athletes_are_404(coach_client, other_coach_athlete):
     pk = other_coach_athlete.pk
     for url in [
         f"/coach/athletes/{pk}/metrics/",
-        f"/coach/athletes/{pk}/metrics/sn/edit/",
+        f"/coach/athletes/{pk}/metrics/{lift_field(other_coach_athlete.gym, 'sn')}/edit/",
         f"/coach/athletes/{pk}/questions/",
     ]:
         assert coach_client.get(url, **HX).status_code == 404, url
@@ -86,7 +88,9 @@ def test_metrics_tab_shows_values_in_gym_units(coach_client, coach, athlete):
 
 def test_coach_adds_a_max_as_a_new_history_row(coach_client, coach, athlete):
     response = coach_client.post(
-        f"/coach/athletes/{athlete.pk}/metrics/cj/edit/", {"value": "105", "date": "2026-09-10"}, **HX
+        f"/coach/athletes/{athlete.pk}/metrics/{lift_field(coach.gym, 'cj')}/edit/",
+        {"value": "105", "date": "2026-09-10"},
+        **HX,
     )
     assert response["HX-Retarget"] == "#metricsPanel"
     assert json.loads(response["HX-Trigger"])["toast"]["message"] == "Clean & Jerk 1RM saved"
@@ -118,7 +122,9 @@ def test_height_and_years_replace_the_value(coach_client, athlete):
 
 def test_metric_edit_validation_rerenders_the_modal(coach_client, athlete):
     response = coach_client.post(
-        f"/coach/athletes/{athlete.pk}/metrics/sn/edit/", {"value": "-4", "date": "2999-01-01"}, **HX
+        f"/coach/athletes/{athlete.pk}/metrics/{lift_field(athlete.gym, 'sn')}/edit/",
+        {"value": "-4", "date": "2999-01-01"},
+        **HX,
     )
     html = response.content.decode()
     assert "HX-Retarget" not in response and 'class="modal open"' in html
@@ -156,7 +162,9 @@ def test_athlete_fills_only_missing_numbers(athlete_client, athlete, coach):
     BodyweightEntry.objects.create(athlete=athlete, date="2026-09-01", kg=64, source="coach")
     html = athlete_client.get("/app/profile/numbers/").content.decode()
     assert "Bodyweight" not in html and "Snatch 1RM" in html
-    response = athlete_client.post("/app/profile/numbers/", {"sn": "80", "years_training": "1-3"})
+    response = athlete_client.post(
+        "/app/profile/numbers/", {lift_field(coach.gym, "sn"): "80", "years_training": "1-3"}
+    )
     assert response["Location"] == "/app/profile/"
     assert MaxEntry.objects.get(athlete=athlete).source == "athlete"
     profile = athlete_client.get("/app/profile/").content.decode()

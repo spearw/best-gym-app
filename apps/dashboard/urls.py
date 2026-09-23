@@ -3,6 +3,7 @@ from django.views.generic import RedirectView
 
 from apps.accounts import coach_views
 from apps.accounts import views as account_views
+from apps.exercises import tracked_views
 from apps.workouts import question_views as qv
 
 from . import views
@@ -62,6 +63,10 @@ urlpatterns = [
     *question_patterns("programming/questions/", "default_q"),
     # Settings and invites.
     path("settings/", account_views.settings_page, name="settings"),
+    path("settings/lifts/", tracked_views.card, name="tracked"),
+    path("settings/lifts/add/", tracked_views.add, name="tracked_add"),
+    path("settings/lifts/<int:pk>/remove/", tracked_views.remove, name="tracked_remove"),
+    path("settings/lifts/<int:pk>/move/<str:direction>/", tracked_views.move, name="tracked_move"),
     path("invites/new/", account_views.invite_new, name="invite_new"),
     path("invites/", account_views.invite_create, name="invite_create"),
     path("invites/pending/", account_views.invite_list, name="invite_list"),

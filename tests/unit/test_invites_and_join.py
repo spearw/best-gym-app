@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Athlete, Coach, Gym, Invite, InviteStatus, User
 
-from ..conftest import PASSWORD
+from ..conftest import PASSWORD, lift_field
 
 pytestmark = pytest.mark.django_db
 HX = {"HTTP_HX_REQUEST": "true"}
@@ -140,14 +140,15 @@ def test_a_signed_in_coach_can_accept_an_invite_to_train(client, coach, make_use
 
 
 def test_metrics_are_saved_as_history_in_kg(athlete_client, athlete):
+    gym = athlete.gym
     response = athlete_client.post(
         "/app/welcome/",
         {
             "bodyweight": "63.8",
             "height_cm": "168",
-            "sn": "82",
-            "cj": "104",
-            "bsq": "",
+            lift_field(gym, "sn"): "82",
+            lift_field(gym, "cj"): "104",
+            lift_field(gym, "bsq"): "",
             "years_training": "3-5",
         },
     )
@@ -167,13 +168,15 @@ def test_metrics_are_saved_as_history_in_kg(athlete_client, athlete):
 def test_metrics_in_pounds_are_converted(athlete_client, athlete):
     athlete.units = "lb"
     athlete.save()
-    athlete_client.post("/app/welcome/", {"bodyweight": "141", "bsq": "300"})
+    athlete_client.post("/app/welcome/", {"bodyweight": "141", lift_field(athlete.gym, "bsq"): "300"})
     assert athlete.current_bodyweight().kg == Decimal("63.96")
     assert next(iter(athlete.current_maxes().values())).kg == Decimal("136.08")
 
 
 def test_skip_all(athlete_client, athlete):
-    response = athlete_client.post("/app/welcome/", {"skip_all": "1", "sn": "999999"})
+    response = athlete_client.post(
+        "/app/welcome/", {"skip_all": "1", lift_field(athlete.gym, "sn"): "999999"}
+    )
     assert response["Location"] == "/app/welcome/done/"
     assert athlete.maxes.count() == 0
     assert "all metrics skipped" in athlete_client.get("/app/welcome/done/").content.decode()

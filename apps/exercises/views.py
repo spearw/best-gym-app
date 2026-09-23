@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import CharField, F, Func, Q, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -7,8 +8,9 @@ from django.views.decorators.http import require_POST
 from apps import hx
 from apps.accounts.access import coach_required
 
+from .deletion import CannotDelete, check_deletable, delete_exercise, deletion_impact
 from .forms import ExerciseForm
-from .models import TAGS, Exercise
+from .models import TAGS, Exercise, TrackedLift
 
 
 def _filtered(request):
@@ -29,7 +31,9 @@ def _filtered(request):
 @coach_required
 def exercise_list(request):
     exercises, filters = _filtered(request)
+    tracked_ids = set(TrackedLift.objects.filter(gym=request.coach.gym).values_list("exercise_id", flat=True))
     context = {
+        "tracked_ids": tracked_ids,
         "panel": "programming",
         "ptab": "exercises",
         "title": "Programming",
@@ -71,9 +75,14 @@ def exercise_form(request, pk=None):
 def exercise_archive(request, pk):
     exercise = _exercise(request, pk)
     users = Exercise.objects.filter(percent_of=exercise, archived=False).count()
-    exercise.archived = True
-    exercise.save(update_fields=["archived"])
+    was_tracked = TrackedLift.objects.filter(exercise=exercise).exists()
+    with transaction.atomic():
+        exercise.archived = True
+        exercise.save(update_fields=["archived"])
+        TrackedLift.objects.filter(exercise=exercise).delete()
     message = f"“{exercise.name}” archived"
+    if was_tracked:
+        message += " and removed from tracked lifts"
     if users:
         message += f" — {users} exercise{'s' if users != 1 else ''} still take percentages from it"
     return hx.trigger(HttpResponse(""), toast={"message": message}, exercisesChanged=True)
@@ -89,4 +98,30 @@ def exercise_restore(request, pk):
         HttpResponse(""),
         toast={"message": f"“{exercise.name}” restored", "kind": "good"},
         exercisesChanged=True,
+    )
+
+
+@coach_required
+def exercise_delete(request, pk):
+    """GET: the warning modal listing what will be removed. POST: delete for good."""
+    exercise = _exercise(request, pk)
+    try:
+        check_deletable(exercise)
+        problem = None
+    except CannotDelete as err:
+        problem = str(err)
+    if request.method == "POST":
+        if problem:
+            return hx.toast(HttpResponse(""), problem, "bad")
+        name = exercise.name
+        impact = delete_exercise(exercise)
+        message = f"“{name}” deleted"
+        if impact["max_entries"]:
+            n = impact["max_entries"]
+            message += f" along with {n} max entr{'ies' if n != 1 else 'y'}"
+        return hx.trigger(HttpResponse(""), toast={"message": message}, exercisesChanged=True)
+    return TemplateResponse(
+        request,
+        "exercises/_delete_modal.html",
+        {"exercise": exercise, "problem": problem, "impact": deletion_impact(exercise)},
     )

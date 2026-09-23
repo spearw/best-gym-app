@@ -8,7 +8,9 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps import hx
-from apps.exercises.starter import install_starter_library
+from apps.exercises.models import MAX_TRACKED_LIFTS, TrackedLift
+from apps.exercises.starter import install_starter_library, track_default_lifts
+from apps.exercises.tracked_views import trackable
 from apps.workouts.models import copy_defaults_to, install_default_questions
 
 from .access import athlete_required, coach_required, home_url_for
@@ -59,6 +61,7 @@ def signup(request):
         with transaction.atomic():
             gym = Gym.objects.create(name=data["gym_name"], units=data["units"], timezone=tz)
             install_starter_library(gym)
+            track_default_lifts(gym)
             install_default_questions(gym)
             user = User.objects.create_user(data["email"], data["password"], name=data["name"], timezone=tz)
             Coach.objects.create(user=user, gym=gym)
@@ -159,7 +162,8 @@ def join(request, token):
 @athlete_required
 def welcome_metrics(request):
     athlete = request.athlete
-    form = MetricsForm(request.POST or None, units=athlete.units)
+    form = MetricsForm(request.POST or None, gym=athlete.gym, units=athlete.units)
+    request.session["onboarding_total"] = len(form.fields)
     if request.method == "POST" and "skip_all" in request.POST:
         request.session["onboarding_skipped"] = len(form.fields)
         return redirect("app:welcome_done")
@@ -173,10 +177,11 @@ def welcome_metrics(request):
 @athlete_required
 def welcome_done(request):
     skipped = request.session.pop("onboarding_skipped", 0)
+    total = request.session.pop("onboarding_total", 0)
     return TemplateResponse(
         request,
         "accounts/welcome_done.html",
-        {"skipped": skipped, "all_skipped": skipped >= len(MetricsForm().fields), "step": 3},
+        {"skipped": skipped, "all_skipped": bool(total) and skipped >= total, "step": 3},
     )
 
 
@@ -208,7 +213,15 @@ def settings_page(request):
     return TemplateResponse(
         request,
         "coach/settings.html",
-        {"panel": "settings", "title": "Settings", "form": form, "week_types": gym.week_types()},
+        {
+            "panel": "settings",
+            "title": "Settings",
+            "form": form,
+            "week_types": gym.week_types(),
+            "tracked": TrackedLift.objects.filter(gym=gym).select_related("exercise"),
+            "trackable": trackable(gym),
+            "max_tracked": MAX_TRACKED_LIFTS,
+        },
     )
 
 
@@ -220,7 +233,7 @@ def update_numbers(request):
     if not missing:
         messages.success(request, "All your numbers are in — nothing to add")
         return redirect("app:profile")
-    form = MetricsForm(request.POST or None, units=athlete.units, only=missing)
+    form = MetricsForm(request.POST or None, gym=athlete.gym, units=athlete.units, only=missing)
     if request.method == "POST" and form.is_valid():
         filled = [k for k in missing if form.cleaned_data.get(k) not in (None, "")]
         save_metrics(athlete, form.cleaned_data, source=MeasurementSource.ATHLETE)

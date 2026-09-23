@@ -3,7 +3,7 @@
 import pytest
 
 from apps.accounts.models import Athlete, Coach, Gym, User
-from apps.exercises.starter import install_starter_library
+from apps.exercises.starter import install_starter_library, track_default_lifts
 
 PASSWORD = "correct-horse-battery-9"
 
@@ -12,6 +12,7 @@ PASSWORD = "correct-horse-battery-9"
 def gym(db):
     gym = Gym.objects.create(name="Iron Ridge Weightlifting", timezone="America/New_York")
     install_starter_library(gym)
+    track_default_lifts(gym)  # snatch, clean & jerk, back squat, as a new gym gets
     return gym
 
 
@@ -44,3 +45,10 @@ def coach_client(client, coach):
 def athlete_client(client, athlete):
     client.force_login(athlete.user)
     return client
+
+
+def lift_field(gym, key):
+    """The form/URL key for a starter lift in this gym, e.g. lift_field(gym, "sn") -> "lift_12"."""
+    from apps.exercises.models import Exercise
+
+    return f"lift_{Exercise.objects.get(gym=gym, key=key).pk}"

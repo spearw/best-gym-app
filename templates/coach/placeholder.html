@@ -1,0 +1,12 @@
+{% extends "base_coach.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="padding:20px 22px;max-width:640px">
+  <h3 style="font-size:1.02rem;margin-bottom:6px">{{ title }} is not built yet</h3>
+  <p class="tiny muted">This page proves the coach shell. The real {{ title|lower }} screen is built in a later phase of docs/BUILD_PLAN.md.</p>
+  <div class="row" style="margin-top:12px">
+    <button class="btn btn--brand btn--sm" hx-get="{% url 'coach:ping' %}" hx-target="#pingResult" hx-swap="outerHTML">Ping the server</button>
+    <span id="pingResult" class="tiny muted">not pinged yet</span>
+  </div>
+</div>
+{% endblock %}

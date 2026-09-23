@@ -1,0 +1,6 @@
+{# Boosted swap inside the phone shell: only #app-body, plus the tab bar out of band. #}
+<title>{% block title %}Platform{% endblock %} · Platform</title>
+{% include "partials/app_tabbar.html" with oob=True %}
+<div class="app-body" id="app-body">
+      {% block content %}{% endblock %}
+    </div>

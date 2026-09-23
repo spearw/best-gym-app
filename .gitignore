@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Django
+.env
+staticfiles/
+*.sqlite3
+*.log
+
+# Playwright
+test-results/
+playwright-report/
+
+# Editors and tools (personal settings; not part of the project)
+.claude/
+CLAUDE.md
+.vscode/
+.idea/
+.DS_Store

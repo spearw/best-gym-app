@@ -1,0 +1,7 @@
+Django>=5.2,<5.3
+django-htmx>=1.23
+django-template-partials>=24.4
+dj-database-url>=2.3
+psycopg[binary]>=3.2
+whitenoise>=6.9
+gunicorn>=23.0

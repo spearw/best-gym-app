@@ -1,0 +1,19 @@
+/* Additions for the real site that the single-file mockup did not need.
+   Keep this file small; anything visual belongs in app.css, ported from the mockup. */
+
+/* Nav links: the mockup used <button> for these; the real site uses <a> so each screen has a URL. */
+a.navitem{color:inherit}
+a.role-btn{color:inherit}
+.app-tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.62rem;font-weight:600;color:var(--ink-4);padding:4px 0}
+.app-tabbar a .ico{font-size:1.15rem}
+.app-tabbar a.active{color:var(--brand)}
+
+/* On a real phone the athlete app fills the screen instead of sitting in a desktop phone frame. */
+@media (max-width:500px){
+  .athlete .phone-stage{padding:0;display:block;min-height:100dvh}
+  .athlete .phone{width:100%;height:100dvh;border-radius:0;border:0;box-shadow:none}
+  .athlete .phone-exit{display:none}
+}
+
+/* Feedback while an HTMX request from a button is in flight. */
+.htmx-request.btn{opacity:.7}

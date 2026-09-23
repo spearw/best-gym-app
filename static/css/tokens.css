@@ -1,0 +1,39 @@
+/* Ported verbatim from the mockup (mockup/index.html). Do not restyle while porting;
+   delete rules as screens are rebuilt. */
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --bg:#F4F5F7; --surface:#FFFFFF; --surface-2:#EDEFF2; --surface-3:#E2E5EA;
+  --ink:#14181F; --ink-2:#3D444F; --ink-3:#6B7280; --ink-4:#9CA3AF;
+  --line:#E2E5EA; --line-2:#EDEFF2;
+  --brand:#1F4FD8; --brand-dk:#173CA8; --brand-lt:#E4EBFC;
+  --good:#159570; --good-lt:#DCF3EC;
+  --warn:#D97706; --warn-lt:#FCEEDB;
+  --bad:#DC3545; --bad-lt:#FBE3E6;
+  /* week-type palette (matches the coach's colour-coded spreadsheet) */
+  --wk-accum:#2E9E5B;   --wk-accum-lt:#DFF2E7;
+  --wk-intens:#E07C24;  --wk-intens-lt:#FBEBDA;
+  --wk-peak:#D8412F;    --wk-peak-lt:#FAE3DF;
+  --wk-deload:#8A63D2;  --wk-deload-lt:#EDE6FA;
+  --wk-cut:#2B7DE0;     --wk-cut-lt:#E0EDFC;   /* "the blue week" */
+  --wk-tech:#0F9BA8;    --wk-tech-lt:#DDF2F4;
+  --grape:#8A63D2;      --grape-lt:#EDE6FA;
+  --font-d:'Inter',-apple-system,'Segoe UI',sans-serif;
+  --font-b:'Inter',-apple-system,'Segoe UI',sans-serif;
+  --r-s:8px; --r:12px; --r-l:18px; --r-xl:26px;
+  --sh-1:0 1px 2px rgba(20,24,31,.05),0 2px 8px rgba(20,24,31,.05);
+  --sh-2:0 4px 14px rgba(20,24,31,.08),0 12px 32px rgba(20,24,31,.08);
+  --sh-3:0 18px 60px rgba(20,24,31,.22);
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-b);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--font-d);margin:0;line-height:1.2;letter-spacing:-.015em;font-weight:700}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none;padding:0}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px;border-radius:4px}
+::selection{background:var(--brand);color:#fff}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

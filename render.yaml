@@ -1,0 +1,53 @@
+# Render blueprint. See docs/BUILD_PLAN.md, "Render deployment".
+# The web service and the cron job share one env var group plus DATABASE_URL,
+# so the nightly job has the same settings and database as the site.
+# ALLOWED_HOSTS is optional: production settings always allow RENDER_EXTERNAL_HOSTNAME.
+# Add ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS in the dashboard when a custom domain is added.
+
+envVarGroups:
+  - name: gymtrainer-shared
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.12.3
+
+services:
+  - type: web
+    name: gymtrainer
+    runtime: python
+    plan: starter
+    branch: main
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    preDeployCommand: python manage.py migrate --noinput
+    startCommand: gunicorn config.wsgi:application --workers 3 --access-logfile -
+    healthCheckPath: /healthz
+    envVars:
+      - fromGroup: gymtrainer-shared
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gymtrainer-db
+          property: connectionString
+
+  - type: cron
+    name: gymtrainer-nightly
+    runtime: python
+    plan: starter
+    branch: main
+    schedule: "0 3 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py nightly
+    envVars:
+      - fromGroup: gymtrainer-shared
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gymtrainer-db
+          property: connectionString
+
+databases:
+  - name: gymtrainer-db
+    databaseName: gymtrainer
+    user: gymtrainer
+    postgresMajorVersion: "16"

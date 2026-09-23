@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{# The mockup's login card. Phase 1 turns this into real email login; for now it links to the two shells. #}
+{% block title %}Welcome{% endblock %}
+{% block body %}
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-left">
+      <div class="logo"><span class="logo-mark"><span class="svgi svgi--barbell"></span></span> Platform</div>
+      <h1 style="margin-top:26px">Every athlete's training history, right where you program.</h1>
+      <p style="opacity:.75;font-size:.9rem;max-width:38ch">Build weekly programs, deliver sessions to your athletes' phones, and review results as they come in — with each athlete's complete lift history beside the editor.</p>
+      <div class="demo-note">Phase 0 build · accounts arrive in phase 1</div>
+    </div>
+    <div class="login-right">
+      <h3 style="font-size:1.1rem">Open a shell</h3>
+      <p class="tiny muted" style="margin:0 0 8px">Placeholders for the coach desktop app and the athlete phone app.</p>
+      <a class="role-btn" href="{% url 'coach:dashboard' %}">
+        <span class="avatar">DW</span>
+        <span><b>Coach app</b><small>Desktop · sidebar shell</small></span>
+        <span class="go">→</span>
+      </a>
+      <a class="role-btn" href="{% url 'app:home' %}">
+        <span class="avatar">MT</span>
+        <span><b>Athlete app</b><small>Phone · tab bar shell</small></span>
+        <span class="go">→</span>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+<nav class="app-tabbar" id="mTabbar"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <a class="{% if tab == 'week' %}active{% endif %}" href="{% url 'app:home' %}"><span class="ico"><span class="svgi svgi--cal"></span></span>Week</a>
+  <a class="{% if tab == 'progress' %}active{% endif %}" href="{% url 'app:progress' %}"><span class="ico"><span class="svgi svgi--trending"></span></span>Progress</a>
+  <a class="{% if tab == 'coach' %}active{% endif %}" href="{% url 'app:messages' %}"><span class="ico"><span class="svgi svgi--msg"></span></span>Coach</a>
+  <a class="{% if tab == 'profile' %}active{% endif %}" href="{% url 'app:profile' %}"><span class="ico"><span class="svgi svgi--user"></span></span>Profile</a>
+</nav>

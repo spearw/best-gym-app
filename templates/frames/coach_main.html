@@ -1,0 +1,10 @@
+{# Boosted swap inside the coach shell: only #coach-main, plus the nav's active state out of band. #}
+<title>{% block title %}Platform{% endblock %} · Platform</title>
+{% include "partials/coach_nav.html" with oob=True %}
+<main class="coach-main" id="coach-main">
+    <div class="coach-topbar">
+      <h2>{% block page_title %}{{ title }}{% endblock %}</h2>
+      {% block topbar_actions %}{% endblock %}
+    </div>
+    {% block content %}{% endblock %}
+  </main>

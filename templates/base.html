@@ -1,0 +1,26 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Programming and session delivery for weightlifting coaches and their athletes.">
+  <title>{% block title %}Platform{% endblock %} · Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/icons.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/shell.css' %}">
+  <script src="{% static 'vendor/htmx-2.0.11.min.js' %}" defer></script>
+  <script src="{% static 'vendor/alpine-3.17.4.min.js' %}" defer></script>
+  <script src="{% static 'js/app.js' %}" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' class="{% block body_class %}{% endblock %}">
+  {% block body %}{% endblock %}
+  {# HTMX modal partials are swapped into #modal; views fire toasts via the HX-Trigger header. #}
+  <div id="modal"></div>
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+</body>
+</html>

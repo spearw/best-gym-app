@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{# Athlete phone shell, from the mockup's .phone. On a real phone it fills the screen (see shell.css).
+   Links inside are boosted: HTMX swaps #app-body and the tab bar comes back out of band. #}
+{% block body_class %}athlete{% endblock %}
+{% block body %}
+<a class="phone-exit" href="{% url 'index' %}">← Switch persona</a>
+<div class="phone-stage">
+  <div class="phone" hx-boost="true" hx-target="#app-body" hx-swap="outerHTML">
+    <header class="app-head">
+      <span class="avatar">{% if user.is_authenticated %}{{ user.initials }}{% else %}MT{% endif %}</span>
+      <span class="hi"><b>Hi, {% if user.is_authenticated %}{{ user.get_short_name }}{% else %}athlete{% endif %}</b><small>{% block app_subtitle %}Iron Ridge WL{% endblock %}</small></span>
+      <a class="iconbtn" href="{% url 'app:messages' %}" aria-label="Messages"><span class="svgi svgi--msg"></span></a>
+    </header>
+    <div class="app-body" id="app-body">
+      {% block content %}{% endblock %}
+    </div>
+    {% include "partials/app_tabbar.html" %}
+  </div>
+</div>
+{% endblock %}

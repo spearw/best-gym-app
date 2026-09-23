@@ -1,4 +1,5 @@
-<nav class="app-tabbar" id="mTabbar"{% if oob %} hx-swap-oob="true"{% endif %}>
+{# The session flow (check-in, player, post-session, done) hides the tab bar, as in the mockup. #}
+<nav class="app-tabbar" id="mTabbar"{% if oob %} hx-swap-oob="true"{% endif %}{% if hide_tabs %} style="display:none"{% endif %}>
   <a class="{% if tab == 'week' %}active{% endif %}" href="{% url 'app:home' %}"><span class="ico"><span class="svgi svgi--cal"></span></span>Week</a>
   <a class="{% if tab == 'progress' %}active{% endif %}" href="{% url 'app:progress' %}"><span class="ico"><span class="svgi svgi--trending"></span></span>Progress</a>
   <a class="{% if tab == 'coach' %}active{% endif %}" href="{% url 'app:messages' %}"><span class="ico"><span class="svgi svgi--msg"></span></span>Coach</a>

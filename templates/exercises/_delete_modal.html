@@ -24,6 +24,12 @@
         <li>The exercise itself, with its tags, demo link and cue.</li>
       </ul>
     </div>
+    {% if impact.logged %}
+    <div class="apply-preview">
+      <b>What stays</b>
+      <p style="margin:6px 0 0">{{ impact.logged }} logged session{{ impact.logged|pluralize }} by {{ impact.logged_by|join:", " }} keep “{{ exercise.name }}” by name with every set. They stop counting towards its trends, PRs and “last done”.</p>
+    </div>
+    {% endif %}
   {% endif %}
 </div>
 <div class="modal-foot">

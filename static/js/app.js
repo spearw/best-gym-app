@@ -77,6 +77,23 @@
     try { window.localStorage.setItem(key, value); } catch (err) { /* private mode etc. */ }
   }
 
+  // ---------------------------------------------------------------- session player
+
+  // Sets that haven't reached the server yet. Leaving the page warns while any are
+  // pending; they retry with backoff and as soon as the phone is back online.
+  var unsavedSets = new Set();
+  window.addEventListener("beforeunload", function (e) {
+    if (unsavedSets.size) { e.preventDefault(); e.returnValue = ""; }
+  });
+  window.addEventListener("online", function () {
+    unsavedSets.forEach(function (row) { if (row.state === "error") row.save(); });
+  });
+
+  function csrfToken() {
+    try { return JSON.parse(document.body.getAttribute("hx-headers"))["X-CSRFToken"]; }
+    catch (err) { return ""; }
+  }
+
   document.addEventListener("alpine:init", function () {
     // The selected day and the columns/list choice live outside #programEditor, so they
     // survive every redraw of the board. The view choice is remembered per browser.
@@ -90,6 +107,61 @@
           this.day = dayId;
           var search = document.getElementById("railSearch");
           if (search) search.focus({ preventScroll: true });
+        },
+      };
+    });
+
+    // One set row in the session player. Each tick or change saves that set; saves for
+    // one row run one at a time, so the last change always wins.
+    window.Alpine.data("setRow", function () {
+      return {
+        load: "", reps: "", time: "", rir: "", done: false,
+        state: "saved", note: "", busy: false, again: false, attempt: 0, timer: null,
+        init: function () {
+          var d = this.$el.dataset;
+          this.url = d.url; this.number = d.number; this.timeUnit = d.timeUnit || "s";
+          this.load = d.load || ""; this.reps = d.reps || ""; this.time = d.time || "";
+          this.rir = d.rir || ""; this.done = d.done === "true";
+        },
+        tick: function () { this.done = !this.done; this.save(); },
+        save: function () {
+          if (this.busy) { this.again = true; return; }
+          clearTimeout(this.timer);
+          this.busy = true; this.state = "saving"; unsavedSets.add(this);
+          var body = new FormData();
+          body.append("load", this.load); body.append("reps", this.reps);
+          body.append("time", this.time); body.append("time_unit", this.timeUnit);
+          body.append("rir", this.rir);
+          if (this.done) body.append("done", "on");
+          var self = this;
+          fetch(this.url, { method: "POST", body: body, credentials: "same-origin", headers: { "X-CSRFToken": csrfToken() } })
+            .then(function (r) {
+              // A save that ends on another page (e.g. the sign-in page) did not save.
+              if (r.redirected) return { ok: false, status: 401, body: { error: "you've been signed out — sign in and enter it again" } };
+              return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, body: j }; });
+            })
+            .then(function (res) {
+              self.busy = false;
+              if (self.again) { self.again = false; self.save(); return; }
+              if (res.ok) {
+                self.attempt = 0; self.state = "saved"; self.note = ""; unsavedSets.delete(self);
+              } else if (res.status >= 500) {
+                self.retry();
+              } else {
+                // The server refused these numbers (or the session is closed): don't retry.
+                self.state = "invalid"; unsavedSets.delete(self);
+                self.note = (res.body && res.body.error) || "Not saved";
+                toast("Set " + self.number + ": " + self.note, "err");
+              }
+            })
+            .catch(function () { self.busy = false; if (self.again) { self.again = false; self.save(); } else { self.retry(); } });
+        },
+        retry: function () {
+          this.state = "error"; this.attempt += 1;
+          this.note = "Not saved yet — retrying";
+          if (this.attempt === 1) toast("Couldn't save set " + this.number + " — retrying", "err");
+          var self = this;
+          this.timer = setTimeout(function () { self.save(); }, Math.min(30000, 1000 * Math.pow(2, this.attempt)));
         },
       };
     });
@@ -182,6 +254,23 @@
       });
     });
   }
+
+  // Library rail: tapping an athlete's history line opens their full log for that exercise.
+  document.addEventListener("click", function (e) {
+    var pop = document.getElementById("histPop");
+    if (!pop) return;
+    var line = e.target.closest("[data-hist]");
+    if (!line) {
+      if (!e.target.closest("#histPop")) pop.classList.remove("open");
+      return;
+    }
+    e.stopPropagation();
+    pop.innerHTML = line.querySelector("template").innerHTML;
+    var r = line.getBoundingClientRect();
+    pop.style.left = Math.max(10, r.left - 310) + "px";
+    pop.style.top = Math.max(10, Math.min(window.innerHeight - 240, r.top - 20)) + "px";
+    pop.classList.add("open");
+  });
 
   document.addEventListener("DOMContentLoaded", function () {
     showInitialToasts(document);

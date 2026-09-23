@@ -90,3 +90,8 @@ label.tagchip:has(input:focus-visible){outline:3px solid var(--brand);outline-of
   .lib-rail.open{transform:none;visibility:visible}
   .lib-rail .card{height:100%;box-shadow:var(--sh-3)}
 }
+
+/* Session player: a set that hasn't reached the server yet (it retries on its own). */
+.set-row.unsaved{border-color:var(--warn);background:var(--warn-lt)}
+.set-row.unsaved .tick{border-color:var(--warn)}
+.set-row .tick:disabled,.set-row .in:disabled{cursor:default}

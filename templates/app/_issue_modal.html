@@ -1,0 +1,4 @@
+{% extends "partials/modal.html" %}
+{% block modal_attrs %}style="width:min(94vw,420px)"{% endblock %}
+{% block modal_title %}Report an issue{% endblock %}
+{% block modal_content %}{% include "app/_issue_form.html" %}{% endblock %}

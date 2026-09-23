@@ -1,0 +1,11 @@
+{% extends "coach/athlete/_base.html" %}
+{% block tab_content %}
+<form class="row" style="margin-bottom:14px" hx-get="{% url 'coach:athlete_tab' athlete.pk 'sessions' %}" hx-target="#sessLog" hx-swap="outerHTML" hx-push-url="true"
+      hx-trigger="input changed delay:250ms from:#histFilter, change from:#histRange" onsubmit="return false">
+  <div class="searchbox" style="width:280px"><span class="svgi svgi--search"></span><input placeholder="Filter by exercise…" id="histFilter" name="q" value="{{ q }}" aria-label="Filter sessions by exercise" autocomplete="off"></div>
+  <select class="input" id="histRange" name="range" style="width:auto;padding:6px 30px 6px 10px;font-size:.8rem" aria-label="Date range">
+    {% for key, label, days in ranges %}<option value="{{ key }}"{% if key == range_key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+</form>
+{% include "coach/athlete/_sessions_list.html" %}
+{% endblock %}

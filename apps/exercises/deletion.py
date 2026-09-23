@@ -2,8 +2,12 @@
 
 Only archived exercises can be deleted. Everything that points at an exercise must
 be counted in `deletion_impact` and cleared in `delete_exercise`. When a later phase
-adds a model with a ForeignKey to Exercise (prescriptions, template slots, session
-logs), extend both functions here and the tests in tests/unit/test_exercises.py.
+adds a model with a ForeignKey to Exercise (e.g. template slots), extend both functions
+here and the tests in tests/unit/test_tracked_lifts_and_delete.py.
+
+Logged training is never deleted: sessions that included the exercise keep its name
+(SessionExercise.exercise_name) and every set, but lose the link, so trends, PRs and
+"last done" stop counting it. Deleting is meant for typos and test entries.
 Those foreign keys should stay PROTECT, so anything missed here fails loudly instead
 of silently cascading.
 """
@@ -27,6 +31,7 @@ def check_deletable(exercise):
 def deletion_impact(exercise):
     """What deleting this exercise would remove or change, for the warning."""
     from apps.programs.models import Prescription
+    from apps.workouts.models import SessionExercise
 
     maxes = MaxEntry.objects.filter(exercise=exercise)
     prescriptions = Prescription.objects.filter(exercise=exercise)
@@ -36,7 +41,15 @@ def deletion_impact(exercise):
         .distinct()
     )
     athletes = maxes.order_by("athlete__user__name").values_list("athlete__user__name", flat=True).distinct()
+    logged = SessionExercise.objects.filter(exercise=exercise)
+    logged_by = (
+        logged.order_by("session_log__athlete__user__name")
+        .values_list("session_log__athlete__user__name", flat=True)
+        .distinct()
+    )
     return {
+        "logged": logged.count(),
+        "logged_by": list(logged_by),
         "max_entries": maxes.count(),
         "athletes": list(athletes),
         "prescriptions": prescriptions.count(),
@@ -52,7 +65,9 @@ def delete_exercise(exercise):
     check_deletable(exercise)
     impact = deletion_impact(exercise)
     from apps.programs.models import Prescription
+    from apps.workouts.models import SessionExercise
 
+    SessionExercise.objects.filter(exercise=exercise).update(exercise=None)  # keeps exercise_name and sets
     MaxEntry.objects.filter(exercise=exercise).delete()
     Prescription.objects.filter(exercise=exercise).delete()
     Exercise.objects.filter(percent_of=exercise).update(percent_of=None)  # fall back to their own max

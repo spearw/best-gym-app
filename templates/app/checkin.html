@@ -1,0 +1,36 @@
+{% extends "base_app.html" %}
+{% block title %}Check-in{% endblock %}
+{% block content %}
+<div class="flow-head">
+  <a class="iconbtn" style="margin:0" href="{{ back_url }}" aria-label="Back">←</a>
+  <div class="bar"><i style="width:{{ progress }}%"></i></div>
+  <span class="step-lbl">{{ n }} of {{ total }}</span>
+</div>
+<form method="post" x-data="{ value: '', other: false }" x-init="value = $el.dataset.initial" data-initial="{{ answer.value|default:'' }}">
+  {% csrf_token %}
+  <h3 style="font-size:1.2rem">{{ question.text }}</h3>
+  {% if question.type == "scale" %}
+    <p class="tiny muted">Shared with {{ coach_name }} before your session.</p>
+    <div class="scale-row">
+      {% for i in scale %}<button type="button" class="scale-btn" data-v="{{ i }}" :class="{ sel: value === $el.dataset.v }" @click="value = $el.dataset.v" aria-label="{{ i }} of 10">{{ i }}</button>{% endfor %}
+    </div>
+    <div class="scale-ends"><span>1 · {{ question.low_label|default:"low" }}</span><span>10 · {{ question.high_label|default:"high" }}</span></div>
+  {% else %}
+    <p class="tiny muted">Pick one — or add your own details.</p>
+    <div style="margin:12px 0 4px">
+      {% for option in question.options %}<button type="button" class="mc-opt" data-v="{{ option }}" :class="{ sel: value === $el.dataset.v }" @click="value = $el.dataset.v"><span><b>{{ option }}</b></span></button>{% endfor %}
+      <button type="button" class="mc-opt" data-v="{{ other_option }}" :class="{ sel: value === $el.dataset.v }" @click="value = $el.dataset.v"><span><b>Other — add details</b></span></button>
+    </div>
+    <div class="field" x-show="value === '{{ other_option }}'" x-cloak style="margin-bottom:10px">
+      <label for="ciOther">Details for {{ coach_name }}</label>
+      <textarea class="input" id="ciOther" name="other_text" rows="2">{{ answer.other_text|default:"" }}</textarea>
+    </div>
+  {% endif %}
+  {% if error %}<p class="errorlist">{{ error }}</p>{% endif %}
+  <input type="hidden" name="value" :value="value">
+  <button class="btn btn--brand btn--block" type="submit" :disabled="!value">Continue</button>
+</form>
+<form method="post" action="{% url 'app:checkin_summary' log.pk %}" style="text-align:center;margin-top:10px">
+  {% csrf_token %}<button class="tiny muted" type="submit" name="action" value="skip" style="text-decoration:underline">Skip check-in this time</button>
+</form>
+{% endblock %}

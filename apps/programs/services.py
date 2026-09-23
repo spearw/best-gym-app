@@ -15,11 +15,28 @@ from .prescriptions import default_dose
 WEEK = datetime.timedelta(days=7)
 
 
+class HasLoggedSessions(Exception):
+    """Logged sessions are history: their days can't be moved or deleted."""
+
+
+def _has_logs(program, from_order):
+    return ProgramSession.objects.filter(
+        day__week__program=program, day__week__order__gte=from_order, logs__isnull=False
+    ).exists()
+
+
+def _empty_and_unused(session):
+    """An unnamed session with no exercises and no log is just a rest day again."""
+    return not session.name and not session.prescriptions.exists() and not session.logs.exists()
+
+
 def locked_day_ids(week):
-    """Days that clearing a week must leave alone: those with a completed session.
-    Nothing is logged until phase 4; phase 4 makes this return days with a finished
-    SessionLog (see CLAUDE.md, phase 3 notes)."""
-    return set()
+    """Days that clearing a week must leave alone: those with a completed session."""
+    return set(
+        ProgramDay.objects.filter(week=week, sessions__logs__finished_at__isnull=False)
+        .values_list("pk", flat=True)
+        .distinct()
+    )
 
 
 # ---------------------------------------------------------------- programs and weeks
@@ -64,6 +81,8 @@ def add_week(program, week_type):
 def duplicate_week(week):
     """Insert a copy right after `week`; later weeks shift a week later. The copy is
     unpublished, so the coach can review it before the athlete sees it."""
+    if _has_logs(week.program, week.order + 1):
+        raise HasLoggedSessions("Later weeks have logged sessions, so they can't move back a week.")
     _shift_weeks(week.program, week.order + 1, 1)
     copy = _create_week(week.program, week.order + 1, week.week_type)
     copy.focus_note = week.focus_note
@@ -117,6 +136,10 @@ def _copy_prescription(rx, session):
 def delete_week(week):
     """Delete a week; every later week moves a week earlier so there's no gap."""
     program, order = week.program, week.order
+    if _has_logs(program, order):
+        raise HasLoggedSessions(
+            "This week or a later one has logged sessions, so it can't be deleted or moved."
+        )
     week.delete()
     _shift_weeks(program, order + 1, -1)
 
@@ -168,8 +191,8 @@ def add_prescription(day, exercise, athlete, session_id=None, index=None):
 def remove_prescription(rx):
     session = rx.session
     rx.delete()
-    if not session.prescriptions.exists() and not session.name:
-        session.delete()  # an unnamed, now-empty session is just a rest day again
+    if _empty_and_unused(session):
+        session.delete()
 
 
 @transaction.atomic
@@ -185,7 +208,7 @@ def move_prescription(rx, target_session, index):
         if item.order != order:
             Prescription.objects.filter(pk=item.pk).update(order=order)
     if old_session.pk != target_session.pk:
-        if not old_session.prescriptions.exists() and not old_session.name:
+        if _empty_and_unused(old_session):
             old_session.delete()
         else:
             _renumber(old_session)

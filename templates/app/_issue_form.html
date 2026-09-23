@@ -1,0 +1,8 @@
+<form id="issueForm" hx-post="{% url 'app:issue' log.pk %}" hx-target="#issueList" hx-swap="outerHTML">
+  <div class="modal-body">
+    {% include "partials/field.html" with field=form.kind %}
+    {% include "partials/field.html" with field=form.text %}
+    <p class="tiny muted" style="margin:0">{{ coach_name }} sees it with this session in your history.</p>
+  </div>
+  <div class="modal-foot"><button class="btn btn--ghost" type="button" onclick="closeModal()">Cancel</button><button class="btn btn--danger" type="submit">Send to {{ coach_name }}</button></div>
+</form>

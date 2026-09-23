@@ -1,0 +1,74 @@
+{% extends "base_app.html" %}
+{% block title %}This week{% endblock %}
+{% block app_subtitle %}{% if program and week %}{{ program.name }} · wk {{ week_number }} · {% endif %}{{ current_gym.name }}{% endblock %}
+{% block content %}
+{% for log in paused %}
+  <div class="mcard spread" style="gap:10px">
+    <span style="min-width:0"><b style="font-size:.85rem">Paused session</b><br><span class="tiny muted">{{ log.date|date:"D j M" }} · {{ log.name }}</span></span>
+    <a class="btn btn--brand btn--sm" href="{% url 'app:resume' log.pk %}">Resume →</a>
+  </div>
+{% endfor %}
+
+{% if not program %}
+  <div class="mcard" style="text-align:center">
+    <h4>No program yet</h4>
+    <p class="tiny muted" style="margin:0">{{ coach_name }} is putting your training together. Your week shows up here as soon as it's published.</p>
+  </div>
+{% elif not week %}
+  <div class="mcard" style="text-align:center">
+    <h4>{{ program.name }}</h4>
+    <p class="tiny muted" style="margin:0">{{ coach_name }} hasn't published a week of it yet. Check back soon.</p>
+  </div>
+{% else %}
+  <div class="week-label">
+    <span class="row" style="gap:6px">
+      {% if prev_week %}<a class="iconbtn" style="margin:0;width:28px;height:28px" href="?week={{ prev_week.start_date|date:'Y-m-d' }}" aria-label="Previous week">‹</a>{% endif %}
+      <b style="font-family:var(--font-d);font-size:.95rem">{{ week.label }} · {{ week.start_date|date:"M j" }}–{% if week.start_date.month == week.end_date.month %}{{ week.end_date|date:"j" }}{% else %}{{ week.end_date|date:"M j" }}{% endif %}</b>
+      {% if next_week %}<a class="iconbtn" style="margin:0;width:28px;height:28px" href="?week={{ next_week.start_date|date:'Y-m-d' }}" aria-label="Next week">›</a>{% endif %}
+    </span>
+    <span class="wk-pill" style="{{ week.week_type.css_vars }}">{{ week.week_type.name }}</span>
+  </div>
+  <div class="week-strip">
+    {% for d in strip %}
+      <a class="ws-day{% if d.status == 'rest' %} rest{% elif d.status == 'done' %} done{% elif d.status == 'missed' %} missed{% endif %}{% if d.is_today %} today{% elif d.selected %} sel{% endif %}"
+         href="?week={{ week.start_date|date:'Y-m-d' }}&amp;day={{ d.day.date|date:'Y-m-d' }}" aria-label="{{ d.day.date|date:'l j F' }}: {{ d.status }}">
+        <small>{{ d.day.date|date:"D" }}</small><b>{{ d.day.date|date:"j" }}</b><span class="m">{% if d.status == 'done' %}✓{% elif d.status == 'rest' %}·{% else %}{{ d.count }}{% endif %}</span>
+      </a>
+    {% endfor %}
+  </div>
+
+  {% with day=selected.day wt=week.week_type %}
+  {% for card in selected.cards %}
+    <div class="today-card" style="{{ wt.css_vars }}">
+      <span class="wk-pill" style="{{ wt.css_vars }}">{% if selected.is_today %}Today's session{% else %}{{ day.date|date:"D" }}'s session{% endif %}{% if card.session.name %} · {{ card.session.name }}{% endif %}</span>
+      <h3>{% if card.state == "done" %}Completed ✓{% else %}{{ card.count }} exercise{{ card.count|pluralize }}{% endif %}</h3>
+      <div class="sub">{{ wt.name }} week{% if wt.description %} · {{ wt.description }}{% endif %}</div>
+      <div class="exs">
+        {% for item in card.items %}<div class="e" style="gap:10px"><span>{{ item.name }}</span><span class="rx" style="text-align:right">{{ item.dose }}</span></div>{% endfor %}
+      </div>
+      {% if card.state == "done" %}
+        <a class="btn btn--soft btn--block" href="{% url 'app:player' card.log.pk 1 %}">{% if card.editable %}Review or edit what you logged{% else %}Review what you logged{% endif %}</a>
+      {% elif card.state == "paused" %}
+        <a class="btn btn--brand btn--lg btn--block" href="{% url 'app:resume' card.log.pk %}">Resume session →</a>
+      {% elif card.state == "start" %}
+        <form method="post" action="{% url 'app:start' card.session.pk %}">{% csrf_token %}<button class="btn btn--brand btn--lg btn--block" type="submit">Start session →</button></form>
+      {% elif card.state == "backfill" %}
+        <form method="post" action="{% url 'app:start' card.session.pk %}">{% csrf_token %}<button class="btn btn--ghost btn--block" type="submit">Log this session</button></form>
+        <p class="tiny muted" style="margin:6px 0 0;text-align:center">Did it but didn't log it? Add what you did — it's saved to {{ day.date|date:"l" }}.</p>
+      {% else %}
+        <p class="tiny muted" style="margin:0;text-align:center">This session unlocks on {{ day.date|date:"l" }}.</p>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="today-card" style="{{ wt.css_vars }};text-align:center"><h3>{% if selected.is_today %}Today{% else %}{{ day.date|date:"l" }}{% endif %} — rest day</h3><p class="sub">No training scheduled. Recovery is part of the program.</p></div>
+  {% endfor %}
+  {% endwith %}
+
+  {% if week.focus_note %}
+    <div class="mcard">
+      <div class="spread"><h4>Coach's focus this week</h4><span class="tiny muted">from {{ coach_name }}</span></div>
+      <p style="font-size:.83rem;margin:4px 0 0;white-space:pre-line">{{ week.focus_note }}</p>
+    </div>
+  {% endif %}
+{% endif %}
+{% endblock %}

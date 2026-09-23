@@ -8,9 +8,21 @@
                 hx-target="#programEditor" hx-swap="outerHTML">+</button>
       </div>
       {% with tags=ex.tags.all %}{% if tags %}<div class="tags">{% for t in tags|slice:":3" %}<span class="tagchip">{{ t.name }}</span>{% endfor %}{% if tags|length > 3 %}<span class="tagchip">+{{ tags|length|add:"-3" }}</span>{% endif %}</div>{% endif %}{% endwith %}
+      {% if ex.hist %}
+        <div class="lib-hist" data-hist role="button" tabindex="0" title="{{ athlete.user.get_short_name }}'s log" style="cursor:help">
+          <span>{{ ex.hist.line }}</span>{% if ex.hist.trend %}<span class="trend {{ ex.hist.trend }}">{% if ex.hist.trend == "up" %}▲{% elif ex.hist.trend == "down" %}▼{% else %}—{% endif %}</span>{% endif %}
+          <template><h5>{{ ex.name }} — {{ athlete.user.get_short_name }}'s log</h5>{% for date, top in ex.hist.log %}<div class="hrow"><span>{{ date|date:"M j" }}</span><b class="mono">{{ top }}</b></div>{% endfor %}</template>
+        </div>
+      {% else %}
+        <div class="lib-hist"><span class="never">Not logged by {{ athlete.user.get_short_name }} yet</span></div>
+      {% endif %}
     </div>
   {% empty %}
     <div class="lib-empty">No exercises match.</div>
   {% endfor %}
-  <p class="tiny muted" style="margin:4px 2px 0">{{ rail_exercises|length }} of {{ rail_total }} exercises</p>
+  <div class="spread" style="margin:4px 2px 0">
+    <span class="tiny muted">{{ rail_exercises|length }} of {{ rail_total }} exercises</span>
+    <button class="btn btn--sm btn--ghost" type="button" hx-get="{% url 'coach:program_library' athlete.pk %}" hx-include="#railFilters" hx-vals='{"sort": "{% if rail_sort == "recent" %}az{% else %}recent{% endif %}"}' hx-target="#libList" hx-swap="outerHTML">Sort: {% if rail_sort == "recent" %}last done{% else %}A–Z{% endif %}</button>
+  </div>
+  <input type="hidden" name="sort" value="{{ rail_sort }}" form="railFilters">
 </div>

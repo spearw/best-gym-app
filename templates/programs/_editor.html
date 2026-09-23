@@ -62,7 +62,7 @@
           <div class="day-head">
             <b style="white-space:nowrap">{{ d.day.date|date:"D" }} <span class="muted" style="font-weight:500">{{ d.day.date|date:"j" }}</span></b>
             <span class="row" style="gap:4px;flex-wrap:nowrap">
-              {% if d.day.date == today %}<span class="today-dot tip" data-tip="Today"></span>{% elif not d.sessions %}<small>rest</small>{% endif %}
+              {% if d.done %}<small style="color:var(--good);font-weight:700;white-space:nowrap">✓ done</small>{% elif d.day.date == today %}<span class="today-dot tip" data-tip="Today"></span>{% elif not d.sessions %}<small>rest</small>{% endif %}
               <button class="add-session tip" type="button" data-tip="Add a session" aria-label="Add a session on {{ d.day.date|date:'l' }}" @click.stop hx-post="{% url 'coach:day_add_session' athlete.pk d.day.pk %}" hx-target="#programEditor" hx-swap="outerHTML">+</button>
             </span>
           </div>

@@ -1,0 +1,19 @@
+{% extends "base_app.html" %}
+{% block title %}Session complete{% endblock %}
+{% block content %}
+<div class="done-hero">
+  <span class="done-ic"><span class="svgi svgi--checkcircle"></span></span>
+  <h3 style="margin-top:12px">Session complete</h3>
+  <p class="tiny muted">Your results and notes have been shared with {{ coach_name }}.</p>
+</div>
+<div class="done-stats">
+  <div class="d"><b>{{ exercise_count }}</b><small>exercise{{ exercise_count|pluralize }}</small></div>
+  <div class="d"><b>{{ sets_done }}/{{ sets_planned }}</b><small>sets done</small></div>
+  <div class="d"><b>{{ log.session_rpe }}</b><small>session RPE</small></div>
+</div>
+<div class="mcard" style="text-align:center">
+  <b style="font-family:var(--font-d)">{{ streak }}-session streak</b>
+  <p class="tiny muted" style="margin:2px 0 0">Saved with {% if not log.checkin_skipped %}your check-in, {% endif %}{{ top_sets }} top set{{ top_sets|pluralize }} and your notes — {{ coach_name }} sees all of it in your history.{% if next_date %} Next session {% if next_date == today %}later today{% else %}{{ next_date|date:"l" }}{% endif %}.{% endif %}</p>
+</div>
+<a class="btn btn--brand btn--block" href="{% url 'app:home' %}">Back to my week</a>
+{% endblock %}

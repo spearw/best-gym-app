@@ -1,0 +1,3 @@
+<div id="issueList">
+  {% for issue in issues %}<div class="note" style="background:var(--bad-lt);margin-bottom:8px"><b>Reported:</b> {{ issue.get_kind_display }}{% if issue.text %} — {{ issue.text }}{% endif %}</div>{% endfor %}
+</div>

@@ -1,14 +1,16 @@
 """The mockup's programs (PROGRAMS in mockup/index.html) for seed_demo.
 
 Each athlete's program is laid out so the mockup's "current" week contains today;
-weeks up to and including the current one are published. Only the current week
-has sessions, as in the mockup."""
+weeks up to and including the current one are published. The mockup's week has its
+"today" on Tuesday, so each mockup day is placed relative to the real today: Monday's
+session is yesterday, Tuesday's is today, and so on (a day that falls outside the
+program is left out)."""
 
 import datetime
 from decimal import Decimal
 
 from apps.programs import services
-from apps.programs.models import LoadBasis, Prescription, WeekType
+from apps.programs.models import LoadBasis, Prescription, ProgramDay, WeekType
 from apps.programs.prescriptions import parse_rep_scheme
 
 WEEK_TYPE_NAMES = {
@@ -19,6 +21,15 @@ WEEK_TYPE_NAMES = {
     "cut": "Cutting",
     "tech": "Technique",
 }
+
+
+# The mockup's "Coach's focus this week" card.
+FOCUS_NOTES = {
+    "maya@ironridge.example": "Openers Saturday. Keep every snatch above 90% crisp — cut the set if the bar "
+    "drifts forward. Sleep is part of the program this week.",
+}
+
+MOCKUP_TODAY = 1  # the mockup's "today" is the Tuesday of its week
 
 
 def rx(key, sets, reps, load, note="", custom=None):
@@ -159,9 +170,15 @@ def seed_programs(athletes_by_email, exercises, coach_user, today):
         weeks = list(program.weeks.all())
         for week in weeks[: current + 1]:
             services.set_published(week, True)
-        week_days = list(weeks[current].days.all())
+        if email in FOCUS_NOTES:
+            weeks[current].focus_note = FOCUS_NOTES[email]
+            weeks[current].save(update_fields=["focus_note"])
+        by_date = {d.date: d for d in ProgramDay.objects.filter(week__program=program)}
         for index, items in days.items():
-            session = services.session_for(week_days[index])
+            day = by_date.get(today + datetime.timedelta(days=index - MOCKUP_TODAY))
+            if day is None:
+                continue
+            session = services.session_for(day)
             for order, (key, sets, reps, load, note, custom) in enumerate(items):
                 basis, value = _load(load)
                 parsed_reps, duration = parse_rep_scheme(reps)

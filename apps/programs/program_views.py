@@ -98,6 +98,9 @@ def editor_context(request, athlete, week_id=None):
     context.update({"weeks": weeks, "week": week})
     if week is None:
         return context
+    from apps.workouts.history import finished_session_ids
+
+    done_ids = finished_session_ids(athlete)
     days = []
     for day in week.days.prefetch_related(
         "sessions__prescriptions__exercise", "sessions__prescriptions__set_overrides"
@@ -109,7 +112,14 @@ def editor_context(request, athlete, week_id=None):
                 for rx in session.prescriptions.all()
             ]
             sessions.append({"session": session, "items": items})
-        days.append({"day": day, "sessions": sessions, "count": sum(len(s["items"]) for s in sessions)})
+        days.append(
+            {
+                "day": day,
+                "sessions": sessions,
+                "count": sum(len(s["items"]) for s in sessions),
+                "done": any(s["session"].pk in done_ids for s in sessions),
+            }
+        )
     week_types = list(WeekType.objects.filter(gym=gym).filter(Q(archived=False) | Q(pk=week.week_type_id)))
     context.update({"days": days, "week_types": week_types})
     return context
@@ -120,9 +130,40 @@ def render_editor(request, athlete, week_id=None, message=None, kind=""):
     return hx.toast(response, message, kind) if message else response
 
 
-def rail_context(request):
+def _with_history(exercises, athlete, unit):
+    """Attach the athlete's history to each exercise: `hist` is None if never logged,
+    else {"line": "78 kg ×1 · 2 days ago", "trend": "up", "log": [(date, top set), ...], "date": ...}."""
+    from apps.workouts import history
+
+    logs = history.exercise_history(athlete, [e.pk for e in exercises])
+    today = athlete.today()
+    for ex in exercises:
+        entries = logs.get(ex.pk)
+        ex.hist = (
+            {
+                "line": history.last_line(entries[0], unit, today),
+                "trend": history.trend(entries),
+                "date": entries[0].date,
+                "log": [(e.date, history.set_text(e.top, unit)) for e in entries],
+            }
+            if entries
+            else None
+        )
+    return exercises
+
+
+def _by_last_done(exercises):
+    """Most recently done first; never-done ones after, A–Z."""
+    done = sorted(
+        (e for e in exercises if e.hist), key=lambda e: (-e.hist["date"].toordinal(), e.name.lower())
+    )
+    return done + [e for e in exercises if not e.hist]
+
+
+def rail_context(request, athlete):
     gym = request.coach.gym
     q = request.GET.get("q", "").strip()
+    sort = "az" if request.GET.get("sort") == "az" else "recent"
     tag_ids = {t for t in request.GET.getlist("tag") if t.isdigit()}
     exercises = (
         Exercise.objects.filter(gym=gym, archived=False)
@@ -136,11 +177,15 @@ def rail_context(request):
         ).distinct()
     for tag_id in tag_ids:
         exercises = exercises.filter(tags__pk=tag_id)
+    exercises = _with_history(list(exercises), athlete, gym.units)
+    if sort == "recent":
+        exercises = _by_last_done(exercises)
     return {
         "rail_exercises": exercises,
         "rail_tags": Tag.objects.filter(gym=gym),
         "rail_tag_ids": {int(t) for t in tag_ids},
         "rail_q": q,
+        "rail_sort": sort,
         "rail_total": Exercise.objects.filter(gym=gym, archived=False).count(),
     }
 
@@ -152,7 +197,7 @@ def program_tab(request, pk):
         **_header_context(request, athlete),
         "tab": "program",
         **editor_context(request, athlete, request.GET.get("week")),
-        **rail_context(request),
+        **rail_context(request, athlete),
     }
     if _program(athlete) is None:
         context["start_form"] = StartProgramForm(gym=athlete.gym, today=athlete.today())
@@ -163,7 +208,7 @@ def program_tab(request, pk):
 def library(request, pk):
     athlete = coach_athlete(request, pk)
     return TemplateResponse(
-        request, "programs/_rail_list.html", {"athlete": athlete, **rail_context(request)}
+        request, "programs/_rail_list.html", {"athlete": athlete, **rail_context(request, athlete)}
     )
 
 
@@ -219,7 +264,10 @@ def week_add(request, pk):
 @require_POST
 def week_duplicate(request, pk, week_id):
     athlete = coach_athlete(request, pk)
-    copy = services.duplicate_week(_week(athlete, week_id))
+    try:
+        copy = services.duplicate_week(_week(athlete, week_id))
+    except services.HasLoggedSessions as e:
+        return render_editor(request, athlete, week_id, str(e), "err")
     return render_editor(
         request,
         athlete,
@@ -235,7 +283,10 @@ def week_delete(request, pk, week_id):
     athlete = coach_athlete(request, pk)
     week = _week(athlete, week_id)
     label = week.label
-    services.delete_week(week)
+    try:
+        services.delete_week(week)
+    except services.HasLoggedSessions as e:
+        return render_editor(request, athlete, week_id, str(e), "err")
     return render_editor(request, athlete, message=f"Deleted {label} — later weeks moved up a week")
 
 
@@ -342,6 +393,10 @@ def session_delete(request, pk, session_id):
     athlete = coach_athlete(request, pk)
     session = _session(athlete, session_id)
     week_id, n = session.day.week_id, session.prescriptions.count()
+    if session.logs.exists():
+        name = athlete.user.get_short_name()
+        message = f"{name} has logged this session, so it stays. You can still edit its exercises."
+        return render_editor(request, athlete, week_id, message, "err")
     session.delete()
     extra = f" and its {n} exercise{'s' if n != 1 else ''}" if n else ""
     return render_editor(request, athlete, week_id, f"Removed the session{extra}")
@@ -447,8 +502,9 @@ def rx_swap(request, pk, rx_id):
         )
         response = hx.retarget(response, "#programEditor", "outerHTML")
         return hx.trigger_after_swap(response, closeModal=True)
+    candidates = _by_last_done(_with_history(list(swap_candidates(rx)), athlete, request.coach.gym.units))
     return TemplateResponse(
-        request, "programs/_swap_list.html", {"athlete": athlete, "rx": rx, "candidates": swap_candidates(rx)}
+        request, "programs/_swap_list.html", {"athlete": athlete, "rx": rx, "candidates": candidates}
     )
 
 

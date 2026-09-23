@@ -1,0 +1,20 @@
+{% extends "base_app.html" %}
+{% block title %}Profile & metrics{% endblock %}
+{% block content %}
+<h3 style="font-size:1.2rem;margin-bottom:12px">Profile &amp; metrics</h3>
+<div class="mcard">
+  <div class="row" style="gap:14px"><span class="avatar avatar--lg">{{ user.initials }}</span><span><b style="font-family:var(--font-d);font-size:1.05rem">{{ user.name|default:user.email }}</b><br><span class="tiny muted">{% if request.athlete.weight_class %}{{ request.athlete.weight_class }} class · {% endif %}joined {{ request.athlete.joined_at|date:"M Y" }}</span></span></div>
+</div>
+<div class="mcard">
+  <h4>Training metrics</h4>
+  <p class="tiny muted" style="margin:0 0 10px">{{ coach_name }} uses these to set your percentages. Anything marked missing you can add any time.</p>
+  <div class="stack" style="gap:8px">
+    {% for row in rows %}
+      <div class="spread tiny" style="border-bottom:1px solid var(--line-2);padding-bottom:8px"><span class="muted">{{ row.label }}</span>{% if row.value %}<b>{{ row.value }}</b>{% else %}<a class="chip chip--warn" href="{% url 'app:numbers' %}">missing — tap to add</a>{% endif %}</div>
+    {% endfor %}
+  </div>
+</div>
+{% if missing_count %}<a class="btn btn--brand btn--block" href="{% url 'app:numbers' %}" style="margin-bottom:8px">Add missing numbers ({{ missing_count }})</a>{% endif %}
+{% if user.coach_profile %}<a class="btn btn--ghost btn--block" href="{% url 'coach:dashboard' %}" hx-boost="false" style="margin-bottom:8px">Open the coach app</a>{% endif %}
+<form method="post" action="{% url 'accounts:logout' %}" hx-boost="false">{% csrf_token %}<button class="btn btn--soft btn--block" type="submit">Sign out</button></form>
+{% endblock %}

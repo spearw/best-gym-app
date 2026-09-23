@@ -1,0 +1,25 @@
+{% extends "base_app.html" %}
+{% block title %}Session complete{% endblock %}
+{% block content %}
+<div class="flow-head">
+  <a class="iconbtn" style="margin:0" href="{{ back_url }}" aria-label="Back to the last exercise">←</a>
+  <span class="step-lbl">{% if log.finished %}Edit how the session went{% else %}Session complete — two quick questions{% endif %}</span>
+</div>
+<form method="post" x-data="{ rpe: '' }" x-init="rpe = $el.dataset.initial" data-initial="{{ rpe|default:'' }}">
+  {% csrf_token %}
+  <h3 style="font-size:1.2rem">How hard was this session?</h3>
+  <p class="tiny muted">Session RPE — 1 is very easy, 10 is maximal effort.</p>
+  <div class="scale-row">
+    {% for i in scale %}<button type="button" class="scale-btn" data-v="{{ i }}" :class="{ sel: rpe === $el.dataset.v }" @click="rpe = $el.dataset.v" aria-label="RPE {{ i }}">{{ i }}</button>{% endfor %}
+  </div>
+  <input type="hidden" name="rpe" :value="rpe">
+  {{ form.rpe.errors }}
+  <div class="field" style="margin:8px 0 12px">
+    <label for="postComment">Notes for {{ coach_name }} <span class="skip" @click="$refs.comment.value = ''">skip</span></label>
+    <textarea class="input" id="postComment" name="comment" rows="2" x-ref="comment" placeholder="e.g. jerks felt better with the narrower grip">{{ form.comment.value|default:"" }}</textarea>
+  </div>
+  {% include "app/_issue_list.html" %}
+  <button class="btn btn--danger btn--block" type="button" style="margin-bottom:8px" hx-get="{% url 'app:issue' log.pk %}" hx-target="#modal" hx-swap="innerHTML"><span class="svgi svgi--alert"></span> Report an issue or pain</button>
+  <button class="btn btn--brand btn--lg btn--block" type="submit" :disabled="!rpe">{% if log.finished %}Save changes{% else %}Finish &amp; save{% endif %}</button>
+</form>
+{% endblock %}

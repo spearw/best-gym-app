@@ -4,6 +4,28 @@
   <p class="tiny muted" style="margin:0">Fields the athlete skipped show <span class="chip chip--warn">not provided</span> — use the pencil to fill them in yourself. Weights show in {{ request.coach.gym.get_units_display }}.</p>
   <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:remind_metrics' athlete.pk %}" hx-swap="none"><span class="svgi svgi--bell"></span> Remind athlete</button>
 </div>
+<div class="card" style="padding:14px 18px;margin-bottom:16px;max-width:720px" id="sessionPrs">
+  <div class="spread" style="flex-wrap:wrap;gap:10px">
+    <h4 style="font-size:.95rem;margin:0">Session PRs</h4>
+    <form class="row" style="gap:8px" hx-post="{% url 'coach:max_updates' athlete.pk %}" hx-trigger="change">
+      <label class="tiny muted" for="maxUpdates">When a session beats a max</label>
+      <select class="input" id="maxUpdates" name="max_updates" style="width:auto;padding:5px 28px 5px 10px;font-size:.8rem">
+        {% for value, label in max_updates_choices %}<option value="{{ value }}"{% if value == athlete.max_updates %} selected{% endif %}>{% if value == "auto" %}Update the max automatically{% else %}I approve it first{% endif %}</option>{% endfor %}
+      </select>
+    </form>
+  </div>
+  {% for pr in pending_prs %}
+    <div class="spread" style="border-top:1px solid var(--line-2);margin-top:10px;padding-top:10px;gap:10px;flex-wrap:wrap">
+      <span><b>{{ pr.exercise }}</b> {{ pr.load }} × {{ pr.reps }} <span class="tiny muted">on {{ pr.date|date:"D j M" }} · working max {{ pr.current }}</span></span>
+      <span class="row" style="gap:6px">
+        <button class="btn btn--brand btn--sm" type="button" hx-post="{% url 'coach:pr_decide' athlete.pk pr.set_id %}" hx-vals='{"decision": "use"}'>Use as working max</button>
+        <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:pr_decide' athlete.pk pr.set_id %}" hx-vals='{"decision": "keep"}'>Keep {{ pr.current }}</button>
+      </span>
+    </div>
+  {% empty %}
+    <p class="tiny muted" style="margin:6px 0 0">{% if athlete.max_updates == "auto" %}A heavier lift than a working max becomes the new max as soon as the session is finished.{% else %}No new bests waiting. When {{ athlete.user.get_short_name }} lifts more than a working max, it shows here for you to use or keep.{% endif %} Only real lifts count (heaviest load for 1+ reps), and only for lifts with a max on file.</p>
+  {% endfor %}
+</div>
 {% include "coach/athlete/_metrics_panel.html" %}
 <div class="spread" style="margin:22px 0 10px"><h4 style="font-size:.95rem">Check-in questions for {{ athlete.user.get_short_name }}</h4>
   <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:athlete_questions_reset' athlete.pk %}" hx-include="#qBuilder" hx-target="#qBuilder" hx-swap="outerHTML" hx-confirm="Replace {{ athlete.user.get_short_name }}'s questions with your gym's defaults?">Reset to defaults</button></div>

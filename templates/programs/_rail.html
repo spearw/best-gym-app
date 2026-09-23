@@ -9,6 +9,8 @@
       </form>
     </div>
     {% include "programs/_rail_list.html" %}
-    <div class="lib-foot"><span class="tiny muted" style="align-self:center">Drag an exercise onto a day, or click a day and press +. Athletes' history appears here from phase 4.</span></div>
+    <div class="lib-foot"><span class="tiny muted" style="align-self:center">Drag an exercise onto a day, or click a day and press +. Tap a history line for {{ athlete.user.get_short_name }}'s full log.</span></div>
   </div>
 </aside>
+{# Outside the aside: the narrow-screen drawer is transformed, which would pin a fixed popover to it. #}
+<div class="hist-pop" id="histPop" role="dialog" aria-label="Exercise history"></div>

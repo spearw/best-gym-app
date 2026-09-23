@@ -1,0 +1,21 @@
+{% extends "base_app.html" %}
+{% block title %}Check-in{% endblock %}
+{% block content %}
+<div class="flow-head">
+  <a class="iconbtn" style="margin:0" href="{{ back_url }}" aria-label="Back">←</a>
+  <div class="bar"><i style="width:100%"></i></div>
+  <span class="step-lbl">{{ n }} of {{ total }}</span>
+</div>
+<h3 style="font-size:1.2rem">Check-in complete</h3>
+<div class="mcard" style="margin-top:12px">
+  {% for a in answers %}
+    <div class="spread tiny" style="margin-bottom:6px"><span class="muted" style="max-width:55%">{{ a.question_text }}</span><b style="text-align:right">{% if a.type == "choice" and a.other_text %}{{ a.other_text }}{% else %}{{ a.display }}{% endif %}</b></div>
+  {% endfor %}
+  <div class="spread tiny" style="{% if answers %}border-top:1px solid var(--line-2);padding-top:8px{% endif %}"><span class="muted">Session</span><b>{{ exercise_count }} exercise{{ exercise_count|pluralize }}{% if log.week_type %} · {{ log.week_type.name }} week{% endif %}</b></div>
+</div>
+<form method="post">
+  {% csrf_token %}
+  <button class="btn btn--brand btn--lg btn--block" type="submit" name="action" value="start">Start session →</button>
+  <button class="btn btn--soft btn--block" type="submit" name="action" value="skip" style="margin-top:8px">Skip check-in this time</button>
+</form>
+{% endblock %}

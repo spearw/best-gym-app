@@ -1,0 +1,37 @@
+<div id="sessLog">
+  <p class="tiny muted" style="margin:-8px 0 10px;text-align:right">{{ items|length }} session{{ items|length|pluralize }} · weights in {{ request.coach.gym.units }}</p>
+  <div class="sess-log">
+  {% for item in items %}{% with log=item.log %}
+    <details class="sess"{% if item.open %} open{% endif %}>
+      <summary>
+        <span class="status {{ item.status }}">{% if item.issues %}<span class="svgi svgi--alert"></span>{% elif not log.finished %}…{% else %}✓{% endif %}</span>
+        <span style="min-width:0"><b>{{ log.date|date:"D j M" }}</b> <span class="tiny muted">· {{ log.name }}</span>{% if item.pr_day %} <span class="chip chip--good">PR day</span>{% endif %}{% if not log.finished %} <span class="chip chip--warn">in progress</span>{% endif %}
+          <br><span class="tiny muted">{% if log.week_type %}<span class="wk-pill" style="{{ log.week_type.css_vars }};padding:1px 8px;font-size:.62rem">{{ log.week_type.name }}</span> {% endif %}{{ item.exercises|length }} exercise{{ item.exercises|length|pluralize }}{% if log.checkin_skipped %} · check-in skipped{% endif %}{% if log.logged_late %} · logged {{ log.started_at|date:"D j M" }}{% endif %}</span></span>
+        <span class="fb">{% if log.session_rpe %}<span class="rpe-pill {{ item.rpe_class }}">RPE {{ log.session_rpe }}</span>{% endif %}{% if item.readiness %}<span>readiness {{ item.readiness }}/10</span>{% endif %}</span>
+      </summary>
+      <div class="detail">
+        <div class="sess-sec"><span class="sess-lbl">Pre-workout check-in</span>
+          {% for a in item.answers %}
+            <div class="exline"><span class="muted">{{ a.question_text }}</span><span><b>{{ a.display }}</b>{% if a.other_text %} — <i>{{ a.other_text }}</i>{% endif %}</span></div>
+          {% empty %}
+            <div class="exline"><span class="muted">{% if log.checkin_skipped %}Skipped{% else %}Not answered{% endif %}</span></div>
+          {% endfor %}
+        </div>
+        <div class="sess-sec"><span class="sess-lbl">Asked for → done</span>
+          {% for e in item.exercises %}
+            <div class="exline"><span>{{ e.name }}{% if e.deleted %} <span class="tiny muted">(deleted from library)</span>{% endif %}{% if e.pr %} <span class="chip chip--good">PR</span>{% endif %}<br><span class="tiny muted">asked {{ e.asked }}</span></span>
+              <span class="rx mono" style="text-align:right">{% if e.did %}did {{ e.did }}{% if e.e1rm %} · e1RM {{ e.e1rm }}{% endif %}{% else %}no sets logged{% endif %}{% if e.planned %}<br><span class="tiny muted">{{ e.done_count }}/{{ e.planned }} sets</span>{% endif %}</span></div>
+          {% endfor %}
+        </div>
+        <div class="sess-sec"><span class="sess-lbl">Post-workout</span>
+          <div class="exline"><span class="muted">Session RPE</span><span>{% if log.session_rpe %}<b>{{ log.session_rpe }} / 10</b>{% else %}—{% endif %}</span></div>
+          {% if log.comment %}<div class="note">“{{ log.comment }}”</div>{% endif %}
+        </div>
+        {% for issue in item.issues %}<div class="note" style="background:var(--bad-lt)"><b>Issue reported:</b> {{ issue.get_kind_display }}{% if issue.text %} — {{ issue.text }}{% endif %}</div>{% endfor %}
+      </div>
+    </details>
+  {% endwith %}{% empty %}
+    <p class="empty-note">{% if q %}No sessions with “{{ q }}” in this range.{% else %}No sessions logged in this range.{% endif %}</p>
+  {% endfor %}
+  </div>
+</div>

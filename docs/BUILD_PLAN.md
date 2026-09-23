@@ -492,12 +492,18 @@ The review settled most of the original list. What remains is below; decide the 
 - Edits to a published week go live immediately; the week shows a "live" badge and can be unpublished.
 - Days with a completed session stay editable; each logged session keeps a snapshot of what was prescribed.
 
+### Decided (23 September, before phase 4)
+
+- Session PRs and maxes: each athlete has a setting, "coach approves" (default) or "update automatically". Only a real lift counts: the heaviest load done for 1+ reps above that exercise's own working max, logged on or after the max's date. e1RM never changes a max. Exercises with no max on file never get one from a session. Pending PRs show on the athlete's Metrics tab ("Use as working max" / "Keep"); the dashboard alert is phase 6.
+- Which sessions an athlete can log: today's; missed days afterwards (dated to the planned day, check-in skipped); upcoming days are view-only, for planning. Unprogrammed workouts are not in v1 (the model allows them).
+- Finished sessions can be edited for 24 hours; an edit re-checks automatic maxes.
+- Deleting an exercise that has been logged keeps the history by name (SessionExercise.exercise_name) with every set; the link is cleared, so it drops out of trends, PRs and "last done".
+- Logged sessions are history: a coach can't insert or delete a week that would move or delete a logged day, can't delete a logged session, and removing its last exercise keeps the session.
+
 ### Still open
 
 - [ ] Product name and domain (the mockup says "Platform"; the repo is GymTrainer).
 - [ ] Offline set logging. v1 saves each set as it is ticked and retries a failed save; if gym signal turns out to be a real problem, v2 adds a service-worker queue that replays saves when back online. Decide after the first athletes use phase 4.
-- [ ] When an athlete logs a new max in a session, do percentages in upcoming weeks update automatically? The mockup's feed implies yes; it changes what the athlete sees mid-block. Suggest: notify the coach and let them choose per athlete.
-- [ ] Should the athlete be able to edit a session after finishing it? Suggest yes for 24 hours.
 - [ ] Do athletes pay, does the gym pay, or is billing out of scope for now? Affects whether Stripe goes in the plan.
 - [ ] Video: YouTube links only for demos (as in the mockup), and athlete uploads in phase 8, or defer uploads entirely?
 - [ ] Can an athlete have two coaches at the same gym? The plan assumes one.

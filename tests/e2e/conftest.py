@@ -47,11 +47,13 @@ def no_browser_errors(request):
         yield
         return
     page = request.getfixturevalue("page")
+    marker = request.node.get_closest_marker("allow_browser_errors")
+    allowed = marker.args if marker else ()
     errors = []
     page.on("pageerror", lambda exc: errors.append(f"page error: {exc}"))
 
     def on_console(msg):
-        if msg.type == "error":
+        if msg.type == "error" and not any(text in msg.text for text in allowed):
             errors.append(f"console {msg.type}: {msg.text}")
 
     page.on("console", on_console)

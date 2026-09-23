@@ -147,6 +147,11 @@ class YearsTraining(models.TextChoices):
     OVER_5 = "5+", "5+"
 
 
+class MaxUpdates(models.TextChoices):
+    APPROVE = "approve", "Coach approves"
+    AUTO = "auto", "Automatically"
+
+
 class Athlete(models.Model):
     """Archive, never delete, so session history survives.
     Bodyweight and maxes are history tables (BodyweightEntry, MaxEntry)."""
@@ -160,6 +165,12 @@ class Athlete(models.Model):
     height_cm = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True)
     years_training = models.CharField(max_length=4, choices=YearsTraining.choices, blank=True)
     units = models.CharField(max_length=2, choices=Units.choices, default=Units.KG)
+    max_updates = models.CharField(
+        max_length=8,
+        choices=MaxUpdates.choices,
+        default=MaxUpdates.APPROVE,
+        help_text="When a session beats a working max: update it straight away, or wait for the coach.",
+    )
     joined_at = models.DateTimeField(default=timezone.now)
     archived_at = models.DateTimeField(null=True, blank=True)
 
@@ -224,6 +235,10 @@ class MaxEntry(models.Model):
     kg = models.DecimalField(max_digits=6, decimal_places=2)
     reps = models.PositiveSmallIntegerField(default=1)
     source = models.CharField(max_length=12, choices=MeasurementSource.choices)
+    # The logged set this max came from, when a session set it (apps/workouts/prs.py).
+    set_log = models.ForeignKey(
+        "workouts.SetLog", null=True, blank=True, on_delete=models.CASCADE, related_name="max_entries"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

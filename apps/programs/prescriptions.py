@@ -47,8 +47,9 @@ def load_text(load_basis, load_value, gym_units):
     return units.display(load_value, gym_units)
 
 
-def summary(rx, gym_units, set_overrides=None):
-    """The one-line description shown on the board: '5×3 @ 75% · RIR 2 · Tempo 3-1-0'."""
+def summary(rx, gym_units, set_overrides=None, custom=True):
+    """The one-line description shown on the board: '5×3 @ 75% · RIR 2 · Tempo 3-1-0'.
+    `custom=False` leaves out the custom fields (the athlete's day card)."""
     overrides = list(rx.set_overrides.all()) if set_overrides is None else set_overrides
     if overrides:
         parts = []
@@ -68,7 +69,7 @@ def summary(rx, gym_units, set_overrides=None):
             text += f" @ {load}"
     if rx.rir is not None:
         text += f" · RIR {rx.rir}"
-    for field in rx.custom_fields or []:
+    for field in (rx.custom_fields or []) if custom else []:
         text += f" · {field.get('key', '')} {field.get('value', '')}".rstrip()
     return text
 

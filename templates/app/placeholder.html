@@ -4,14 +4,6 @@
 <h3 style="font-size:1.2rem;margin-bottom:12px">{{ title }}</h3>
 <div class="mcard">
   <h4>Not built yet</h4>
-  <p class="tiny muted" style="margin:4px 0 0">This screen proves the athlete shell. The real screen is built in phase 4 of docs/BUILD_PLAN.md.</p>
+  <p class="tiny muted" style="margin:4px 0 0">Messages with your coach arrive in phase 6 of docs/BUILD_PLAN.md.</p>
 </div>
-{% if tab == "profile" %}
-<div class="mcard">
-  <div class="row" style="gap:14px"><span class="avatar avatar--lg">{{ user.initials }}</span><span><b style="font-family:var(--font-d);font-size:1.05rem">{{ user.name|default:user.email }}</b><br><span class="tiny muted">{{ current_gym.name }} · joined {{ request.athlete.joined_at|date:"M Y" }}</span></span></div>
-</div>
-{% if missing_count %}<a class="btn btn--brand btn--block" href="{% url 'app:numbers' %}" style="margin-bottom:8px">Add missing numbers ({{ missing_count }})</a>{% endif %}
-{% if user.coach_profile %}<a class="btn btn--ghost btn--block" href="{% url 'coach:dashboard' %}" style="margin-bottom:8px">Open the coach app</a>{% endif %}
-<form method="post" action="{% url 'accounts:logout' %}" hx-boost="false">{% csrf_token %}<button class="btn btn--soft btn--block" type="submit">Sign out</button></form>
-{% endif %}
 {% endblock %}

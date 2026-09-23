@@ -3,11 +3,11 @@
 {% block modal_title %}Swap {{ rx.exercise.name }}{% endblock %}
 {% block modal_content %}
 <div class="modal-body">
-  <p class="tiny muted" style="margin:0">Same category or a shared tag. The dose carries over.</p>
+  <p class="tiny muted" style="margin:0">Same category or a shared tag, most recently done first. The dose carries over.</p>
   <div class="swap-list">
     {% for ex in candidates %}
       <button class="swap-item" type="button" hx-post="{% url 'coach:rx_swap' athlete.pk rx.pk %}" hx-vals='{"exercise": "{{ ex.pk }}"}' hx-target="#programEditor" hx-swap="outerHTML">
-        <span><b>{{ ex.name }}</b><small>{{ ex.category.name }}{% for t in ex.tags.all|slice:":3" %} · {{ t.name }}{% endfor %}</small></span><span class="go">Use</span>
+        <span><b>{{ ex.name }}</b><small>{% if ex.hist %}last: {{ ex.hist.line }}{% else %}{{ ex.category.name }}{% for t in ex.tags.all|slice:":3" %} · {{ t.name }}{% endfor %}{% endif %}</small></span><span class="go">Use</span>
       </button>
     {% empty %}
       <p class="tiny muted">No alternatives in the library share its category or tags.</p>

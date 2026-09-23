@@ -1,0 +1,25 @@
+{% extends "base_app.html" %}
+{% block title %}Your progress{% endblock %}
+{% block content %}
+<h3 style="font-size:1.2rem;margin-bottom:12px">Your progress</h3>
+<h4 style="font-size:.92rem;margin:14px 0 8px">Personal records</h4>
+<div class="pr-list">
+  {% for pr in prs %}
+    <div class="pr-row"><span class="medal"><span class="svgi svgi--trophy"></span></span>
+      <span style="min-width:0"><b>{{ pr.name }}</b><small>Heaviest {{ pr.heaviest_ago }}{% if pr.e1rm %} · best e1RM {{ pr.e1rm }}{% endif %}</small></span>
+      <span class="val">{{ pr.heaviest }}</span></div>
+  {% empty %}
+    <p class="empty-note">Your records show up here once you've logged a loaded lift.</p>
+  {% endfor %}
+</div>
+<h4 style="font-size:.92rem;margin:16px 0 8px">Recent sessions</h4>
+<div class="pr-list">
+  {% for item in recent %}{% with log=item.log %}
+    <a class="pr-row" href="{% url 'app:player' log.pk 1 %}" style="color:inherit"><span class="medal" style="background:var(--good-lt);color:var(--good)"><span class="svgi svgi--check"></span></span>
+      <span style="min-width:0"><b>{{ log.date|date:"D j M" }}</b><small>{{ log.name }}{% if log.session_rpe %} · RPE {{ log.session_rpe }}{% endif %}{% if log.comment %} · “{{ log.comment|truncatechars:60 }}”{% endif %}</small></span>
+      {% if item.editable %}<span class="chip" style="margin-left:auto">edit</span>{% endif %}</a>
+  {% endwith %}{% empty %}
+    <p class="empty-note">No sessions logged yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

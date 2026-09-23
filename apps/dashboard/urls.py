@@ -73,6 +73,8 @@ urlpatterns = [
     ),
     path("athletes/<int:pk>/metrics/<str:key>/edit/", coach_views.metric_edit, name="metric_edit"),
     path("athletes/<int:pk>/remind/", coach_views.remind_metrics, name="remind_metrics"),
+    path("athletes/<int:pk>/max-updates/", coach_views.max_updates, name="max_updates"),
+    path("athletes/<int:pk>/prs/<int:set_id>/", coach_views.pr_decide, name="pr_decide"),
     path("athletes/<int:athlete_pk>/questions/", qv.builder, name="athlete_questions"),
     path("athletes/<int:athlete_pk>/questions/reset/", qv.reset_to_defaults, name="athlete_questions_reset"),
     *question_patterns("athletes/<int:athlete_pk>/questions/", "athlete_q"),

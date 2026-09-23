@@ -52,7 +52,7 @@ def test_archived_athletes_leave_the_roster(coach_client, athlete):
     [
         ("overview", "arrives in phase 7"),
         ("program", "Start a program for Maya"),
-        ("sessions", "arrives in phase 4"),
+        ("sessions", "No sessions logged in this range"),
         ("messages", "arrives in phase 6"),
     ],
 )

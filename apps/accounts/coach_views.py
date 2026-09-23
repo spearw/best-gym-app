@@ -18,13 +18,13 @@ from .access import coach_required
 from .emails import send_metrics_reminder
 from .forms import InputClassMixin
 from .metrics import current_metrics, metric_specs, missing_metrics, save_metrics, spec_for
-from .models import Athlete, MeasurementSource, YearsTraining
+from .models import Athlete, MaxUpdates, MeasurementSource, YearsTraining
 from .views import _invite_list_context
 
 DETAIL_TABS = [
     ("overview", "Overview", 7),
     ("program", "Program", None),
-    ("sessions", "Sessions", 4),
+    ("sessions", "Sessions", None),
     ("metrics", "Metrics", None),
     ("messages", "Messages", 6),
 ]
@@ -80,6 +80,10 @@ def athlete_detail(request, pk, tab="overview"):
     athlete = coach_athlete(request, pk)
     if tab == "metrics":
         return athlete_metrics(request, athlete)
+    if tab == "sessions":
+        from apps.workouts.coach_views import sessions_tab
+
+        return sessions_tab(request, athlete, _header_context(request, athlete))
     phase = dict((key, ph) for key, _label, ph in DETAIL_TABS)[tab]
     label = dict((key, lbl) for key, lbl, _ph in DETAIL_TABS)[tab]
     return TemplateResponse(
@@ -135,7 +139,29 @@ def _metrics_context(request, athlete):
         for what, e in recent
     ]
     cards = _metric_cards(request, athlete)
-    return {"cards": cards, "history": history, "missing_count": sum(1 for c in cards if c["missing"])}
+    return {
+        "cards": cards,
+        "history": history,
+        "missing_count": sum(1 for c in cards if c["missing"]),
+        "pending_prs": _pending_prs(athlete, gym_units),
+        "max_updates_choices": MaxUpdates.choices,
+    }
+
+
+def _pending_prs(athlete, unit):
+    from apps.workouts import prs
+
+    return [
+        {
+            "set_id": c.set_log.pk,
+            "exercise": c.exercise.name,
+            "load": units.display(c.set_log.load_kg, unit),
+            "reps": c.set_log.reps,
+            "date": c.set_log.session_exercise.session_log.date,
+            "current": units.display(c.current.kg, unit),
+        }
+        for c in prs.pending(athlete)
+    ]
 
 
 def athlete_metrics(request, athlete):
@@ -220,6 +246,43 @@ def remind_metrics(request, pk):
         return hx.toast(HttpResponse(""), f"{athlete.user.get_short_name()} has filled in everything")
     send_metrics_reminder(request, athlete, missing)
     return hx.toast(HttpResponse(""), f"Reminder emailed to {athlete.user.get_short_name()}", "good")
+
+
+@coach_required
+@require_POST
+def max_updates(request, pk):
+    athlete = coach_athlete(request, pk)
+    value = request.POST.get("max_updates")
+    if value in MaxUpdates.values:
+        athlete.max_updates = value
+        athlete.save(update_fields=["max_updates"])
+    name = athlete.user.get_short_name()
+    message = (
+        f"Session PRs now update {name}'s maxes automatically"
+        if athlete.max_updates == MaxUpdates.AUTO
+        else f"You'll review {name}'s session PRs before their maxes change"
+    )
+    return hx.toast(athlete_metrics(request, athlete), message, "good")
+
+
+@coach_required
+@require_POST
+def pr_decide(request, pk, set_id):
+    """Use a session PR as the working max, or keep the current one."""
+    from apps.workouts import prs
+
+    athlete = coach_athlete(request, pk)
+    candidate = prs.pending_set(athlete, set_id)
+    if candidate is None:
+        return hx.toast(athlete_metrics(request, athlete), "That PR has already been handled", "err")
+    lift = candidate.exercise.name
+    if request.POST.get("decision") == "use":
+        prs.accept(athlete, candidate)
+        message = f"{lift} max is now {units.display(candidate.set_log.load_kg, request.coach.gym.units)}"
+    else:
+        prs.dismiss(athlete, candidate)
+        message = f"Kept {lift} at {units.display(candidate.current.kg, request.coach.gym.units)}"
+    return hx.toast(athlete_metrics(request, athlete), message, "good")
 
 
 @coach_required

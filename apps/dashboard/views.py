@@ -15,16 +15,19 @@ def dashboard(request):
     return _coach_page(request, "dashboard", "Dashboard")
 
 
-@coach_required
-def athletes(request):
-    # Phase 2 builds the real roster. Phase 1 lists athletes and pending invites.
-    roster = request.coach.athletes.filter(archived_at__isnull=True).select_related("user")
-    return _coach_page(request, "athletes", "Athletes", template="coach/athletes.html", roster=roster)
+PROGRAMMING_TAB_LABELS = {"templates": "Templates", "weeks": "Saved weeks", "sessions": "Saved sessions"}
 
 
 @coach_required
-def programming(request):
-    return _coach_page(request, "programming", "Programming")
+def programming_placeholder(request, ptab):
+    return _coach_page(
+        request,
+        "programming",
+        "Programming",
+        template="coach/programming/placeholder.html",
+        ptab=ptab,
+        ptab_label=PROGRAMMING_TAB_LABELS[ptab],
+    )
 
 
 @coach_required

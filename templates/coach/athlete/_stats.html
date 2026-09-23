@@ -1,0 +1,3 @@
+<span class="cd-stats" id="cdStats"{% if oob_header %} hx-swap-oob="true"{% endif %}>
+  {% for label, value in stats %}<span class="cd-stat"><span class="v">{% if value %}{{ value }}<span class="u"> {{ stat_unit }}</span>{% else %}—{% endif %}</span><span class="l">{{ label }}</span></span>{% endfor %}
+</span>

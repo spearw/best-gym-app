@@ -95,19 +95,32 @@ class MetricsForm(InputClassMixin, forms.Form):
         required=False, choices=[("", "Select…"), *YearsTraining.choices], label="Years training"
     )
 
-    def __init__(self, *args, units="kg", **kwargs):
+    def __init__(self, *args, units="kg", only=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.units = units
-        self.fields["bodyweight"].label = f"Bodyweight ({units})"
-        self.fields["sn"].label = f"Snatch 1RM ({units})"
-        self.fields["cj"].label = f"Clean & Jerk 1RM ({units})"
-        self.fields["bsq"].label = f"Back Squat 1RM ({units})"
-        self.fields["bodyweight"].widget.attrs["placeholder"] = "e.g. 64" if units == "kg" else "e.g. 141"
-        self.fields["height_cm"].widget.attrs["placeholder"] = "e.g. 168"
-        self.fields["sn"].widget.attrs["placeholder"] = "best single"
-        for name in ["bodyweight", "height_cm", "sn", "cj", "bsq"]:
-            self.fields[name].widget.attrs["inputmode"] = "decimal"
-            self.fields[name].widget.attrs["step"] = "any"
+        if only is not None:
+            for name in list(self.fields):
+                if name not in only:
+                    del self.fields[name]
+        labels = {
+            "bodyweight": f"Bodyweight ({units})",
+            "sn": f"Snatch 1RM ({units})",
+            "cj": f"Clean & Jerk 1RM ({units})",
+            "bsq": f"Back Squat 1RM ({units})",
+        }
+        placeholders = {
+            "bodyweight": "e.g. 64" if units == "kg" else "e.g. 141",
+            "height_cm": "e.g. 168",
+            "sn": "best single",
+        }
+        for name, field in self.fields.items():
+            if name in labels:
+                field.label = labels[name]
+            if name in placeholders:
+                field.widget.attrs["placeholder"] = placeholders[name]
+            if name != "years_training":
+                field.widget.attrs["inputmode"] = "decimal"
+                field.widget.attrs["step"] = "any"
         for field in self.fields.values():
             # "skip" (Alpine) clears and disables the input; disabled inputs aren't submitted.
             field.widget.attrs["x-ref"] = "i"

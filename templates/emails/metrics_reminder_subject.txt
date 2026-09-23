@@ -1,0 +1,1 @@
+{{ coach.user.get_short_name }} needs a few of your training numbers

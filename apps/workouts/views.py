@@ -25,4 +25,8 @@ def messages(request):
 
 @athlete_required
 def profile(request):
-    return _app_page(request, "profile", "Profile & metrics")
+    from apps.accounts.metrics import missing_metrics
+
+    response = _app_page(request, "profile", "Profile & metrics")
+    response.context_data["missing_count"] = len(missing_metrics(request.athlete))
+    return response

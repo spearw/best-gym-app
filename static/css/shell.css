@@ -38,3 +38,23 @@ a.role-btn{color:inherit}
 .auth-links{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.8rem}
 .auth-links a{color:var(--brand);font-weight:600}
 .onboard .app-body{padding-bottom:24px}
+
+/* Tag chips that are really checkboxes (library filter, exercise modal). */
+label.tagchip{cursor:pointer;user-select:none;transition:all .13s}
+label.tagchip:hover{border-color:var(--brand);color:var(--brand)}
+label.tagchip:has(input:checked){background:var(--brand);border-color:var(--brand);color:#fff}
+label.tagchip input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+label.tagchip:has(input:focus-visible){outline:3px solid var(--brand);outline-offset:2px}
+
+/* Tabs rendered as links (the mockup used buttons that toggled hidden panels). */
+.tabs a{padding:10px 16px;font-weight:600;font-size:.88rem;color:var(--ink-3);border-bottom:2.5px solid transparent;white-space:nowrap}
+.tabs a:hover{color:var(--ink)}
+.tabs a.active{color:var(--brand);border-bottom-color:var(--brand)}
+.tabs a .n{background:var(--bad);color:#fff;font-size:.64rem;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:5px}
+
+/* Row actions: the mockup revealed them on hover only; keep them reachable by keyboard and touch. */
+.exlib-table tr:focus-within .rowact{opacity:1}
+@media (hover:none){.exlib-table .rowact{opacity:1}}
+
+/* Athlete header stats: number above label. */
+.cd-stat{display:flex;flex-direction:column;align-items:center}

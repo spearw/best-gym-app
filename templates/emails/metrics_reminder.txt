@@ -1,0 +1,9 @@
+Hi {{ athlete.user.get_short_name }},
+
+{{ coach.user.name|default:coach.user.email }} programs your percentages from your training numbers, and a few are missing:
+
+{% for label in labels %}  - {{ label }}
+{% endfor %}
+Add whichever you know here (skip any you don't):
+
+{{ url }}

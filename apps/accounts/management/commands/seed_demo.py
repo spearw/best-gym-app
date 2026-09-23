@@ -22,6 +22,7 @@ from apps.accounts.models import (
     User,
 )
 from apps.exercises.starter import install_starter_library
+from apps.workouts.models import CheckinQuestion, copy_defaults_to, install_default_questions
 
 DEMO_PASSWORD = "demo-password-123"
 TZ = "America/New_York"
@@ -116,6 +117,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         gym, _ = Gym.objects.update_or_create(name=GYM_NAME, defaults={"timezone": TZ, "units": "kg"})
         exercises = install_starter_library(gym)
+        install_default_questions(gym)
         today = gym.today()
 
         email, name, title = COACH
@@ -168,6 +170,8 @@ class Command(BaseCommand):
                     for key, kg, d in spec["maxes"]
                 ]
             )
+            if not CheckinQuestion.objects.for_athlete(athlete).filter(archived=False).exists():
+                copy_defaults_to(athlete)
             self.stdout.write(f"athlete {spec['email']}")
 
         self.stdout.write(

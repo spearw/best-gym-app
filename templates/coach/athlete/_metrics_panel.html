@@ -1,0 +1,21 @@
+<div id="metricsPanel">
+  <div class="metric-grid">
+    {% for m in cards %}
+      <div class="metric{% if m.missing %} missing{% endif %}">
+        <span class="l">{{ m.label }}</span>
+        <div class="v">{% if m.missing %}not provided — athlete skipped{% else %}{{ m.value }}{% if m.unit %} <span class="u">{{ m.unit }}</span>{% endif %}{% endif %}</div>
+        {% if m.date %}<span class="tiny muted">as of {{ m.date|date:"j M Y" }} · {{ m.source|lower }}</span>{% endif %}
+        <button class="edit iconbtn" type="button" aria-label="Edit {{ m.label }}" hx-get="{% url 'coach:metric_edit' athlete.pk m.key %}" hx-target="#modal" hx-swap="innerHTML"><span class="svgi svgi--pencil"></span></button>
+      </div>
+    {% endfor %}
+  </div>
+  {% if history %}
+  <div class="card" style="padding:14px 18px;margin-top:14px;max-width:720px">
+    <h4 style="font-size:.9rem;margin-bottom:6px">Recent measurements</h4>
+    <table class="client-table"><thead><tr><th>Date</th><th>What</th><th>Value</th><th>Entered by</th></tr></thead><tbody>
+      {% for h in history %}<tr><td class="tiny">{{ h.date|date:"j M Y" }}</td><td>{{ h.what }}</td><td class="mono">{{ h.value }}</td><td class="tiny muted">{{ h.source }}</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+  {% endif %}
+</div>
+{% if oob_header %}{% include "coach/athlete/_stats.html" %}{% endif %}

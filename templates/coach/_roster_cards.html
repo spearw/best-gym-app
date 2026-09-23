@@ -1,0 +1,17 @@
+<div id="clientCards">
+  {% if cards %}
+  <div class="kpi-row" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">
+    {% for card in cards %}{% with a=card.athlete %}
+      <a class="kpi" style="text-align:left;display:block" href="{% url 'coach:athlete_tab' a.pk 'metrics' %}">
+        <div class="row" style="gap:10px;margin-bottom:8px;flex-wrap:nowrap"><span class="avatar">{{ a.user.initials }}</span><span><b style="font-size:.95rem">{{ a.user.name|default:a.user.email }}</b><br><small class="tiny muted">{{ a.weight_class|default:"no class set" }}{% if a.competition_name %} · {{ a.competition_name }} {{ a.competition_date|date:"M j" }}{% endif %}</small></span></div>
+        {% if card.missing %}<span class="chip chip--warn">{{ card.missing }} metric{{ card.missing|pluralize }} missing</span>{% else %}<span class="chip chip--good">metrics complete</span>{% endif %}
+        <div class="tiny muted" style="margin-top:8px">joined {{ a.joined_at|date:"j M Y" }}</div>
+      </a>
+    {% endwith %}{% endfor %}
+  </div>
+  {% elif q %}
+    <p class="tiny muted">No athletes match “{{ q }}”.</p>
+  {% else %}
+    <div class="card" style="padding:20px 22px;max-width:640px"><h3 style="font-size:1.02rem;margin-bottom:6px">No athletes yet</h3><p class="tiny muted" style="margin:0">Invite your first athlete. They appear here once they create their account.</p></div>
+  {% endif %}
+</div>

@@ -8,10 +8,9 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps import hx
-from apps.exercises.models import Exercise
-from apps.exercises.starter import ONBOARDING_MAX_KEYS, install_starter_library
+from apps.exercises.starter import install_starter_library
+from apps.workouts.models import copy_defaults_to, install_default_questions
 
-from . import units
 from .access import athlete_required, coach_required, home_url_for
 from .emails import invite_url, send_invite_email
 from .forms import (
@@ -22,14 +21,13 @@ from .forms import (
     MetricsForm,
     clean_browser_timezone,
 )
+from .metrics import missing_metrics, save_metrics
 from .models import (
     Athlete,
-    BodyweightEntry,
     Coach,
     Gym,
     Invite,
     InviteStatus,
-    MaxEntry,
     MeasurementSource,
     User,
 )
@@ -61,6 +59,7 @@ def signup(request):
         with transaction.atomic():
             gym = Gym.objects.create(name=data["gym_name"], units=data["units"], timezone=tz)
             install_starter_library(gym)
+            install_default_questions(gym)
             user = User.objects.create_user(data["email"], data["password"], name=data["name"], timezone=tz)
             Coach.objects.create(user=user, gym=gym)
         login(request, user, backend="django.contrib.auth.backends.ModelBackend")
@@ -142,7 +141,10 @@ def join(request, token):
                 user = User.objects.create_user(
                     data["email"], data["password"], name=data["name"], timezone=tz
                 )
-            Athlete.objects.create(user=user, coach=invite.coach, gym=invite.gym, units=invite.gym.units)
+            athlete = Athlete.objects.create(
+                user=user, coach=invite.coach, gym=invite.gym, units=invite.gym.units
+            )
+            copy_defaults_to(athlete)
             invite.status = InviteStatus.ACCEPTED
             invite.accepted_by = user
             invite.accepted_at = timezone.now()
@@ -162,32 +164,7 @@ def welcome_metrics(request):
         request.session["onboarding_skipped"] = len(form.fields)
         return redirect("app:welcome_done")
     if request.method == "POST" and form.is_valid():
-        data = form.cleaned_data
-        today = athlete.today()
-        with transaction.atomic():
-            if data["bodyweight"] is not None:
-                BodyweightEntry.objects.create(
-                    athlete=athlete,
-                    date=today,
-                    kg=units.to_kg(data["bodyweight"], athlete.units),
-                    source=MeasurementSource.ONBOARDING,
-                )
-            exercises = {
-                e.key: e for e in Exercise.objects.filter(gym=athlete.gym, key__in=["sn", "cj", "bsq"])
-            }
-            for key, _label in ONBOARDING_MAX_KEYS:
-                if data[key] is not None and key in exercises:
-                    MaxEntry.objects.create(
-                        athlete=athlete,
-                        exercise=exercises[key],
-                        date=today,
-                        kg=units.to_kg(data[key], athlete.units),
-                        reps=1,
-                        source=MeasurementSource.ONBOARDING,
-                    )
-            athlete.height_cm = data["height_cm"]
-            athlete.years_training = data["years_training"] or ""
-            athlete.save(update_fields=["height_cm", "years_training"])
+        save_metrics(athlete, form.cleaned_data, source=MeasurementSource.ONBOARDING)
         request.session["onboarding_skipped"] = form.skipped_count()
         return redirect("app:welcome_done")
     return TemplateResponse(request, "accounts/welcome_metrics.html", {"form": form, "step": 2})
@@ -232,4 +209,25 @@ def settings_page(request):
         request,
         "coach/settings.html",
         {"panel": "settings", "title": "Settings", "form": form, "week_types": gym.week_types()},
+    )
+
+
+@athlete_required
+def update_numbers(request):
+    """Where the coach's reminder email points: fill in only the missing metrics."""
+    athlete = request.athlete
+    missing = missing_metrics(athlete)
+    if not missing:
+        messages.success(request, "All your numbers are in — nothing to add")
+        return redirect("app:profile")
+    form = MetricsForm(request.POST or None, units=athlete.units, only=missing)
+    if request.method == "POST" and form.is_valid():
+        filled = [k for k in missing if form.cleaned_data.get(k) not in (None, "")]
+        save_metrics(athlete, form.cleaned_data, source=MeasurementSource.ATHLETE)
+        coach = athlete.coach.user.get_short_name()
+        if filled:
+            messages.success(request, f"Thanks — {coach} can see your numbers")
+        return redirect("app:profile")
+    return TemplateResponse(
+        request, "accounts/update_numbers.html", {"form": form, "tab": "profile", "title": "Your numbers"}
     )

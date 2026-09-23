@@ -1,0 +1,13 @@
+{% extends "base_coach.html" %}
+{% block title %}Check-in questions{% endblock %}
+{% block page_title %}Programming{% endblock %}
+{% block content %}
+{% include "coach/programming/_tabs.html" %}
+<p class="tiny muted" style="margin:0 0 12px;max-width:720px">The default pre-session check-in. Every athlete gets their own copy of these when they join, which you can adjust from their Metrics tab. Changing the defaults here doesn't touch existing athletes unless you push them.</p>
+<div class="card" style="padding:16px 18px;max-width:720px">
+  {% include "workouts/_question_builder.html" %}
+  <div class="row" style="margin-top:12px;justify-content:flex-end">
+    <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:questions_push' %}" hx-target="#{{ builder_id }}" hx-swap="outerHTML" hx-confirm="Replace the check-in questions of all {{ athlete_count }} of your athletes with these defaults? Their past answers are kept.">Push defaults to all my athletes ({{ athlete_count }})</button>
+  </div>
+</div>
+{% endblock %}

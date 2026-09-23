@@ -1,0 +1,29 @@
+<div id="exlibResults">
+  <p class="tiny muted" style="margin:-6px 0 10px">{{ exercises|length }} exercise{{ exercises|length|pluralize }}{% if show_archived %} archived{% endif %}{% if q or tags %} matching{% endif %}</p>
+  <div class="card" style="overflow:hidden"><div style="overflow-x:auto">
+    <table class="exlib-table">
+      <thead><tr><th>Exercise</th><th>Category</th><th>Tags</th><th>% from</th><th>Demo video</th><th style="width:90px"></th></tr></thead>
+      <tbody>
+        {% for ex in exercises %}
+          <tr>
+            <td><b>{{ ex.name }}</b><br><span class="tiny muted">{{ ex.cue }}</span></td>
+            <td>{{ ex.get_category_display }}{% if ex.measure != "reps" %}<br><span class="tiny muted">by {{ ex.get_measure_display|lower }}</span>{% endif %}</td>
+            <td><span class="row" style="gap:4px">{% for t in ex.tags %}<span class="tagchip">{{ t }}</span>{% endfor %}</span></td>
+            <td class="tiny">{% if ex.percent_of %}{{ ex.percent_of.name }}{% else %}<span class="muted">own max</span>{% endif %}</td>
+            <td>{% if ex.youtube_url %}<a class="yt" href="{{ ex.youtube_url }}" target="_blank" rel="noopener" hx-boost="false">YouTube ↗</a>{% else %}<span class="tiny muted">none</span>{% endif %}</td>
+            <td><span class="rowact">
+              {% if ex.archived %}
+                <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:exercise_restore' ex.pk %}" hx-target="#exlibResults" hx-swap="none">Restore</button>
+              {% else %}
+                <button class="iconbtn tip" type="button" data-tip="Edit" aria-label="Edit {{ ex.name }}" hx-get="{% url 'coach:exercise_edit' ex.pk %}" hx-target="#modal" hx-swap="innerHTML"><span class="svgi svgi--pencil"></span></button>
+                <button class="iconbtn tip" type="button" data-tip="Archive" aria-label="Archive {{ ex.name }}" hx-post="{% url 'coach:exercise_archive' ex.pk %}" hx-target="#exlibResults" hx-swap="none" hx-confirm="Archive “{{ ex.name }}”? It disappears from the library but past sessions keep it. You can restore it later."><span class="svgi svgi--trash"></span></button>
+              {% endif %}
+            </span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="tiny muted" style="padding:22px;text-align:center">{% if show_archived %}No archived exercises.{% else %}No exercises match. Try fewer tags or a shorter search.{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>

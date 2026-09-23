@@ -12,5 +12,6 @@ urlpatterns = [
     path("coach/", views.messages, name="messages"),
     path("profile/", views.profile, name="profile"),
     path("welcome/", account_views.welcome_metrics, name="welcome_metrics"),
+    path("profile/numbers/", account_views.update_numbers, name="numbers"),
     path("welcome/done/", account_views.welcome_done, name="welcome_done"),
 ]

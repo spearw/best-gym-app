@@ -30,7 +30,7 @@ def test_coach_shell_boosted_navigation_keeps_sidebar(page: Page, base, coach, s
 
 def test_htmx_ping_swaps_fragment_and_shows_toast(page: Page, base, coach, sign_in):
     sign_in(page, coach.user)
-    page.goto(base + "/coach/programming/")
+    page.goto(base + "/coach/")
     page.get_by_role("button", name="Ping the server").click()
     expect(page.locator("#pingResult")).to_have_text("HTMX is wired")
     expect(page.locator("#toastStack .toast")).to_have_text("Server replied")

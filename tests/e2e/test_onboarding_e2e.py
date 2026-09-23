@@ -72,7 +72,7 @@ def test_coach_invites_and_athlete_onboards(page: Page, browser: Browser, base, 
 
     # Back on the coach's screen, the athlete shows up and the invite is gone.
     page.reload()
-    expect(page.locator(".client-table")).to_contain_text("Nia Park")
+    expect(page.locator("#clientCards")).to_contain_text("Nia Park")
     expect(page.locator("#inviteList")).to_contain_text("No pending invites")
 
 

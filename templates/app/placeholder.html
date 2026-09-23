@@ -10,6 +10,7 @@
 <div class="mcard">
   <div class="row" style="gap:14px"><span class="avatar avatar--lg">{{ user.initials }}</span><span><b style="font-family:var(--font-d);font-size:1.05rem">{{ user.name|default:user.email }}</b><br><span class="tiny muted">{{ current_gym.name }} · joined {{ request.athlete.joined_at|date:"M Y" }}</span></span></div>
 </div>
+{% if missing_count %}<a class="btn btn--brand btn--block" href="{% url 'app:numbers' %}" style="margin-bottom:8px">Add missing numbers ({{ missing_count }})</a>{% endif %}
 {% if user.coach_profile %}<a class="btn btn--ghost btn--block" href="{% url 'coach:dashboard' %}" style="margin-bottom:8px">Open the coach app</a>{% endif %}
 <form method="post" action="{% url 'accounts:logout' %}" hx-boost="false">{% csrf_token %}<button class="btn btn--soft btn--block" type="submit">Sign out</button></form>
 {% endif %}

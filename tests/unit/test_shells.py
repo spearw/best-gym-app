@@ -30,7 +30,7 @@ def test_index_sends_visitors_to_login(client):
     [
         ("/coach/", "Dashboard"),
         ("/coach/athletes/", "Athletes"),
-        ("/coach/programming/", "Programming"),
+        ("/coach/programming/exercises/", "Programming"),
         ("/coach/settings/", "Settings"),
     ],
 )
@@ -38,7 +38,8 @@ def test_coach_shell_marks_active_nav(coach_client, url, active):
     html = coach_client.get(url).content.decode()
     assert 'class="coach-shell"' in html
     assert 'hx-boost="true"' in html
-    assert f'navitem active" href="{url}"' in html
+    nav_href = "/coach/programming/" if active == "Programming" else url
+    assert f'navitem active" href="{nav_href}"' in html
     assert f"<h2>{active}</h2>" in html
     assert "Dana Whitfield" in html  # real signed-in coach in the sidebar
 

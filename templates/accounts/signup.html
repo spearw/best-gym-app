@@ -1,0 +1,19 @@
+{% extends "accounts/_auth_card.html" %}
+{% block title %}Create your gym{% endblock %}
+{% block left_note %}Coaches start here. Athletes join from their coach's invite.{% endblock %}
+{% block card %}
+<h3 style="font-size:1.1rem">Create your gym</h3>
+<p class="tiny muted" style="margin:0 0 4px">You'll get the starter exercise library and can invite athletes straight away.</p>
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+  {% include "partials/field.html" with field=form.name %}
+  {% include "partials/field.html" with field=form.email %}
+  {% include "partials/field.html" with field=form.password %}
+  {% include "partials/field.html" with field=form.gym_name %}
+  <div class="field"><label>Units</label><div class="radio-row">{{ form.units }}</div>{{ form.units.errors }}</div>
+  {{ form.browser_timezone }}
+  <button class="btn btn--brand btn--block" type="submit">Create gym</button>
+</form>
+<div class="auth-links"><span class="muted">Already have an account?</span><a href="{% url 'accounts:login' %}">Log in</a></div>
+{% endblock %}

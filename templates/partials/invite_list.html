@@ -1,0 +1,16 @@
+{% if pending_invites %}
+  <div class="stack" style="gap:8px">
+    {% for invite, url in pending_invites %}
+      <div class="spread" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;flex-wrap:wrap">
+        <span><b style="font-size:.88rem">{{ invite.email|default:"Link invite" }}</b><br><small class="muted">sent {{ invite.created_at|date:"j M" }} · expires {{ invite.expires_at|date:"j M" }}</small></span>
+        <span class="row" style="gap:6px">
+          <input class="sr" id="inv-{{ invite.pk }}" value="{{ url }}" readonly aria-hidden="true" tabindex="-1">
+          <button class="btn btn--ghost btn--sm" type="button" data-copy="#inv-{{ invite.pk }}">Copy link</button>
+          <button class="btn btn--danger btn--sm" type="button" hx-post="{% url 'coach:invite_revoke' invite.pk %}" hx-target="#inviteList" hx-swap="innerHTML" hx-confirm="Revoke this invite? The link will stop working.">Revoke</button>
+        </span>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="tiny muted" style="margin:0">No pending invites.</p>
+{% endif %}

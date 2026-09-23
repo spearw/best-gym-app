@@ -1,0 +1,6 @@
+{# Base for HTMX modals. Swap a template extending this into #modal; closeModal() or Escape empties it. #}
+<div class="scrim open" onclick="closeModal()"></div>
+<div class="modal open" role="dialog" aria-modal="true" aria-labelledby="modalTitle" {% block modal_attrs %}{% endblock %}>
+  <div class="modal-head"><h3 id="modalTitle">{% block modal_title %}{% endblock %}</h3><button class="close-x" type="button" onclick="closeModal()" aria-label="Close">✕</button></div>
+  {% block modal_content %}{% endblock %}
+</div>

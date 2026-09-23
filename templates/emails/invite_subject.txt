@@ -1,0 +1,1 @@
+{{ coach.user.name|default:coach.user.email }} invited you to train with {{ gym.name }}

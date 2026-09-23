@@ -1,0 +1,33 @@
+{% extends "base_coach.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<form method="post" novalidate class="stack" style="gap:18px;max-width:640px">
+  {% csrf_token %}
+  <div class="card" style="padding:20px">
+    <h4 style="font-size:.95rem;margin-bottom:12px">Gym</h4>
+    <div class="stack">
+      {% include "partials/field.html" with field=form.gym_name %}
+      {% include "partials/field.html" with field=form.coach_title %}
+      {% include "partials/field.html" with field=form.timezone %}
+      <div class="field"><label>Units</label><div class="radio-row">{{ form.units }}</div><span class="help">New athletes start with this unit. Weights are stored exactly, so switching never loses precision.</span></div>
+    </div>
+  </div>
+  <div class="card" style="padding:20px">
+    <div class="spread"><h4 style="font-size:.95rem">Week type colours</h4><button class="btn btn--ghost btn--sm" type="submit" name="reset_colours" value="1">Reset to defaults</button></div>
+    <p class="tiny muted">Week types colour-code the program editor, the athlete's week strip, and every session card, so a training phase is recognisable at a glance.</p>
+    <div class="stack" style="margin-top:10px">
+      {% for wt in week_types %}
+        {% with field_name="colour_"|add:wt.key %}
+        <div class="row" style="gap:10px">
+          {% for field in form %}{% if field.name == field_name %}{{ field }}{% endif %}{% endfor %}
+          <span class="wk-pill wk-{{ wt.key }}">{{ wt.label }}</span>
+          <span class="tiny muted">{{ wt.desc }}</span>
+          {% for field in form %}{% if field.name == field_name and field.errors %}<span class="errorlist">Use a colour like #2E9E5B</span>{% endif %}{% endfor %}
+        </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+  </div>
+  <div><button class="btn btn--brand" type="submit">Save settings</button></div>
+</form>
+{% endblock %}

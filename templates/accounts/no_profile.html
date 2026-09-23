@@ -1,0 +1,7 @@
+{% extends "accounts/_auth_card.html" %}
+{% block title %}Almost there{% endblock %}
+{% block card %}
+<h3 style="font-size:1.1rem">Your account isn't linked to a gym</h3>
+<p class="tiny muted">You're signed in as {{ user.email }}. Athletes join through an invite link from their coach. Coaches can create a gym.</p>
+<form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="btn btn--ghost btn--block" type="submit">Sign out</button></form>
+{% endblock %}

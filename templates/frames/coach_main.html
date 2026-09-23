@@ -7,4 +7,5 @@
       {% block topbar_actions %}{% endblock %}
     </div>
     {% block content %}{% endblock %}
+    {% if initial_toasts %}{{ initial_toasts|json_script:"initialToasts" }}{% endif %}
   </main>

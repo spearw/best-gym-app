@@ -1,10 +1,12 @@
 from django.contrib import admin
 from django.urls import include, path
 
-from apps.dashboard import views as dashboard_views
+from apps.accounts import views as account_views
 
 urlpatterns = [
-    path("", dashboard_views.index, name="index"),
+    path("", account_views.index, name="index"),
+    path("accounts/", include("apps.accounts.urls")),
+    path("join/<str:token>/", account_views.join),  # short invite links; same view as accounts:join
     path("coach/", include("apps.dashboard.urls")),
     path("app/", include("apps.workouts.urls")),
     path("admin/", admin.site.urls),

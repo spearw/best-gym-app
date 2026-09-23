@@ -1,0 +1,21 @@
+{% extends "frames/app_bare.html" %}
+{% block title %}Your training numbers{% endblock %}
+{% block content %}
+<div class="ob-wrap">
+  {% include "accounts/_onboard_head.html" with coach_name=request.athlete.coach.user.name gym_name=request.athlete.gym.name %}
+  <div class="ob-step active">
+    <h3>Your training numbers</h3>
+    <p class="tiny muted">{{ request.athlete.coach.user.get_short_name }} programs off these. <b>Skip anything you don't know</b> — your coach can fill it in later.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="stack" style="margin-top:14px">
+        {% for field in form %}
+          <div x-data="{ skipped: false }">{% include "partials/field.html" with field=field skip=True %}</div>
+        {% endfor %}
+      </div>
+      <button class="btn btn--brand btn--block" type="submit" style="margin-top:16px">Continue</button>
+      <button class="btn btn--soft btn--block" type="submit" name="skip_all" value="1" formnovalidate style="margin-top:8px">Skip all for now</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

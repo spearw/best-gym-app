@@ -3,4 +3,5 @@
 {% include "partials/app_tabbar.html" with oob=True %}
 <div class="app-body" id="app-body">
       {% block content %}{% endblock %}
+      {% if initial_toasts %}{{ initial_toasts|json_script:"initialToasts" }}{% endif %}
     </div>

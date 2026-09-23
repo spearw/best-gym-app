@@ -1,0 +1,28 @@
+{% extends "partials/modal.html" %}
+{% block modal_title %}Invite an athlete{% endblock %}
+{% block modal_content %}
+{% if invite %}
+  <div class="modal-body">
+    <p class="tiny muted" style="margin:0">{% if sent %}We emailed {{ invite.email }} a link. You can also share it yourself:{% else %}Share this link with your athlete. It works once and expires {{ invite.expires_at|date:"j M" }}.{% endif %}</p>
+    <div class="field"><label for="invLink">Invite link</label>
+      <div class="row" style="flex-wrap:nowrap"><input class="input mono" id="invLink" readonly value="{{ join_url }}" onclick="this.select()"><button class="btn btn--ghost" type="button" data-copy="#invLink">Copy</button></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn--ghost" type="button" hx-get="{% url 'coach:invite_new' %}" hx-target="#modal" hx-swap="innerHTML">Invite another</button>
+    <button class="btn btn--brand" type="button" onclick="closeModal()">Done</button>
+  </div>
+{% else %}
+  <form hx-post="{% url 'coach:invite_create' %}" hx-target="#modal" hx-swap="innerHTML" novalidate>
+    <div class="modal-body">
+      <p class="tiny muted" style="margin:0">They'll get a link to create an account, enter their metrics (skippable), and land on the week you assign.</p>
+      {% include "partials/field.html" with field=form.email %}
+      <p class="tiny muted" style="margin:0">Leave the email blank to just get a link you can text them.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn--ghost" type="button" onclick="closeModal()">Cancel</button>
+      <button class="btn btn--brand" type="submit">Create invite</button>
+    </div>
+  </form>
+{% endif %}
+{% endblock %}

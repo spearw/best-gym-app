@@ -1,0 +1,30 @@
+{% extends "base_coach.html" %}
+{% block title %}Athletes{% endblock %}
+{% block topbar_actions %}{% include "partials/invite_button.html" %}{% endblock %}
+{% block content %}
+<div class="dash-grid">
+  <div class="card" style="overflow:hidden">
+    <div class="spread" style="padding:16px 18px 0"><h3 style="font-size:1.02rem">Your athletes</h3><span class="tiny muted">{{ roster|length }} active</span></div>
+    {% if roster %}
+      <div style="overflow-x:auto"><table class="client-table">
+        <thead><tr><th>Athlete</th><th>Email</th><th>Joined</th></tr></thead>
+        <tbody>
+          {% for athlete in roster %}
+            <tr><td><div class="ct-name"><span class="avatar">{{ athlete.user.initials }}</span><span><b>{{ athlete.user.name|default:athlete.user.email }}</b><small>{{ athlete.weight_class|default:"—" }}</small></span></div></td>
+              <td class="tiny muted">{{ athlete.user.email }}</td><td class="tiny muted">{{ athlete.joined_at|date:"j M Y" }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table></div>
+    {% else %}
+      <p class="tiny muted" style="padding:14px 18px 18px;margin:0">No athletes yet. Invite your first one — they'll appear here once they create their account.</p>
+    {% endif %}
+    <p class="tiny muted" style="padding:0 18px 16px;margin:0">The full roster with compliance and attention flags arrives in phase 2.</p>
+  </div>
+  <div class="card" style="padding:16px 18px">
+    <h3 style="font-size:1rem;margin-bottom:10px">Pending invites</h3>
+    <div id="inviteList" hx-get="{% url 'coach:invite_list' %}" hx-trigger="invitesChanged from:body" hx-target="this" hx-swap="innerHTML">
+      {% include "partials/invite_list.html" %}
+    </div>
+  </div>
+</div>
+{% endblock %}

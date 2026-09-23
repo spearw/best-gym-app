@@ -1,5 +1,6 @@
 {% extends "base_coach.html" %}
 {% block title %}{{ title }}{% endblock %}
+{% block topbar_actions %}{% if panel == "dashboard" %}{% include "partials/invite_button.html" %}{% endif %}{% endblock %}
 {% block content %}
 <div class="card" style="padding:20px 22px;max-width:640px">
   <h3 style="font-size:1.02rem;margin-bottom:6px">{{ title }} is not built yet</h3>

@@ -1,0 +1,20 @@
+{% extends "accounts/_auth_card.html" %}
+{% block title %}Log in{% endblock %}
+{% block card %}
+<h3 style="font-size:1.1rem">Log in</h3>
+<p class="tiny muted" style="margin:0 0 4px">Coaches and athletes use the same login.</p>
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="field"><label for="id_username">Email</label><input class="input" type="email" name="username" id="id_username" autocomplete="email" autofocus required value="{{ form.username.value|default:'' }}"></div>
+  <div class="field"><label for="id_password">Password <a class="skip" href="{% url 'accounts:password_reset' %}">forgot?</a></label><input class="input" type="password" name="password" id="id_password" autocomplete="current-password" required></div>
+  <input type="hidden" name="next" value="{{ next }}">
+  <button class="btn btn--brand btn--block" type="submit">Log in</button>
+</form>
+<div class="or-line">or</div>
+<a class="role-btn" href="{% url 'accounts:signup' %}">
+  <span class="avatar"><span class="svgi svgi--users"></span></span>
+  <span><b>Create a gym</b><small>New coach · set up your team in a minute</small></span>
+  <span class="go">→</span>
+</a>
+{% endblock %}

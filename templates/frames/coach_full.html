@@ -6,10 +6,11 @@
   <aside class="snav">
     <a class="logo" href="{% url 'coach:dashboard' %}"><span class="logo-mark"><span class="svgi svgi--barbell"></span></span> <span class="lbl">Platform</span></a>
     {% include "partials/coach_nav.html" %}
+    {% if user.athlete_profile %}<a class="navitem" href="{% url 'app:home' %}" hx-boost="false"><span class="ico"><span class="svgi svgi--phone"></span></span><span class="lbl">My training</span></a>{% endif %}
     <div class="snav-foot">
-      <span class="avatar avatar--sm">{% if user.is_authenticated %}{{ user.initials }}{% else %}DW{% endif %}</span>
-      <span class="who"><b>{% if user.is_authenticated %}{{ user }}{% else %}Demo coach{% endif %}</b><small>Head coach</small></span>
-      <a class="iconbtn out" href="{% url 'index' %}" hx-boost="false" title="Sign out" aria-label="Sign out"><span class="svgi svgi--logout"></span></a>
+      <span class="avatar avatar--sm">{{ user.initials }}</span>
+      <span class="who"><b>{{ user }}</b><small>{{ user.coach.title|default:"Coach" }}</small></span>
+      <form method="post" action="{% url 'accounts:logout' %}" hx-boost="false" style="margin-left:auto">{% csrf_token %}<button class="iconbtn out" type="submit" title="Sign out" aria-label="Sign out"><span class="svgi svgi--logout"></span></button></form>
     </div>
   </aside>
   <main class="coach-main" id="coach-main">

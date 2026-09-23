@@ -18,10 +18,12 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django.contrib.postgres",
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     "django_htmx",
     "template_partials",
+    "anymail",
     "apps.accounts",
     "apps.exercises",
     "apps.library",
@@ -42,6 +44,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
+    "apps.accounts.middleware.UserTimezoneMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -58,6 +61,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.dashboard.context_processors.shell_frames",
+                "apps.accounts.context_processors.gym",
             ],
         },
     },
@@ -74,6 +78,10 @@ DATABASES = {
 }
 
 AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "index"
+LOGOUT_REDIRECT_URL = "accounts:login"
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24  # reset links last one day
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -95,6 +103,21 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Email: invites and password resets. Set EMAIL_PROVIDER to "resend" or "postmark"
+# and EMAIL_API_KEY to send for real; otherwise email is printed to the console.
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Platform <no-reply@localhost>")
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+EMAIL_PROVIDER = os.environ.get("EMAIL_PROVIDER", "").lower()
+_email_key = os.environ.get("EMAIL_API_KEY", "")
+if EMAIL_PROVIDER == "resend" and _email_key:
+    EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
+    ANYMAIL = {"RESEND_API_KEY": _email_key}
+elif EMAIL_PROVIDER == "postmark" and _email_key:
+    EMAIL_BACKEND = "anymail.backends.postmark.EmailBackend"
+    ANYMAIL = {"POSTMARK_SERVER_TOKEN": _email_key}
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 LOGGING = {
     "version": 1,

@@ -1,0 +1,7 @@
+{# One form field in the mockup's .field style. Usage: {% include "partials/field.html" with field=form.email %} #}
+<div class="field">
+  <label for="{{ field.id_for_label }}">{{ field.label }}{% if skip %} <span class="skip" @click="skipped = true; $refs.i.value = ''" x-text="skipped ? 'skipped' : 'skip'">skip</span>{% endif %}</label>
+  {{ field }}
+  {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+  {{ field.errors }}
+</div>

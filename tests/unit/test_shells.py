@@ -20,9 +20,9 @@ def test_healthz_skips_host_check_and_https_redirect(client):
     assert response.status_code == 200
 
 
-def test_index_links_to_both_shells(client):
-    html = client.get("/").content.decode()
-    assert 'href="/coach/"' in html and 'href="/app/"' in html
+def test_index_sends_visitors_to_login(client):
+    response = client.get("/")
+    assert response.status_code == 302 and response["Location"] == "/accounts/login/"
 
 
 @pytest.mark.parametrize(
@@ -34,23 +34,24 @@ def test_index_links_to_both_shells(client):
         ("/coach/settings/", "Settings"),
     ],
 )
-def test_coach_shell_marks_active_nav(client, url, active):
-    html = client.get(url).content.decode()
+def test_coach_shell_marks_active_nav(coach_client, url, active):
+    html = coach_client.get(url).content.decode()
     assert 'class="coach-shell"' in html
     assert 'hx-boost="true"' in html
     assert f'navitem active" href="{url}"' in html
     assert f"<h2>{active}</h2>" in html
+    assert "Dana Whitfield" in html  # real signed-in coach in the sidebar
 
 
 @pytest.mark.parametrize("url", ["/app/", "/app/progress/", "/app/coach/", "/app/profile/"])
-def test_athlete_shell_renders(client, url):
-    html = client.get(url).content.decode()
+def test_athlete_shell_renders(athlete_client, url):
+    html = athlete_client.get(url).content.decode()
     assert 'class="phone"' in html and 'id="mTabbar"' in html
     assert f'class="active" href="{url}"' in html
 
 
-def test_base_layout_loads_htmx_alpine_and_ported_css(client):
-    html = client.get("/coach/").content.decode()
+def test_base_layout_loads_htmx_alpine_and_ported_css(coach_client):
+    html = coach_client.get("/coach/").content.decode()
     for asset in [
         "htmx-2.0.11.min.js",
         "alpine-3.17.4.min.js",
@@ -63,8 +64,8 @@ def test_base_layout_loads_htmx_alpine_and_ported_css(client):
     assert '"X-CSRFToken"' in html  # CSRF header for every HTMX request
 
 
-def test_ping_returns_fragment_and_toast_trigger(client):
-    response = client.get("/coach/ping/", HTTP_HX_REQUEST="true")
+def test_ping_returns_fragment_and_toast_trigger(coach_client):
+    response = coach_client.get("/coach/ping/", HTTP_HX_REQUEST="true")
     assert 'id="pingResult"' in response.content.decode()
     assert json.loads(response["HX-Trigger"])["toast"]["kind"] == "good"
 
@@ -74,8 +75,8 @@ def test_nightly_command_runs(capsys):
     assert "database reachable" in capsys.readouterr().out
 
 
-def test_boosted_coach_request_returns_only_main_and_oob_nav(client):
-    html = client.get(
+def test_boosted_coach_request_returns_only_main_and_oob_nav(coach_client):
+    html = coach_client.get(
         "/coach/athletes/", HTTP_HX_REQUEST="true", HTTP_HX_BOOSTED="true", HTTP_HX_TARGET="coach-main"
     ).content.decode()
     assert "<aside" not in html and "<html" not in html
@@ -84,9 +85,20 @@ def test_boosted_coach_request_returns_only_main_and_oob_nav(client):
     assert "<title>Athletes · Platform</title>" in html
 
 
-def test_boosted_app_request_returns_only_body_and_oob_tabbar(client):
-    html = client.get(
+def test_boosted_app_request_returns_only_body_and_oob_tabbar(athlete_client):
+    html = athlete_client.get(
         "/app/profile/", HTTP_HX_REQUEST="true", HTTP_HX_BOOSTED="true", HTTP_HX_TARGET="app-body"
     ).content.decode()
     assert 'class="phone"' not in html and 'id="app-body"' in html
     assert 'id="mTabbar" hx-swap-oob="true"' in html
+
+
+def test_hx_trigger_header_is_ascii_json_even_with_unicode():
+    from django.http import HttpResponse
+
+    from apps import hx
+
+    response = hx.toast(HttpResponse(), "Link created — share it", "good")
+    header = response["HX-Trigger"]
+    assert header.isascii()
+    assert json.loads(header)["toast"]["message"] == "Link created — share it"

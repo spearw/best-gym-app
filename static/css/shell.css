@@ -17,3 +17,24 @@ a.role-btn{color:inherit}
 
 /* Feedback while an HTMX request from a button is in flight. */
 .htmx-request.btn{opacity:.7}
+
+/* Form errors (the mockup had no server validation). */
+.errorlist{list-style:none;margin:2px 0 0;padding:0;color:var(--bad);font-size:.76rem;font-weight:500}
+.form-errors{background:var(--bad-lt);color:var(--bad);border-radius:10px;padding:10px 12px;font-size:.82rem}
+.form-errors .errorlist{margin:0}
+.field .help{font-size:.72rem;color:var(--ink-4)}
+.input:disabled{background:var(--surface-2);color:var(--ink-4)}
+
+/* Radio groups rendered by Django (units, etc.). */
+.radio-row{display:flex;gap:16px;flex-wrap:wrap}
+.radio-row label{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;font-weight:500;color:var(--ink)}
+.radio-row ul,.radio-row > div{display:flex;gap:16px;list-style:none;margin:0;padding:0}
+
+/* Week-type colour pickers on Settings. */
+.colour-input{width:44px;height:30px;padding:2px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer}
+
+/* Auth pages use the login card; its right side holds a form. */
+.login-right form{display:flex;flex-direction:column;gap:12px}
+.auth-links{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.8rem}
+.auth-links a{color:var(--brand);font-weight:600}
+.onboard .app-body{padding-bottom:24px}

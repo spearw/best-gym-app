@@ -8,7 +8,6 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
 STORAGES["staticfiles"] = {  # noqa: F405
     "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
 }
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # WhiteNoise warns that STATIC_ROOT does not exist; in development runserver serves static files itself.
 warnings.filterwarnings("ignore", message="No directory at", module="whitenoise.base")

@@ -6,9 +6,9 @@ from playwright.sync_api import Page, expect
 pytestmark = pytest.mark.django_db(transaction=True)
 
 
-def test_coach_shell_boosted_navigation_keeps_sidebar(page: Page, base):
+def test_coach_shell_boosted_navigation_keeps_sidebar(page: Page, base, coach, sign_in):
+    sign_in(page, coach.user)
     page.goto(base + "/")
-    page.get_by_role("link", name=re.compile("Coach app")).click()
     expect(page).to_have_url(base + "/coach/")
     expect(page.locator(".snav")).to_be_visible()
     assert page.evaluate("typeof window.htmx") == "object"
@@ -28,21 +28,24 @@ def test_coach_shell_boosted_navigation_keeps_sidebar(page: Page, base):
     assert bg == "rgb(20, 24, 31)"
 
 
-def test_htmx_ping_swaps_fragment_and_shows_toast(page: Page, base):
+def test_htmx_ping_swaps_fragment_and_shows_toast(page: Page, base, coach, sign_in):
+    sign_in(page, coach.user)
     page.goto(base + "/coach/programming/")
     page.get_by_role("button", name="Ping the server").click()
     expect(page.locator("#pingResult")).to_have_text("HTMX is wired")
     expect(page.locator("#toastStack .toast")).to_have_text("Server replied")
 
 
-def test_athlete_shell_fills_a_phone_screen_and_tabs_work(page: Page, base):
+def test_athlete_shell_fills_a_phone_screen_and_tabs_work(page: Page, base, athlete, sign_in):
+    sign_in(page, athlete.user)
     page.set_viewport_size({"width": 390, "height": 844})
-    page.goto(base + "/app/")
+    page.goto(base + "/")
+    expect(page).to_have_url(base + "/app/")
     phone = page.locator(".phone")
     expect(phone).to_be_visible()
     box = phone.bounding_box()
     assert box["width"] == 390 and box["height"] == 844
-    expect(page.locator(".phone-exit")).to_be_hidden()
+    expect(page.locator(".app-head")).to_contain_text("Hi, Maya")
 
     page.locator("#mTabbar a", has_text="Progress").click()
     expect(page).to_have_url(base + "/app/progress/")

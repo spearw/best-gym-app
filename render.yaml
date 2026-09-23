@@ -30,6 +30,13 @@ services:
         fromDatabase:
           name: gymtrainer-db
           property: connectionString
+      # Email for invites and password resets. Set these in the Render dashboard.
+      - key: EMAIL_PROVIDER
+        sync: false
+      - key: EMAIL_API_KEY
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
 
   - type: cron
     name: gymtrainer-nightly

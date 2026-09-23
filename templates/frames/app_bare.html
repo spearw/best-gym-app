@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{# The phone frame with no header or tab bar: onboarding and invite pages. #}
+{% block body_class %}athlete onboard{% endblock %}
+{% block body %}
+<div class="phone-stage">
+  <div class="phone">
+    <div class="app-body" id="app-body">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{# The mockup's login card: brand panel on the left, the form on the right. #}
+{% block body %}
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-left">
+      <div class="logo"><span class="logo-mark"><span class="svgi svgi--barbell"></span></span> Platform</div>
+      <h1 style="margin-top:26px">Every athlete's training history, right where you program.</h1>
+      <p style="opacity:.75;font-size:.9rem;max-width:38ch">Build weekly programs, deliver sessions to your athletes' phones, and review results as they come in — with each athlete's complete lift history beside the editor.</p>
+      <div class="demo-note">{% block left_note %}Athletes join by invite from their coach.{% endblock %}</div>
+    </div>
+    <div class="login-right">
+      {% block card %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

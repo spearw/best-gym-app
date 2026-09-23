@@ -1,0 +1,5 @@
+<div class="invite-card">
+  <small>You've been invited by</small><br>
+  <b>{{ coach_name }} — {{ gym_name }}</b>
+</div>
+<div class="ob-progress" aria-label="Step {{ step }} of 3">{% for i in "123" %}<i{% if forloop.counter <= step %} class="on"{% endif %}></i>{% endfor %}</div>

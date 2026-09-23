@@ -1,0 +1,9 @@
+Hi,
+
+{{ coach.user.name|default:coach.user.email }} has invited you to {{ gym.name }} on Platform, where your programming, sessions and progress live.
+
+Create your account here (it takes a minute; you can skip any numbers you don't know):
+
+{{ join_url }}
+
+This link works once and expires on {{ invite.expires_at|date:"j F Y" }}.

@@ -1,0 +1,29 @@
+{% extends "frames/app_bare.html" %}
+{% block title %}Join {{ invite.gym.name }}{% endblock %}
+{% block content %}
+<div class="ob-wrap">
+  {% include "accounts/_onboard_head.html" with coach_name=invite.coach.user.name gym_name=invite.gym.name %}
+  <div class="ob-step active">
+    {% if form %}
+      <h3>Create your account</h3>
+      <p class="tiny muted">Just the basics — training details come next.</p>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="stack" style="margin-top:14px">
+          {% include "partials/field.html" with field=form.name %}
+          {% include "partials/field.html" with field=form.email %}
+          {% include "partials/field.html" with field=form.password %}
+        </div>
+        {{ form.browser_timezone }}
+        <button class="btn btn--brand btn--block" type="submit" style="margin-top:16px">Create account</button>
+      </form>
+      <p class="tiny muted" style="margin-top:12px;text-align:center">Already have an account? <a href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}" style="color:var(--brand);font-weight:600">Log in to accept</a></p>
+    {% else %}
+      <h3>Join as {{ user.name|default:user.email }}</h3>
+      <p class="tiny muted">You're signed in. Accept to add an athlete profile with {{ invite.gym.name }} to your account.</p>
+      <form method="post">{% csrf_token %}<button class="btn btn--brand btn--block" type="submit" style="margin-top:16px">Accept invite</button></form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,235 @@
+from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.shortcuts import get_object_or_404, redirect
+from django.template.response import TemplateResponse
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from apps import hx
+from apps.exercises.models import Exercise
+from apps.exercises.starter import ONBOARDING_MAX_KEYS, install_starter_library
+
+from . import units
+from .access import athlete_required, coach_required, home_url_for
+from .emails import invite_url, send_invite_email
+from .forms import (
+    CoachSignupForm,
+    GymSettingsForm,
+    InviteForm,
+    JoinForm,
+    MetricsForm,
+    clean_browser_timezone,
+)
+from .models import (
+    Athlete,
+    BodyweightEntry,
+    Coach,
+    Gym,
+    Invite,
+    InviteStatus,
+    MaxEntry,
+    MeasurementSource,
+    User,
+)
+
+
+def index(request):
+    if request.user.is_authenticated:
+        return redirect(home_url_for(request.user))
+    return redirect("accounts:login")
+
+
+@login_required
+def no_profile(request):
+    if request.user.coach_profile or request.user.athlete_profile:
+        return redirect(home_url_for(request.user))
+    return TemplateResponse(request, "accounts/no_profile.html")
+
+
+# ---------------------------------------------------------------- coach sign-up
+
+
+def signup(request):
+    if request.user.is_authenticated:
+        return redirect(home_url_for(request.user))
+    form = CoachSignupForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        tz = clean_browser_timezone(data["browser_timezone"], "UTC")
+        with transaction.atomic():
+            gym = Gym.objects.create(name=data["gym_name"], units=data["units"], timezone=tz)
+            install_starter_library(gym)
+            user = User.objects.create_user(data["email"], data["password"], name=data["name"], timezone=tz)
+            Coach.objects.create(user=user, gym=gym)
+        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        messages.success(request, f"Welcome to Platform, {user.get_short_name()}")
+        return redirect("coach:dashboard")
+    return TemplateResponse(request, "accounts/signup.html", {"form": form})
+
+
+# ---------------------------------------------------------------- invites (coach side)
+
+
+@coach_required
+def invite_new(request):
+    return TemplateResponse(request, "partials/invite_modal.html", {"form": InviteForm()})
+
+
+@coach_required
+@require_POST
+def invite_create(request):
+    form = InviteForm(request.POST)
+    if not form.is_valid():
+        return TemplateResponse(request, "partials/invite_modal.html", {"form": form})
+    email = form.cleaned_data["email"]
+    invite = Invite.objects.create(coach=request.coach, email=email)
+    join_url = invite_url(request, invite)
+    if email:
+        send_invite_email(request, invite)
+        toast = f"Invite sent to {email}"
+    else:
+        toast = "Invite link created — share it with your athlete"
+    response = TemplateResponse(
+        request, "partials/invite_modal.html", {"invite": invite, "join_url": join_url, "sent": bool(email)}
+    )
+    return hx.trigger(response, toast={"message": toast, "kind": "good"}, invitesChanged=True)
+
+
+@coach_required
+def invite_list(request):
+    return TemplateResponse(request, "partials/invite_list.html", _invite_list_context(request))
+
+
+def _invite_list_context(request):
+    pending = [i for i in request.coach.invites.filter(status=InviteStatus.PENDING) if not i.is_expired]
+    return {"pending_invites": [(i, invite_url(request, i)) for i in pending]}
+
+
+@coach_required
+@require_POST
+def invite_revoke(request, pk):
+    invite = get_object_or_404(Invite, pk=pk, coach=request.coach, status=InviteStatus.PENDING)
+    invite.status = InviteStatus.REVOKED
+    invite.save(update_fields=["status"])
+    response = TemplateResponse(request, "partials/invite_list.html", _invite_list_context(request))
+    return hx.toast(response, "Invite revoked")
+
+
+# ---------------------------------------------------------------- joining (athlete side)
+
+
+def join(request, token):
+    invite = Invite.objects.select_related("coach__user", "coach__gym").filter(token=token).first()
+    if invite is None or not invite.is_usable:
+        return TemplateResponse(request, "accounts/join_invalid.html", {"invite": invite}, status=410)
+
+    user = request.user if request.user.is_authenticated else None
+    if user and user.athlete_profile:
+        messages.warning(request, "You already have an athlete account.")
+        return redirect("app:home")
+
+    form = None if user else JoinForm(request.POST or None, invite_email=invite.email)
+    if request.method == "POST" and (user or form.is_valid()):
+        with transaction.atomic():
+            invite = Invite.objects.select_for_update().get(pk=invite.pk)
+            if not invite.is_usable:
+                return TemplateResponse(request, "accounts/join_invalid.html", {"invite": invite}, status=410)
+            if user is None:
+                data = form.cleaned_data
+                tz = clean_browser_timezone(data["browser_timezone"], invite.gym.timezone)
+                user = User.objects.create_user(
+                    data["email"], data["password"], name=data["name"], timezone=tz
+                )
+            Athlete.objects.create(user=user, coach=invite.coach, gym=invite.gym, units=invite.gym.units)
+            invite.status = InviteStatus.ACCEPTED
+            invite.accepted_by = user
+            invite.accepted_at = timezone.now()
+            invite.save(update_fields=["status", "accepted_by", "accepted_at"])
+        if not request.user.is_authenticated:
+            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        return redirect("app:welcome_metrics")
+
+    return TemplateResponse(request, "accounts/join.html", {"invite": invite, "form": form, "step": 1})
+
+
+@athlete_required
+def welcome_metrics(request):
+    athlete = request.athlete
+    form = MetricsForm(request.POST or None, units=athlete.units)
+    if request.method == "POST" and "skip_all" in request.POST:
+        request.session["onboarding_skipped"] = len(form.fields)
+        return redirect("app:welcome_done")
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        today = athlete.today()
+        with transaction.atomic():
+            if data["bodyweight"] is not None:
+                BodyweightEntry.objects.create(
+                    athlete=athlete,
+                    date=today,
+                    kg=units.to_kg(data["bodyweight"], athlete.units),
+                    source=MeasurementSource.ONBOARDING,
+                )
+            exercises = {
+                e.key: e for e in Exercise.objects.filter(gym=athlete.gym, key__in=["sn", "cj", "bsq"])
+            }
+            for key, _label in ONBOARDING_MAX_KEYS:
+                if data[key] is not None and key in exercises:
+                    MaxEntry.objects.create(
+                        athlete=athlete,
+                        exercise=exercises[key],
+                        date=today,
+                        kg=units.to_kg(data[key], athlete.units),
+                        reps=1,
+                        source=MeasurementSource.ONBOARDING,
+                    )
+            athlete.height_cm = data["height_cm"]
+            athlete.years_training = data["years_training"] or ""
+            athlete.save(update_fields=["height_cm", "years_training"])
+        request.session["onboarding_skipped"] = form.skipped_count()
+        return redirect("app:welcome_done")
+    return TemplateResponse(request, "accounts/welcome_metrics.html", {"form": form, "step": 2})
+
+
+@athlete_required
+def welcome_done(request):
+    skipped = request.session.pop("onboarding_skipped", 0)
+    return TemplateResponse(
+        request,
+        "accounts/welcome_done.html",
+        {"skipped": skipped, "all_skipped": skipped >= len(MetricsForm().fields), "step": 3},
+    )
+
+
+# ---------------------------------------------------------------- gym settings
+
+
+@coach_required
+def settings_page(request):
+    gym = request.coach.gym
+    initial = {
+        "gym_name": gym.name,
+        "coach_title": request.coach.title,
+        "timezone": gym.timezone,
+        "units": gym.units,
+    }
+    form = GymSettingsForm(request.POST or None, initial=initial, gym=gym)
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        gym.name = data["gym_name"]
+        gym.timezone = data["timezone"]
+        gym.units = data["units"]
+        gym.week_type_colours = {} if "reset_colours" in request.POST else form.colour_overrides()
+        gym.full_clean()
+        gym.save()
+        request.coach.title = data["coach_title"]
+        request.coach.save(update_fields=["title"])
+        messages.success(request, "Settings saved")
+        return redirect("coach:settings")
+    return TemplateResponse(
+        request,
+        "coach/settings.html",
+        {"panel": "settings", "title": "Settings", "form": form, "week_types": gym.week_types()},
+    )

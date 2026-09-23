@@ -7,7 +7,7 @@ from django.contrib.auth import password_validation
 from apps.exercises.starter import PACK_CHOICES, PACKS
 
 from .metrics import metric_specs
-from .models import Units, User, YearsTraining
+from .models import Units, User, WeekStart, YearsTraining
 
 
 def timezone_choices():
@@ -160,6 +160,13 @@ class GymSettingsForm(InputClassMixin, forms.Form):
     coach_title = forms.CharField(max_length=60, required=False, label="Your title")
     timezone = forms.ChoiceField(label="Gym time zone")
     units = forms.ChoiceField(choices=Units.choices, widget=forms.RadioSelect)
+    week_start = forms.TypedChoiceField(
+        choices=WeekStart.choices,
+        coerce=int,
+        widget=forms.RadioSelect,
+        label="Training weeks start on",
+        help_text="Used for new programs. Existing programs keep their dates.",
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

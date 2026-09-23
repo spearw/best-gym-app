@@ -26,11 +26,21 @@ def check_deletable(exercise):
 
 def deletion_impact(exercise):
     """What deleting this exercise would remove or change, for the warning."""
+    from apps.programs.models import Prescription
+
     maxes = MaxEntry.objects.filter(exercise=exercise)
+    prescriptions = Prescription.objects.filter(exercise=exercise)
+    programmed_for = (
+        prescriptions.order_by("session__day__week__program__athlete__user__name")
+        .values_list("session__day__week__program__athlete__user__name", flat=True)
+        .distinct()
+    )
     athletes = maxes.order_by("athlete__user__name").values_list("athlete__user__name", flat=True).distinct()
     return {
         "max_entries": maxes.count(),
         "athletes": list(athletes),
+        "prescriptions": prescriptions.count(),
+        "programmed_for": list(programmed_for),
         "dependents": list(
             Exercise.objects.filter(percent_of=exercise).order_by("name").values_list("name", flat=True)
         ),
@@ -41,7 +51,10 @@ def deletion_impact(exercise):
 def delete_exercise(exercise):
     check_deletable(exercise)
     impact = deletion_impact(exercise)
+    from apps.programs.models import Prescription
+
     MaxEntry.objects.filter(exercise=exercise).delete()
+    Prescription.objects.filter(exercise=exercise).delete()
     Exercise.objects.filter(percent_of=exercise).update(percent_of=None)  # fall back to their own max
     TrackedLift.objects.filter(
         exercise=exercise

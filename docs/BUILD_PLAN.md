@@ -129,7 +129,7 @@ Read top-down: the gym owns libraries, libraries are copied onto an athlete's pr
 | Model | Key fields | Notes |
 | --- | --- | --- |
 | User | email (login), password, name, timezone | Custom `AbstractUser`, set before the first migration. No role column: a Coach row makes a coach, an Athlete row makes an athlete, and one user can have both. After login the coach app wins when both exist, with a switcher |
-| Gym | name, units (kg / lb), timezone | Owns the exercise library, categories, tags, week types, templates and default check-in questions. Created with the first coach account, who picks a starter pack (see below) |
+| Gym | name, units (kg / lb), timezone, week_start (Monday or Sunday) | Owns the exercise library, categories, tags, week types, templates and default check-in questions. Created with the first coach account, who picks a starter pack (see below) |
 | Coach | user, gym, title | |
 | Athlete | user, coach, gym, weight_class, competition_name, competition_date, height_cm, years_training, units (defaults from gym), joined_at, archived_at | Archive, never delete, so session history survives. Bodyweight and maxes are history tables below, not columns here. The athlete's time zone is `User.timezone`, defaulted from the gym when they join |
 | Invite | coach, email, token, starting_template, status, expires_at, accepted_by | Backs the invite link and onboarding |
@@ -195,9 +195,9 @@ One `Template` model with a `kind` field replaces the mockup's three lists (temp
 
 | Model | Key fields | Notes |
 | --- | --- | --- |
-| Program | athlete, block_name, active, source_template, created_at | One active program per athlete, enforced by a partial unique index; old ones are kept for history |
-| ProgramWeek | program, order, week_type (FK WeekType), start_date (Monday), focus_note, published | The coach's "focus this week" note lives here. The athlete app reads published weeks only; the label ("Wk 3") is derived |
-| ProgramDay | week, date, is_rest | Unique on (week, date). No status column: done, missed and today are worked out from session logs and the date (see derived values) |
+| Program | athlete, name (the block), start_date, active, source_template (phase 5), created_by, created_at | One active program per athlete, enforced by a partial unique index; starting a new one ends the current one, which is kept for history. Weeks are back-to-back from start_date |
+| ProgramWeek | program, order, week_type (FK WeekType), start_date (the gym's week-start day when the program began), focus_note, published, published_at | The coach's "focus this week" note lives here. The athlete app reads published weeks only; edits to a published week are live immediately. Weeks are consecutive: inserting or deleting one shifts every later week's dates. The label ("Wk 3") is derived |
+| ProgramDay | week, date | Seven per week, unique on (week, date). No status or rest flag: a day with no sessions in a published week is a rest day, and done, missed and today are worked out from session logs and the date (see derived values) |
 | ProgramSession | day, order, name, source_template_session | Usually one per day; a second one covers morning and evening sessions. The mockup shows one, so the UI adds a second only on demand |
 | Prescription | session, order, exercise, tag_slot_tags (M2M Tag, empty when fixed), plus every PrescriptionBase field | Tags are rows, not strings, so renaming a tag updates slots and prescriptions too |
 | PrescribedSet | prescription, set_number, reps, load_value | Per-set overrides |
@@ -210,7 +210,7 @@ One `Template` model with a `kind` field replaces the mockup's three lists (temp
 | Model | Key fields | Notes |
 | --- | --- | --- |
 | SessionLog | athlete, program_session (nullable), started_at, finished_at, name, week_type (FK WeekType), checkin_skipped, session_rpe, comment | One per workout; a paused session has no finished_at. Nullable link so an athlete can log an unprogrammed session |
-| SessionExercise | session_log, prescription (nullable), exercise, order | Holds "asked for X" beside "did Y". The link survives later edits to the prescription, and the coach's Sessions tab shows both |
+| SessionExercise | session_log, prescription (nullable), exercise, order, prescribed (JSON snapshot of the prescription and its per-set overrides when the session was logged) | Holds "asked for X" beside "did Y". Coaches may still edit a completed day, so "asked for" is read from the snapshot, never from the live prescription |
 | SetLog | session_exercise, set_number, load_kg (Decimal 6,2), reps, duration_seconds, rir, done, logged_at | Loads always in kg, exact; a complex logs one rep of the complex; timed work logs seconds and null reps |
 | CheckinQuestion | owner (gym defaults or one athlete), order, type (scale / multiple choice), text, low_label, high_label, options (JSON), archived | Each athlete gets a copy on join; "push defaults" overwrites copies. Archive rather than delete so old answers keep their question |
 | CheckinAnswer | session_log, question (FK), question_text (snapshot), type, value, other_text | The FK keeps trend charts working after a reword; the snapshot keeps history readable if the question is archived |
@@ -484,6 +484,13 @@ The review settled most of the original list. What remains is below; decide the 
 - Categories, tags and week types are per gym and editable. Tag names are at most 24 characters.
 - Deleting a category that has exercises offers to move them to another category.
 - A new gym chooses a starter pack: Olympic weightlifting, General strength, or Start empty (no exercises, basic categories and week types).
+
+### Decided (23 September, before phase 3)
+
+- Program weeks are back-to-back calendar weeks; inserting or deleting a week shifts every later week.
+- Each gym sets whether its week starts on Monday (default) or Sunday.
+- Edits to a published week go live immediately; the week shows a "live" badge and can be unpublished.
+- Days with a completed session stay editable; each logged session keeps a snapshot of what was prescribed.
 
 ### Still open
 

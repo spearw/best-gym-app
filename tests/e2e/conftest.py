@@ -37,3 +37,23 @@ def htmx_idle(page):
         "() => window.htmx && !document.querySelector("
         "'.htmx-request, .htmx-swapping, .htmx-settling, .htmx-added')"
     )
+
+
+@pytest.fixture(autouse=True)
+def no_browser_errors(request):
+    """Fail any browser test whose page logs a JavaScript or HTMX error (e.g. htmx:syntax:error
+    from a malformed hx-trigger), even if the assertions it makes still pass."""
+    if "page" not in request.fixturenames:
+        yield
+        return
+    page = request.getfixturevalue("page")
+    errors = []
+    page.on("pageerror", lambda exc: errors.append(f"page error: {exc}"))
+
+    def on_console(msg):
+        if msg.type == "error":
+            errors.append(f"console {msg.type}: {msg.text}")
+
+    page.on("console", on_console)
+    yield
+    assert not errors, "Browser errors:\n" + "\n".join(errors)

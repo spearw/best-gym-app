@@ -68,7 +68,7 @@ def test_coach_fills_a_skipped_metric(page: Page, base, coach, athlete, sign_in)
 
     page.locator(".tabs").get_by_role("link", name="Program", exact=True).click()
     expect(page.locator(".tabs a.active")).to_have_text("Program")
-    expect(page.locator("#coach-main")).to_contain_text("arrives in phase 3")
+    expect(page.locator("#coach-main")).to_contain_text("Start a program for Maya")
 
 
 def test_question_builder_edits_an_athletes_copy(page: Page, base, coach, athlete, sign_in):

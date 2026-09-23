@@ -23,7 +23,7 @@ from .views import _invite_list_context
 
 DETAIL_TABS = [
     ("overview", "Overview", 7),
-    ("program", "Program", 3),
+    ("program", "Program", None),
     ("sessions", "Sessions", 4),
     ("metrics", "Metrics", None),
     ("messages", "Messages", 6),

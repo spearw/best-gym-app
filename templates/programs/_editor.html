@@ -1,0 +1,98 @@
+{# The whole editor for one week. Every change redraws this block. #}
+<div id="programEditor">
+  <div class="spread" style="margin-bottom:12px;flex-wrap:wrap;gap:10px">
+    <div class="row">
+      <h3 style="font-size:1.02rem">{{ program.name }}</h3>
+      <span class="tiny muted">started {{ program.start_date|date:"j M Y" }} · {{ weeks|length }} week{{ weeks|length|pluralize }}</span>
+      <button class="btn btn--ghost btn--sm" type="button" hx-get="{% url 'coach:program_start' athlete.pk %}" hx-target="#modal" hx-swap="innerHTML">Start a new program</button>
+    </div>
+    <div class="segmini" role="group" aria-label="Board layout">
+      <button type="button" :aria-pressed="(view === 'cols').toString()" @click="setView('cols')">Columns</button>
+      <button type="button" :aria-pressed="(view === 'list').toString()" @click="setView('list')">List</button>
+    </div>
+  </div>
+
+  <nav class="month-strip" aria-label="Weeks">
+    {% for w in weeks %}
+      <a class="wk-tab{% if w.pk == week.pk %} sel{% endif %}" style="{{ w.week_type.css_vars }}" href="{% url 'coach:program' athlete.pk %}?week={{ w.pk }}">
+        <span class="t">{{ w.week_type.name }}</span>
+        <b>{{ w.label }}{% if w.published %} <span class="chip chip--good" style="padding:0 6px;font-size:.6rem">live</span>{% endif %}</b>
+        <small>{{ w.start_date|date:"j M" }}–{{ w.end_date|date:"j M" }}{% if w.start_date <= today and today <= w.end_date %} · this week{% endif %}</small>
+      </a>
+    {% endfor %}
+    <button class="wk-tab" type="button" style="border-style:dashed" hx-post="{% url 'coach:week_add' athlete.pk %}" hx-target="#programEditor" hx-swap="outerHTML">
+      <span class="t" style="color:var(--ink-4)">+ Week</span><b>Add a week</b><small>at the end, same type</small>
+    </button>
+  </nav>
+
+  {% if week %}
+    <div class="card" style="padding:12px 14px;margin-bottom:12px">
+      <div class="spread" style="flex-wrap:wrap;gap:10px">
+        <div class="row" style="gap:8px">
+          <b style="font-size:.9rem">{{ week.label }} · {{ week.start_date|date:"D j M" }}–{{ week.end_date|date:"D j M" }}</b>
+          {% if week.published %}<span class="chip chip--good" title="{{ athlete.user.get_short_name }} can see this week; edits go live immediately">Live — {{ athlete.user.get_short_name }} sees edits immediately</span>{% else %}<span class="chip">Draft — not visible to {{ athlete.user.get_short_name }}</span>{% endif %}
+        </div>
+        <div class="row" style="gap:6px">
+          <select class="input" name="week_type" style="width:auto;padding:6px 30px 6px 10px;font-size:.8rem" aria-label="Week type"
+                  hx-post="{% url 'coach:week_settings' athlete.pk week.pk %}" hx-trigger="change" hx-target="#programEditor" hx-swap="outerHTML">
+            {% for wt in week_types %}<option value="{{ wt.pk }}"{% if wt.pk == week.week_type_id %} selected{% endif %}>{{ wt.name }}{% if wt.archived %} (archived){% endif %}</option>{% endfor %}
+          </select>
+          <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:week_duplicate' athlete.pk week.pk %}" hx-target="#programEditor" hx-swap="outerHTML">Duplicate week</button>
+          <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:week_clear' athlete.pk week.pk %}" hx-target="#programEditor" hx-swap="outerHTML" hx-confirm="Remove every session from {{ week.label }}?{% if week.published %} {{ athlete.user.get_short_name }} will see the empty week straight away.{% endif %}">Clear week</button>
+          <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:week_delete' athlete.pk week.pk %}" hx-target="#programEditor" hx-swap="outerHTML" hx-confirm="Delete {{ week.label }} and everything in it? Later weeks move up a week to close the gap.">Delete week</button>
+          {% if week.published %}
+            <button class="btn btn--soft btn--sm" type="button" hx-post="{% url 'coach:week_publish' athlete.pk week.pk %}" hx-vals='{"publish": "0"}' hx-target="#programEditor" hx-swap="outerHTML">Unpublish</button>
+          {% else %}
+            <button class="btn btn--good btn--sm" type="button" hx-post="{% url 'coach:week_publish' athlete.pk week.pk %}" hx-vals='{"publish": "1"}' hx-target="#programEditor" hx-swap="outerHTML">Publish to {{ athlete.user.get_short_name }}</button>
+          {% endif %}
+        </div>
+      </div>
+      <form style="margin-top:10px" hx-post="{% url 'coach:week_settings' athlete.pk week.pk %}" hx-trigger="change" hx-swap="none" onsubmit="return false">
+        <label class="tiny muted" for="focusNote">Coach's focus this week <span style="font-weight:400">— shown on {{ athlete.user.get_short_name }}'s home screen</span></label>
+        <textarea class="input" id="focusNote" name="focus_note" rows="2" maxlength="1000" placeholder="e.g. Openers Saturday. Keep every snatch above 90% crisp.">{{ week.focus_note }}</textarea>
+      </form>
+    </div>
+
+    <div class="week-board" :class="{ 'as-list': view === 'list' }" style="{{ week.week_type.css_vars }}">
+      {% for d in days %}
+        <div class="day-col{% if not d.sessions %} rest{% endif %}" :class="{ selected: day === {{ d.day.pk }} }" @click="pick({{ d.day.pk }})" data-day-id="{{ d.day.pk }}">
+          <div class="day-head">
+            <b style="white-space:nowrap">{{ d.day.date|date:"D" }} <span class="muted" style="font-weight:500">{{ d.day.date|date:"j" }}</span></b>
+            <span class="row" style="gap:4px;flex-wrap:nowrap">
+              {% if d.day.date == today %}<span class="today-dot tip" data-tip="Today"></span>{% elif not d.sessions %}<small>rest</small>{% endif %}
+              <button class="add-session tip" type="button" data-tip="Add a session" aria-label="Add a session on {{ d.day.date|date:'l' }}" @click.stop hx-post="{% url 'coach:day_add_session' athlete.pk d.day.pk %}" hx-target="#programEditor" hx-swap="outerHTML">+</button>
+            </span>
+          </div>
+          <div class="day-body">
+            {% for s in d.sessions %}
+              {% if s.session.name or d.sessions|length > 1 %}
+                <div class="row" style="gap:4px;flex-wrap:nowrap" @click.stop>
+                  <form style="flex:1" hx-post="{% url 'coach:session_rename' athlete.pk s.session.pk %}" hx-trigger="change" hx-swap="none" onsubmit="return false">
+                    <input class="input" name="name_{{ s.session.pk }}" value="{{ s.session.name }}" placeholder="Session name" style="padding:3px 7px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700" aria-label="Name of session {{ forloop.counter }} on {{ d.day.date|date:'l' }}">
+                  </form>
+                  <button class="iconbtn" type="button" style="width:24px;height:24px" aria-label="Remove session {{ s.session.name|default:forloop.counter }} on {{ d.day.date|date:'l' }}" hx-post="{% url 'coach:session_delete' athlete.pk s.session.pk %}" hx-target="#programEditor" hx-swap="outerHTML"{% if s.items %} hx-confirm="Remove this session and its {{ s.items|length }} exercise{{ s.items|length|pluralize }}?"{% endif %}>✕</button>
+                </div>
+              {% endif %}
+              <div class="stack" style="gap:6px;min-height:8px" data-rx-list data-session="{{ s.session.pk }}" data-day="{{ d.day.pk }}">
+                {% for item in s.items %}
+                  <div class="rx-item" tabindex="0" role="button" data-move-url="{% url 'coach:rx_move' athlete.pk item.rx.pk %}"
+                       aria-label="Edit {{ item.rx.exercise.name }}, {{ item.summary }}"
+                       hx-get="{% url 'coach:rx_edit' athlete.pk item.rx.pk %}" hx-trigger="click, keyup[key=='Enter']" hx-target="#modal" hx-swap="innerHTML" @click.stop>
+                    <b>{{ item.rx.exercise.name }}</b><span class="rx">{{ item.summary }}</span>
+                    <button class="x" type="button" aria-label="Remove {{ item.rx.exercise.name }}" hx-post="{% url 'coach:rx_remove' athlete.pk item.rx.pk %}" hx-trigger="click consume" hx-target="#programEditor" hx-swap="outerHTML">✕</button>
+                  </div>
+                {% endfor %}
+              </div>
+            {% empty %}
+              <div class="stack" style="gap:6px;min-height:8px" data-rx-list data-day="{{ d.day.pk }}"></div>
+            {% endfor %}
+            <button class="day-add" type="button" @click.stop="pick({{ d.day.pk }})">+ add exercise</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <p class="tiny muted" style="margin-top:10px">Click a day, then + on a library exercise. Click an exercise to edit it, drag to move it, or hover for ✕ to remove it. The coloured edge follows the week type.</p>
+  {% else %}
+    <div class="card" style="padding:18px"><p class="tiny muted" style="margin:0">This program has no weeks. Add one above.</p></div>
+  {% endif %}
+</div>

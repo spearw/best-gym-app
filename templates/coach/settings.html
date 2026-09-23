@@ -10,6 +10,7 @@
       {% include "partials/field.html" with field=form.coach_title %}
       {% include "partials/field.html" with field=form.timezone %}
       <div class="field"><label>Units</label><div class="radio-row">{{ form.units }}</div><span class="help">New athletes start with this unit. Weights are stored exactly, so switching never loses precision.</span></div>
+      <div class="field"><label>{{ form.week_start.label }}</label><div class="radio-row">{{ form.week_start }}</div><span class="help">{{ form.week_start.help_text }}</span>{{ form.week_start.errors }}</div>
     </div>
   </div>
   <div><button class="btn btn--brand" type="submit">Save settings</button></div>

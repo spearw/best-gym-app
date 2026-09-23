@@ -15,6 +15,9 @@
         {% else %}
           <li>No athlete has a max recorded for it.</li>
         {% endif %}
+        {% if impact.prescriptions %}
+          <li>{{ impact.prescriptions }} prescription{{ impact.prescriptions|pluralize }} in the programs of {{ impact.programmed_for|join:", " }}. Published weeks change for those athletes straight away.</li>
+        {% endif %}
         {% if impact.dependents %}
           <li>{{ impact.dependents|join:", " }} take{{ impact.dependents|length|pluralize:"s," }} percentages from it and will use {{ impact.dependents|length|pluralize:"its,their" }} own max instead.</li>
         {% endif %}

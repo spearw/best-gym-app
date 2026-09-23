@@ -6,13 +6,13 @@
 {% include "coach/programming/_tabs.html" %}
 <form class="exlib-toolbar" id="exlibFilters"
       hx-get="{% url 'coach:exercises' %}" hx-target="#exlibResults" hx-swap="outerHTML" hx-push-url="true"
-      hx-trigger="input changed delay:250ms from:#exlibSearch, change, exercisesChanged from:body"
+      hx-trigger="input changed delay:250ms from:#exlibSearch, change from:.exlib-filter, exercisesChanged from:body"
       onsubmit="return false">
   <div class="searchbox"><span class="svgi svgi--search"></span><input id="exlibSearch" name="q" value="{{ q }}" placeholder="Search name, tag or cue…" aria-label="Search exercises" autocomplete="off"></div>
   <div class="tag-filter" style="margin:0">
-    {% for tag in all_tags %}<label class="tagchip"><input class="sr" type="checkbox" name="tag" value="{{ tag.pk }}"{% if tag.pk in tag_ids %} checked{% endif %}>{{ tag.name }}</label>{% empty %}<span class="tiny muted">No tags yet</span>{% endfor %}
+    {% for tag in all_tags %}<label class="tagchip"><input class="sr exlib-filter" type="checkbox" name="tag" value="{{ tag.pk }}"{% if tag.pk in tag_ids %} checked{% endif %}>{{ tag.name }}</label>{% empty %}<span class="tiny muted">No tags yet</span>{% endfor %}
   </div>
-  <label class="row tiny" style="gap:6px;margin-left:auto"><input type="checkbox" name="archived" value="1"{% if show_archived %} checked{% endif %}> Show archived</label>
+  <label class="row tiny" style="gap:6px;margin-left:auto"><input class="exlib-filter" type="checkbox" name="archived" value="1"{% if show_archived %} checked{% endif %}> Show archived</label>
   <button class="btn btn--brand btn--sm" type="button" hx-get="{% url 'coach:exercise_new' %}" hx-target="#modal" hx-swap="innerHTML" hx-push-url="false">+ New exercise</button>
 </form>
 {% include "exercises/_results.html" %}

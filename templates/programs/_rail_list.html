@@ -1,0 +1,16 @@
+<div class="lib-list" id="libList">
+  {% for ex in rail_exercises %}
+    <div class="lib-item">
+      <div class="top">
+        <span style="min-width:0"><span class="cat">{{ ex.category.name }}</span><br><b>{{ ex.name }}</b></span>
+        <button class="addbtn tip" type="button" data-tip="Add to the selected day" aria-label="Add {{ ex.name }} to the selected day"
+                hx-post="{% url 'coach:day_add_exercise' athlete.pk %}" hx-vals='{"exercise": "{{ ex.pk }}"}' hx-include="#selectedDay"
+                hx-target="#programEditor" hx-swap="outerHTML">+</button>
+      </div>
+      {% with tags=ex.tags.all %}{% if tags %}<div class="tags">{% for t in tags|slice:":3" %}<span class="tagchip">{{ t.name }}</span>{% endfor %}{% if tags|length > 3 %}<span class="tagchip">+{{ tags|length|add:"-3" }}</span>{% endif %}</div>{% endif %}{% endwith %}
+    </div>
+  {% empty %}
+    <div class="lib-empty">No exercises match.</div>
+  {% endfor %}
+  <p class="tiny muted" style="margin:4px 2px 0">{{ rail_exercises|length }} of {{ rail_total }} exercises</p>
+</div>

@@ -4,6 +4,7 @@ from django.views.generic import RedirectView
 from apps.accounts import coach_views
 from apps.accounts import views as account_views
 from apps.exercises import tracked_views
+from apps.programs import program_views as pv
 from apps.programs import views as week_type_views
 from apps.workouts import question_views as qv
 
@@ -33,6 +34,38 @@ urlpatterns = [
     # Athletes: roster, detail tabs, metrics, per-athlete check-in questions.
     path("athletes/", coach_views.roster, name="athletes"),
     path("athletes/<int:pk>/", coach_views.athlete_detail, name="athlete"),
+    # Program editor (phase 3). Listed before the generic tab route so /program/ lands here.
+    path("athletes/<int:pk>/program/", pv.program_tab, name="program"),
+    path("athletes/<int:pk>/program/start/", pv.start, name="program_start"),
+    path("athletes/<int:pk>/program/library/", pv.library, name="program_library"),
+    path("athletes/<int:pk>/program/weeks/add/", pv.week_add, name="week_add"),
+    path(
+        "athletes/<int:pk>/program/weeks/<int:week_id>/duplicate/", pv.week_duplicate, name="week_duplicate"
+    ),
+    path("athletes/<int:pk>/program/weeks/<int:week_id>/delete/", pv.week_delete, name="week_delete"),
+    path("athletes/<int:pk>/program/weeks/<int:week_id>/clear/", pv.week_clear, name="week_clear"),
+    path("athletes/<int:pk>/program/weeks/<int:week_id>/publish/", pv.week_publish, name="week_publish"),
+    path("athletes/<int:pk>/program/weeks/<int:week_id>/settings/", pv.week_settings, name="week_settings"),
+    path("athletes/<int:pk>/program/add/", pv.day_add_exercise, name="day_add_exercise"),
+    path(
+        "athletes/<int:pk>/program/days/<int:day_id>/sessions/add/",
+        pv.day_add_session,
+        name="day_add_session",
+    ),
+    path(
+        "athletes/<int:pk>/program/sessions/<int:session_id>/rename/",
+        pv.session_rename,
+        name="session_rename",
+    ),
+    path(
+        "athletes/<int:pk>/program/sessions/<int:session_id>/delete/",
+        pv.session_delete,
+        name="session_delete",
+    ),
+    path("athletes/<int:pk>/program/rx/<int:rx_id>/", pv.rx_edit, name="rx_edit"),
+    path("athletes/<int:pk>/program/rx/<int:rx_id>/remove/", pv.rx_remove, name="rx_remove"),
+    path("athletes/<int:pk>/program/rx/<int:rx_id>/swap/", pv.rx_swap, name="rx_swap"),
+    path("athletes/<int:pk>/program/rx/<int:rx_id>/move/", pv.rx_move, name="rx_move"),
     re_path(
         r"^athletes/(?P<pk>\d+)/(?P<tab>overview|program|sessions|metrics|messages)/$",
         coach_views.athlete_detail,

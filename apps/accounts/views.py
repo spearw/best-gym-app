@@ -196,6 +196,7 @@ def settings_page(request):
         "coach_title": request.coach.title,
         "timezone": gym.timezone,
         "units": gym.units,
+        "week_start": gym.week_start,
     }
     form = GymSettingsForm(request.POST or None, initial=initial)
     if request.method == "POST" and form.is_valid():
@@ -203,6 +204,7 @@ def settings_page(request):
         gym.name = data["gym_name"]
         gym.timezone = data["timezone"]
         gym.units = data["units"]
+        gym.week_start = data["week_start"]
         gym.full_clean()
         gym.save()
         request.coach.title = data["coach_title"]

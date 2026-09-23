@@ -1,0 +1,10 @@
+<form id="startProgramForm" class="stack" novalidate hx-post="{% url 'coach:program_start' athlete.pk %}" hx-target="this" hx-swap="outerHTML">
+  {% if has_program %}<div class="form-errors" style="background:var(--warn-lt);color:var(--warn)">Starting a new program ends the current one. It's kept in {{ athlete.user.get_short_name }}'s history.</div>{% endif %}
+  {% include "partials/field.html" with field=start_form.name %}
+  <div class="row" style="gap:12px;align-items:flex-start">
+    <div style="flex:2">{% include "partials/field.html" with field=start_form.first_day %}</div>
+    <div style="flex:1">{% include "partials/field.html" with field=start_form.weeks %}</div>
+  </div>
+  {% include "partials/field.html" with field=start_form.week_type %}
+  <div class="row"><button class="btn btn--brand" type="submit">Start program</button>{% if has_program %}<button class="btn btn--ghost" type="button" onclick="closeModal()">Cancel</button>{% endif %}</div>
+</form>

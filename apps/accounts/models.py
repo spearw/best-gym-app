@@ -100,6 +100,11 @@ class User(AbstractUser):
         return timezone.localdate(timezone=self.zoneinfo)
 
 
+class WeekStart(models.IntegerChoices):
+    MONDAY = 0, "Monday"
+    SUNDAY = 6, "Sunday"
+
+
 class Gym(models.Model):
     """Owns the exercise library, templates and default check-in questions.
     Coaches at one gym share them; a solo coach is a gym of one."""
@@ -107,6 +112,11 @@ class Gym(models.Model):
     name = models.CharField(max_length=120)
     units = models.CharField(max_length=2, choices=Units.choices, default=Units.KG)
     timezone = models.CharField(max_length=64, default="UTC", validators=[validate_timezone])
+    week_start = models.PositiveSmallIntegerField(
+        choices=WeekStart.choices,
+        default=WeekStart.MONDAY,
+        help_text="The day training weeks start on (Python weekday: 0 = Monday, 6 = Sunday).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -115,6 +125,10 @@ class Gym(models.Model):
     def today(self):
         """The date in the gym's zone; the coach dashboard counts days in this."""
         return timezone.localdate(timezone=zoneinfo.ZoneInfo(self.timezone))
+
+    def week_start_for(self, day):
+        """The first day of the training week containing `day`."""
+        return day - datetime.timedelta(days=(day.weekday() - self.week_start) % 7)
 
 
 class Coach(models.Model):

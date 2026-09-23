@@ -236,6 +236,7 @@ def test_deletion_handles_every_model_that_points_at_an_exercise():
         ("exercises", "exercise", "percent_of"),
         ("exercises", "trackedlift", "exercise"),
         ("exercises", "exercise_tags", "exercise"),  # tag links go with the exercise automatically
+        ("programs", "prescription", "exercise"),
     }
     pointing = {
         (f.related_model._meta.app_label, f.related_model._meta.model_name, f.field.name)

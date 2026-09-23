@@ -24,6 +24,8 @@ from apps.accounts.models import (
 from apps.exercises.starter import install_pack
 from apps.workouts.models import CheckinQuestion, copy_defaults_to, install_default_questions
 
+from ._seed_programs import seed_programs
+
 DEMO_PASSWORD = "demo-password-123"
 TZ = "America/New_York"
 GYM_NAME = "Iron Ridge Weightlifting"
@@ -124,6 +126,7 @@ class Command(BaseCommand):
         coach_user = self._user(email, name, is_staff=True)
         coach, _ = Coach.objects.update_or_create(user=coach_user, defaults={"gym": gym, "title": title})
 
+        athletes_by_email = {}
         for spec in ATHLETES:
             user = self._user(spec["email"], spec["name"])
             comp_name, comp_date = "", None
@@ -172,8 +175,10 @@ class Command(BaseCommand):
             )
             if not CheckinQuestion.objects.for_athlete(athlete).filter(archived=False).exists():
                 copy_defaults_to(athlete)
+            athletes_by_email[spec["email"]] = athlete
             self.stdout.write(f"athlete {spec['email']}")
 
+        seed_programs(athletes_by_email, exercises, coach_user, today)
         self.stdout.write(
             self.style.SUCCESS(
                 f"Demo data ready: {GYM_NAME}, coach {COACH[0]}, {len(ATHLETES)} athletes, "

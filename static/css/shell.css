@@ -58,3 +58,18 @@ label.tagchip:has(input:focus-visible){outline:3px solid var(--brand);outline-of
 
 /* Athlete header stats: number above label. */
 .cd-stat{display:flex;flex-direction:column;align-items:center}
+
+/* Program editor additions. */
+[x-cloak]{display:none!important}
+.rx-item.is-dragging{opacity:.4}
+.month-strip a.wk-tab{color:inherit;display:block}
+.day-head{gap:6px}
+.add-session{width:20px;height:20px;border-radius:6px;font-size:.8rem;font-weight:700;color:var(--ink-4);display:grid;place-items:center}
+.add-session:hover{background:var(--brand-lt);color:var(--brand)}
+.rx-item:focus-visible{outline:3px solid var(--brand);outline-offset:1px}
+/* Let the editor column shrink so the scrolling week strip can't push the library rail off screen. */
+.prog-layout > *{min-width:0}
+/* List view: each session's exercises run in a row, as in the mockup (our lists add a wrapper per session). */
+.week-board.as-list [data-rx-list]{flex-direction:row;flex-wrap:wrap;align-items:flex-start;flex:1 1 100%}
+.week-board.as-list [data-rx-list] .rx-item{flex:1 1 210px;max-width:300px}
+.set-label{width:52px;white-space:nowrap;flex-shrink:0}

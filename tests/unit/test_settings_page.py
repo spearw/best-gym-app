@@ -11,6 +11,7 @@ def form(**overrides):
         "coach_title": "Owner",
         "timezone": "Europe/London",
         "units": "lb",
+        "week_start": "6",
         **overrides,
     }
 
@@ -33,6 +34,7 @@ def test_saving_settings(coach_client, coach):
         "lb",
         "Owner",
     )
+    assert gym.week_start == 6  # Sunday
     assert "Settings saved" in coach_client.get("/coach/settings/").content.decode()  # shown as a toast
 
 

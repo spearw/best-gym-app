@@ -1,0 +1,20 @@
+{% extends "partials/modal.html" %}
+{% block modal_attrs %}style="width:min(94vw,520px)"{% endblock %}
+{% block modal_title %}Swap {{ rx.exercise.name }}{% endblock %}
+{% block modal_content %}
+<div class="modal-body">
+  <p class="tiny muted" style="margin:0">Same category or a shared tag. The dose carries over.</p>
+  <div class="swap-list">
+    {% for ex in candidates %}
+      <button class="swap-item" type="button" hx-post="{% url 'coach:rx_swap' athlete.pk rx.pk %}" hx-vals='{"exercise": "{{ ex.pk }}"}' hx-target="#programEditor" hx-swap="outerHTML">
+        <span><b>{{ ex.name }}</b><small>{{ ex.category.name }}{% for t in ex.tags.all|slice:":3" %} · {{ t.name }}{% endfor %}</small></span><span class="go">Use</span>
+      </button>
+    {% empty %}
+      <p class="tiny muted">No alternatives in the library share its category or tags.</p>
+    {% endfor %}
+  </div>
+</div>
+<div class="modal-foot">
+  <button class="btn btn--ghost" type="button" hx-get="{% url 'coach:rx_edit' athlete.pk rx.pk %}" hx-target="#modal" hx-swap="innerHTML">← Back</button>
+</div>
+{% endblock %}

@@ -296,7 +296,13 @@ def day_add_exercise(request, pk):
         return response
     day = _day(athlete, day_id)
     exercise = get_object_or_404(Exercise, pk=request.POST.get("exercise"), gym=athlete.gym, archived=False)
-    services.add_prescription(day, exercise, athlete, request.POST.get("session") or None)
+    session_id = request.POST.get("session") or None
+    if session_id is not None:
+        session = _session(athlete, session_id)  # must be one of this athlete's sessions
+        day, session_id = session.day, session.pk  # the session decides the day
+    index = request.POST.get("index", "")
+    index = int(index) if index.isdigit() else None  # set when dragged in from the library
+    services.add_prescription(day, exercise, athlete, session_id, index)
     # No HX-Retarget: the + button already targets #programEditor, and a retarget is resolved
     # from the button, which may have been redrawn out of the page while this request ran.
     return render_editor(request, athlete, day.week_id, f"{exercise.name} → {day.date:%a %-d %b}", "good")

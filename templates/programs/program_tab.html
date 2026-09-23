@@ -7,7 +7,7 @@
     {% include "programs/_start_form.html" %}
   </div>
 {% else %}
-  <div x-data="programEditor()">
+  <div x-data="programEditor()" @keydown.escape.window="library = false">
     <input type="hidden" id="selectedDay" name="day" :value="day ?? ''">
     <div class="prog-layout">
       <div>{% include "programs/_editor.html" %}</div>

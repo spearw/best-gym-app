@@ -1,6 +1,6 @@
-<div class="lib-list" id="libList">
+<div class="lib-list" id="libList" data-lib-list data-add-url="{% url 'coach:day_add_exercise' athlete.pk %}">
   {% for ex in rail_exercises %}
-    <div class="lib-item">
+    <div class="lib-item" data-exercise="{{ ex.pk }}" title="Drag onto a day, or select a day and press +">
       <div class="top">
         <span style="min-width:0"><span class="cat">{{ ex.category.name }}</span><br><b>{{ ex.name }}</b></span>
         <button class="addbtn tip" type="button" data-tip="Add to the selected day" aria-label="Add {{ ex.name }} to the selected day"

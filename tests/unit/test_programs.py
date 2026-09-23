@@ -462,3 +462,44 @@ def test_deleting_an_exercise_warns_about_programs(coach_client, athlete, progra
     assert "1 prescription in the programs of Maya Torres" in html
     coach_client.post(f"/coach/programming/exercises/{snatch.pk}/delete/", **HX)
     assert not Prescription.objects.exists() and not Exercise.objects.filter(pk=snatch.pk).exists()
+
+
+def test_dragging_from_the_library_inserts_at_the_drop_position(coach_client, athlete, program, gym):
+    day = program.weeks.first().days.first()
+    first = services.add_prescription(day, ex(gym, "sn"), athlete)
+    services.add_prescription(day, ex(gym, "bsq"), athlete)
+    coach_client.post(
+        f"{base(athlete)}add/",
+        {"exercise": ex(gym, "snp").pk, "day": day.pk, "session": first.session_id, "index": "1"},
+        **HX,
+    )
+    assert list(first.session.prescriptions.values_list("exercise__key", flat=True)) == ["sn", "snp", "bsq"]
+    coach_client.post(
+        f"{base(athlete)}add/", {"exercise": ex(gym, "abw").pk, "day": day.pk, "index": "0"}, **HX
+    )
+    assert first.session.prescriptions.first().exercise.key == "abw"
+
+
+def test_library_drop_into_someone_elses_session_is_404(coach_client, athlete, program, gym, make_user):
+    other_athlete = Athlete.objects.create(user=make_user("x@example.com"), coach=athlete.coach, gym=gym)
+    theirs = services.start_program(other_athlete, "T", MON, 1, wt(gym), by=athlete.coach.user)
+    their_rx = services.add_prescription(theirs.weeks.first().days.first(), ex(gym, "sn"), other_athlete)
+    day = program.weeks.first().days.first()
+    response = coach_client.post(
+        f"{base(athlete)}add/",
+        {"exercise": ex(gym, "bsq").pk, "day": day.pk, "session": their_rx.session_id},
+        **HX,
+    )
+    assert response.status_code == 404
+
+
+def test_a_session_on_another_day_decides_where_it_goes(coach_client, athlete, program, gym):
+    d1, d2 = list(program.weeks.first().days.all())[:2]
+    on_d2 = services.add_prescription(d2, ex(gym, "sn"), athlete)
+    response = coach_client.post(
+        f"{base(athlete)}add/",
+        {"exercise": ex(gym, "bsq").pk, "day": d1.pk, "session": on_d2.session_id, "index": "0"},
+        **HX,
+    )
+    assert response.status_code == 200
+    assert list(d2.sessions.get().prescriptions.values_list("exercise__key", flat=True)) == ["bsq", "sn"]

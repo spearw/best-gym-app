@@ -6,9 +6,12 @@
       <span class="tiny muted">started {{ program.start_date|date:"j M Y" }} · {{ weeks|length }} week{{ weeks|length|pluralize }}</span>
       <button class="btn btn--ghost btn--sm" type="button" hx-get="{% url 'coach:program_start' athlete.pk %}" hx-target="#modal" hx-swap="innerHTML">Start a new program</button>
     </div>
+    <div class="row" style="gap:8px">
+    <button class="btn btn--ghost btn--sm lib-toggle" type="button" @click="library = !library" :aria-expanded="library.toString()" aria-controls="libList">Exercise library</button>
     <div class="segmini" role="group" aria-label="Board layout">
       <button type="button" :aria-pressed="(view === 'cols').toString()" @click="setView('cols')">Columns</button>
       <button type="button" :aria-pressed="(view === 'list').toString()" @click="setView('list')">List</button>
+    </div>
     </div>
   </div>
 
@@ -91,7 +94,7 @@
         </div>
       {% endfor %}
     </div>
-    <p class="tiny muted" style="margin-top:10px">Click a day, then + on a library exercise. Click an exercise to edit it, drag to move it, or hover for ✕ to remove it. The coloured edge follows the week type.</p>
+    <p class="tiny muted" style="margin-top:10px">Drag exercises from the library onto a day (or click a day, then +). Click an exercise to edit it, drag it to move it, or hover for ✕ to remove it. The coloured edge follows the week type.</p>
   {% else %}
     <div class="card" style="padding:18px"><p class="tiny muted" style="margin:0">This program has no weeks. Add one above.</p></div>
   {% endif %}

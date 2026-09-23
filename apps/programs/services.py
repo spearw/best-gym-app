@@ -151,12 +151,17 @@ def add_session(day, name=""):
 
 
 @transaction.atomic
-def add_prescription(day, exercise, athlete, session_id=None):
+def add_prescription(day, exercise, athlete, session_id=None, index=None):
+    """Add `exercise` to the day (its first session unless one is given), at the end or,
+    when dragged in from the library, at position `index`."""
     session = session_for(day, session_id)
     next_order = (session.prescriptions.aggregate(m=Max("order"))["m"] or 0) + 1
-    return Prescription.objects.create(
+    rx = Prescription.objects.create(
         session=session, order=next_order, exercise=exercise, **default_dose(exercise, athlete)
     )
+    if index is not None:
+        move_prescription(rx, session, index)
+    return rx
 
 
 @transaction.atomic

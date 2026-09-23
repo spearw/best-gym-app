@@ -1,7 +1,7 @@
-<aside class="lib-rail">
+<aside class="lib-rail" :class="{ open: library }" aria-label="Exercise library">
   <div class="card">
     <div class="lib-head">
-      <h4>Exercise library <button class="btn btn--sm btn--soft" type="button" hx-get="{% url 'coach:exercise_new' %}" hx-target="#modal" hx-swap="innerHTML">+ New</button></h4>
+      <h4>Exercise library <span class="row" style="gap:6px"><button class="btn btn--sm btn--soft" type="button" hx-get="{% url 'coach:exercise_new' %}" hx-target="#modal" hx-swap="innerHTML">+ New</button><button class="iconbtn lib-close" type="button" @click="library = false" aria-label="Close the exercise library">✕</button></span></h4>
       <form id="railFilters" hx-get="{% url 'coach:program_library' athlete.pk %}" hx-target="#libList" hx-swap="outerHTML"
             hx-trigger="input changed delay:200ms from:#railSearch, change from:.rail-filter, exercisesChanged from:body" onsubmit="return false">
         <div class="searchbox" style="width:100%;height:34px"><span class="svgi svgi--search"></span><input id="railSearch" name="q" value="{{ rail_q }}" placeholder="Search exercises…" aria-label="Search the exercise library" autocomplete="off"></div>
@@ -9,6 +9,6 @@
       </form>
     </div>
     {% include "programs/_rail_list.html" %}
-    <div class="lib-foot"><span class="tiny muted" style="align-self:center">Click a day on the board, then + to add. Athletes' history appears here from phase 4.</span></div>
+    <div class="lib-foot"><span class="tiny muted" style="align-self:center">Drag an exercise onto a day, or click a day and press +. Athletes' history appears here from phase 4.</span></div>
   </div>
 </aside>

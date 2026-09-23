@@ -83,6 +83,7 @@
     window.Alpine.data("programEditor", function () {
       return {
         day: null,
+        library: false,  // the library drawer on narrow screens
         view: storage("boardView", "cols"),
         setView: function (v) { this.view = v; store("boardView", v); },
         pick: function (dayId) {
@@ -114,19 +115,68 @@
     });
   });
 
-  // Drag and drop on the board: each session's list is a Sortable in one shared group.
-  // Dropping posts the new position; the server redraws the editor.
+  // Drag and drop on the board. Every session list (each filling its day column) is a
+  // Sortable in the "rx" group; the library list is a clone-only source in the same group.
+  // The day being dropped on gets the mockup's .droptarget outline. Dropping posts the
+  // new position and the server redraws the editor.
+  function clearDropTargets() {
+    document.querySelectorAll(".day-col.droptarget").forEach(function (c) { c.classList.remove("droptarget"); });
+  }
+  function markDropTarget(evt) {
+    clearDropTargets();
+    var col = evt.to && evt.to.closest(".day-col");
+    if (col) col.classList.add("droptarget");
+    return true;
+  }
+  function positionIn(item) {
+    // Count the exercise cards above the dropped element (it may itself be a library card).
+    var i = 0;
+    for (var n = item.previousElementSibling; n; n = n.previousElementSibling) {
+      if (n.classList.contains("rx-item")) i++;
+    }
+    return i;
+  }
+  function dropValues(to, item) {
+    return { session: to.dataset.session || "", day: to.dataset.day, index: positionIn(item) };
+  }
+
   function initSortables(root) {
     if (!window.Sortable) return;
-    (root || document).querySelectorAll("[data-rx-list]").forEach(function (list) {
+    var scope = root || document;
+    var lists = Array.prototype.slice.call(scope.querySelectorAll("[data-rx-list]"));
+    if (scope.matches && scope.matches("[data-rx-list]")) lists.push(scope);
+    lists.forEach(function (list) {
       if (list._sortable) return;
       list._sortable = window.Sortable.create(list, {
         group: "rx", animation: 120, draggable: ".rx-item", ghostClass: "is-dragging",
+        onMove: markDropTarget,
         onEnd: function (evt) {
+          clearDropTargets();
           if (evt.from === evt.to && evt.oldIndex === evt.newIndex) return;
           window.htmx.ajax("POST", evt.item.dataset.moveUrl, {
-            source: evt.item, target: "#programEditor", swap: "outerHTML",
-            values: { session: evt.to.dataset.session || "", day: evt.to.dataset.day, index: evt.newIndex },
+            source: evt.item, target: "#programEditor", swap: "outerHTML", values: dropValues(evt.to, evt.item),
+          });
+        },
+      });
+    });
+
+    var libs = Array.prototype.slice.call(scope.querySelectorAll("[data-lib-list]"));
+    if (scope.matches && scope.matches("[data-lib-list]")) libs.push(scope);
+    libs.forEach(function (lib) {
+      if (lib._sortable) return;
+      lib._sortable = window.Sortable.create(lib, {
+        group: { name: "rx", pull: "clone", put: false }, sort: false, draggable: ".lib-item",
+        filter: ".addbtn", preventOnFilter: false, ghostClass: "is-dragging",
+        onMove: markDropTarget,
+        onEnd: function (evt) {
+          clearDropTargets();
+          if (evt.to === evt.from) return;
+          var values = dropValues(evt.to, evt.item);
+          values.exercise = evt.item.dataset.exercise;
+          var source = evt.to;
+          evt.item.remove();  // the server redraws the day with the real exercise card
+          window.htmx.ajax("POST", lib.dataset.addUrl, {
+            source: source, target: "#programEditor", swap: "outerHTML", values: values,
           });
         },
       });

@@ -4,11 +4,12 @@ post-session RPE and comment, and any issue reported."""
 
 import datetime
 
+from django.db.models import Q
 from django.template.response import TemplateResponse
 
 from apps.programs.prescriptions import summary
 
-from . import history, sessions
+from . import charts, history, sessions
 from .models import QuestionType
 
 RANGES = [("4", "Last 4 weeks", 28), ("8", "Last 8 weeks", 56), ("all", "All time", None)]
@@ -90,3 +91,82 @@ def sessions_tab(request, athlete, header_context):
     if request.htmx and request.htmx.target == "sessLog":
         return TemplateResponse(request, "coach/athlete/_sessions_list.html", context)
     return TemplateResponse(request, "coach/athlete/sessions.html", context)
+
+
+# ---------------------------------------------------------------- Overview tab
+
+
+def _chart_lift(athlete, lift_id):
+    lifts = charts.chart_lifts(athlete)
+    chosen = next((e for e in lifts if str(e.pk) == str(lift_id)), lifts[0] if lifts else None)
+    return lifts, chosen
+
+
+def overview_tab(request, athlete, header_context):
+    from apps.programs.models import ProgramDay
+
+    unit = request.coach.gym.units
+    today = athlete.today()
+    lifts, lift = _chart_lift(athlete, request.GET.get("lift"))
+    volume_svg, weeks = charts.volume_chart(athlete, unit)
+    recent = list(
+        athlete.session_logs.finished()
+        .prefetch_related("answers")
+        .filter(Q(answers__isnull=False) | Q(session_rpe__isnull=False))
+        .distinct()
+        .order_by("-date", "-finished_at")[:5]
+    )
+    checkins = []
+    for log in recent:
+        answers = list(log.answers.all())
+        scale = next((a for a in answers if a.type == QuestionType.SCALE), None)
+        choice = next((a for a in answers if a.type != QuestionType.SCALE), None)
+        checkins.append({"log": log, "scale": scale, "choice": choice})
+    week_start = athlete.gym.week_start_for(today)
+    done_ids = history.finished_session_ids(athlete)
+    days = {
+        d.date: d
+        for d in ProgramDay.objects.filter(
+            week__program__athlete=athlete,
+            week__program__active=True,
+            date__gte=week_start,
+            date__lte=week_start + datetime.timedelta(days=6),
+        ).prefetch_related("sessions__prescriptions")
+    }
+    glance = []
+    for i in range(7):
+        date = week_start + datetime.timedelta(days=i)
+        day = days.get(date)
+        sessions = list(day.sessions.all()) if day else []
+        count = sum(len(s.prescriptions.all()) for s in sessions)
+        label = (
+            "rest" if not count else "✓ done" if any(s.pk in done_ids for s in sessions) else f"{count} ex"
+        )
+        glance.append({"date": date, "label": label, "today": date == today})
+    from apps.exercises.models import tracked_exercises
+
+    tracked = {e.name: i for i, e in enumerate(tracked_exercises(athlete.gym))}
+    ordered = sorted(history.lifetime_prs(athlete), key=lambda pr: tracked.get(pr["name"], len(tracked)))
+    prs = [
+        {
+            "name": pr["name"],
+            "heaviest": history.set_text(pr["heaviest"], unit),
+            "ago": history.ago(pr["heaviest_date"], today),
+        }
+        for pr in ordered[:6]  # the gym's tracked lifts first, then the most recent
+    ]
+    context = {
+        **header_context,
+        "tab": "overview",
+        "lifts": lifts,
+        "lift": lift,
+        "e1rm_svg": charts.e1rm_chart(athlete, lift, unit) if lift else "",
+        "volume_svg": volume_svg,
+        "unit": unit,
+        "checkins": checkins,
+        "glance": glance,
+        "prs": prs,
+    }
+    if request.htmx and request.htmx.target == "e1rmChart":
+        return TemplateResponse(request, "coach/athlete/_e1rm_chart.html", context)
+    return TemplateResponse(request, "coach/athlete/overview.html", context)

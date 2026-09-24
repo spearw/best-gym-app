@@ -192,7 +192,8 @@ def _write_week(program, order, start_date, planned, publish):
 
 @transaction.atomic
 def confirm(athlete, template, days, mode, placement_value, publish, by):
-    """Write the planned weeks; returns (program, first new week)."""
+    """Write the planned weeks and prescribe the template's habits (skipping ones the
+    athlete already has); returns (program, first new week, habits added)."""
     planned = plan(template, athlete, days, mode)
     if not planned:
         raise CannotApply(
@@ -232,4 +233,11 @@ def confirm(athlete, template, days, mode, placement_value, publish, by):
         week = _write_week(program, order, program.start_date + WEEK * order, planned_week, publish)
         first = first or week
     TemplateApplication.objects.create(template=template, athlete=athlete, applied_by=by, weeks=n)
-    return program, first
+    from apps.programs import habits
+
+    added = sum(
+        1
+        for h in template.habits.all()
+        if habits.prescribe(athlete, h.name, h.emoji, h.cadence, h.note, source_template=template)
+    )
+    return program, first, added

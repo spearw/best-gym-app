@@ -2,6 +2,20 @@
 {% block title %}Your progress{% endblock %}
 {% block content %}
 <h3 style="font-size:1.2rem;margin-bottom:12px">Your progress</h3>
+{% if lift %}
+  <div class="mcard" id="progressChart">
+    <div class="spread">
+      {% if lifts|length > 1 %}
+        <select class="input" name="lift" style="width:auto;padding:4px 26px 4px 8px;font-size:.8rem;font-weight:700" aria-label="Lift"
+                hx-get="{% url 'app:progress' %}" hx-target="#app-body" hx-select="#app-body" hx-swap="outerHTML" hx-trigger="change">
+          {% for e in lifts %}<option value="{{ e.pk }}"{% if e.pk == lift.pk %} selected{% endif %}>{{ e.name }} e1RM</option>{% endfor %}
+        </select>
+      {% else %}<h4>{{ lift.name }} e1RM</h4>{% endif %}
+      {% if change.change %}<span class="chip {% if change.change > 0 %}chip--good{% endif %}">{% if change.change > 0 %}▲ +{{ change.change }}{% else %}▼ {{ change.drop }}{% endif %} {{ unit }} / {{ change.weeks }} wk</span>{% endif %}
+    </div>
+    <svg class="spark" viewBox="0 0 340 120" role="img" aria-label="{{ lift.name }} progress chart">{{ chart }}</svg>
+  </div>
+{% endif %}
 <h4 style="font-size:.92rem;margin:14px 0 8px">Personal records</h4>
 <div class="pr-list">
   {% for pr in prs %}

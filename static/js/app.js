@@ -269,6 +269,16 @@
     });
   }
 
+  // Ctrl+Z / Cmd+Z on the program board presses Undo (not while typing in a field).
+  document.addEventListener("keydown", function (e) {
+    if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== "z") return;
+    if (e.target.closest("input, textarea, select, [contenteditable]")) return;
+    var button = document.querySelector("#programEditor [data-undo]:not([disabled])");
+    if (!button) return;
+    e.preventDefault();
+    button.click();
+  });
+
   // Library rail: tapping an athlete's history line opens their full log for that exercise.
   document.addEventListener("click", function (e) {
     var pop = document.getElementById("histPop");

@@ -10,7 +10,7 @@
       {% with tags=ex.tags.all %}{% if tags %}<div class="tags">{% for t in tags|slice:":3" %}<span class="tagchip">{{ t.name }}</span>{% endfor %}{% if tags|length > 3 %}<span class="tagchip">+{{ tags|length|add:"-3" }}</span>{% endif %}</div>{% endif %}{% endwith %}
       {% if not rail_athlete %}{% elif ex.hist %}
         <div class="lib-hist" data-hist role="button" tabindex="0" title="{{ rail_athlete.user.get_short_name }}'s log" style="cursor:help">
-          <span>{{ ex.hist.line }}</span>{% if ex.hist.trend %}<span class="trend {{ ex.hist.trend }}">{% if ex.hist.trend == "up" %}▲{% elif ex.hist.trend == "down" %}▼{% else %}—{% endif %}</span>{% endif %}
+          {{ ex.hist.spark }}<span>{{ ex.hist.line }}</span>{% if ex.hist.trend %}<span class="trend {{ ex.hist.trend }}">{% if ex.hist.trend == "up" %}▲{% elif ex.hist.trend == "down" %}▼{% else %}—{% endif %}</span>{% endif %}
           <template><h5>{{ ex.name }} — {{ rail_athlete.user.get_short_name }}'s log</h5>{% for date, top in ex.hist.log %}<div class="hrow"><span>{{ date|date:"M j" }}</span><b class="mono">{{ top }}</b></div>{% endfor %}</template>
         </div>
       {% else %}

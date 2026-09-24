@@ -264,7 +264,7 @@ def apply_confirm(request, pk):
         return render_editor(request, athlete, message="Nothing to apply", kind="err")
     n = len(apply.plan(template, athlete, draft["days"], draft["mode"]))
     try:
-        program, first = apply.confirm(
+        program, first, habits_added = apply.confirm(
             athlete, template, draft["days"], draft["mode"], draft["start"], draft["publish"], request.user
         )
     except apply.CannotApply as err:
@@ -278,11 +278,8 @@ def apply_confirm(request, pk):
     message = (
         f"“{template.display_name}” applied — {n} week{'s' if n != 1 else ''} from {first.label}, {state}"
     )
-    habits = template.habits.count()
-    if habits:
-        message += (
-            f". Its {habits} habit{'s' if habits != 1 else ''} will be prescribed once athlete habits arrive"
-        )
+    if habits_added:
+        message += f" · {habits_added} habit{'s' if habits_added != 1 else ''} prescribed"
     return render_editor(request, athlete, first.pk, message, "good")
 
 

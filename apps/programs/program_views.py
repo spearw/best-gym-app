@@ -15,7 +15,7 @@ from apps.accounts.access import coach_required
 from apps.accounts.coach_views import _header_context, coach_athlete
 from apps.exercises.models import Exercise, Tag
 
-from . import services
+from . import services, undo
 from .forms import MAX_CUSTOM_FIELDS, MAX_SETS, PrescriptionForm, StartProgramForm, set_rows_initial
 from .models import Prescription, ProgramDay, ProgramSession, ProgramWeek, WeekType
 from .prescriptions import load_text, suggested_weight, summary
@@ -121,7 +121,7 @@ def editor_context(request, athlete, week_id=None):
             }
         )
     week_types = list(WeekType.objects.filter(gym=gym).filter(Q(archived=False) | Q(pk=week.week_type_id)))
-    context.update({"days": days, "week_types": week_types})
+    context.update({"days": days, "week_types": week_types, "undo_entry": undo.latest(week)})
     return context
 
 
@@ -143,15 +143,18 @@ def _with_history(exercises, athlete, unit):
     """Attach the athlete's history to each exercise: `hist` is None if never logged,
     else {"line": "78 kg ×1 · 2 days ago", "trend": "up", "log": [(date, top set), ...], "date": ...}."""
     from apps.workouts import history
+    from apps.workouts.charts import rail_spark
 
     logs = history.exercise_history(athlete, [e.pk for e in exercises])
     today = athlete.today()
     for ex in exercises:
         entries = logs.get(ex.pk)
+        trend = history.trend(entries) if entries else None
         ex.hist = (
             {
                 "line": history.last_line(entries[0], unit, today),
-                "trend": history.trend(entries),
+                "trend": trend,
+                "spark": rail_spark(entries, trend),
                 "date": entries[0].date,
                 "log": [(e.date, history.set_text(e.top, unit)) for e in entries],
             }
@@ -234,6 +237,9 @@ def program_tab(request, pk):
     }
     if _program(athlete) is None:
         context["start_form"] = StartProgramForm(gym=athlete.gym, today=athlete.today())
+    from .habit_views import coach_card_context
+
+    context.update({k: v for k, v in coach_card_context(athlete).items() if k != "athlete"})
     return TemplateResponse(request, "programs/program_tab.html", context)
 
 
@@ -328,6 +334,7 @@ def week_delete(request, pk, week_id):
 def week_clear(request, pk, week_id):
     athlete = coach_athlete(request, pk)
     week = _week(athlete, week_id)
+    undo.record(week, request.user, f"Clear {week.label}")
     kept = services.clear_week(week)
     message = "Week cleared" + (f" — {kept} completed day{'s' if kept != 1 else ''} kept" if kept else "")
     return render_editor(request, athlete, week.pk, message)
@@ -358,12 +365,14 @@ def week_settings(request, pk, week_id):
         week_type = get_object_or_404(WeekType, pk=request.POST["week_type"], gym=athlete.gym)
         if week_type.archived and week_type.pk != week.week_type_id:
             raise Http404
+        undo.record(week, request.user, f"Week type → {week_type.name}")
         week.week_type = week_type
         week.save(update_fields=["week_type"])
         return render_editor(request, athlete, week.pk, f"{week.label} is now {week_type.name}")
+    undo.record(week, request.user, "Edit focus note")
     week.focus_note = request.POST.get("focus_note", "").strip()[:1000]
     week.save(update_fields=["focus_note"])
-    return hx.toast(HttpResponse(""), "Focus note saved")
+    return hx.toast(_undo_button_oob(request, athlete, week), "Focus note saved")
 
 
 # ---------------------------------------------------------------- sessions
@@ -386,6 +395,7 @@ def day_add_exercise(request, pk):
         day, session_id = session.day, session.pk  # the session decides the day
     index = request.POST.get("index", "")
     index = int(index) if index.isdigit() else None  # set when dragged in from the library
+    undo.record(day.week, request.user, f"Add {exercise.name}")
     services.add_prescription(day, exercise, athlete, session_id, index)
     # No HX-Retarget: the + button already targets #programEditor, and a retarget is resolved
     # from the button, which may have been redrawn out of the page while this request ran.
@@ -399,6 +409,7 @@ def day_add_session(request, pk, day_id):
     day = _day(athlete, day_id)
     if day.sessions.count() >= 3:
         return render_editor(request, athlete, day.week_id, "Up to three sessions a day", "bad")
+    undo.record(day.week, request.user, f"Add a session on {day.date:%a}")
     if not day.sessions.exists():
         services.add_session(day, "Session 1")
     else:
@@ -415,9 +426,10 @@ def day_add_session(request, pk, day_id):
 def session_rename(request, pk, session_id):
     athlete = coach_athlete(request, pk)
     session = _session(athlete, session_id)
+    undo.record(session.day.week, request.user, "Rename a session")
     session.name = " ".join(request.POST.get(f"name_{session.pk}", "").split())[:80]
     session.save(update_fields=["name"])
-    return hx.toast(HttpResponse(""), "Session renamed")
+    return hx.toast(_undo_button_oob(request, athlete, session.day.week), "Session renamed")
 
 
 @coach_required
@@ -430,6 +442,7 @@ def session_delete(request, pk, session_id):
         name = athlete.user.get_short_name()
         message = f"{name} has logged this session, so it stays. You can still edit its exercises."
         return render_editor(request, athlete, week_id, message, "err")
+    undo.record(session.day.week, request.user, f"Remove a session on {session.day.date:%a}")
     session.delete()
     extra = f" and its {n} exercise{'s' if n != 1 else ''}" if n else ""
     return render_editor(request, athlete, week_id, f"Removed the session{extra}")
@@ -468,6 +481,7 @@ def rx_edit(request, pk, rx_id):
     if request.method == "POST":
         form = PrescriptionForm(request.POST, unit=unit)
         if form.is_valid():
+            undo.record(rx.session.day.week, request.user, f"Edit {rx.exercise.name}")
             form.save(rx)
             response = render_editor(
                 request, athlete, rx.session.day.week_id, f"{rx.exercise.name} updated", "good"
@@ -494,6 +508,7 @@ def rx_remove(request, pk, rx_id):
     athlete = coach_athlete(request, pk)
     rx = _rx(athlete, rx_id)
     week_id, name, date = rx.session.day.week_id, rx.exercise.name, rx.session.day.date
+    undo.record(rx.session.day.week, request.user, f"Remove {name}")
     services.remove_prescription(rx)
     response = render_editor(request, athlete, week_id, f"Removed {name} from {date:%a}")
     response = hx.retarget(response, "#programEditor", "outerHTML")
@@ -525,6 +540,7 @@ def rx_swap(request, pk, rx_id):
     if request.method == "POST":
         exercise = get_object_or_404(swap_candidates(rx), pk=request.POST.get("exercise"))
         old = rx.exercise.name
+        undo.record(rx.session.day.week, request.user, f"Swap {old} for {exercise.name}")
         services.swap_exercise(rx, exercise)
         response = render_editor(
             request,
@@ -547,6 +563,7 @@ def rx_move(request, pk, rx_id):
     """Drag and drop: move to position `index` in a session, or onto a day (its first session)."""
     athlete = coach_athlete(request, pk)
     rx = _rx(athlete, rx_id)
+    undo.record(rx.session.day.week, request.user, f"Move {rx.exercise.name}")
     if request.POST.get("session"):
         target = _session(athlete, request.POST["session"])
     else:
@@ -559,3 +576,25 @@ def rx_move(request, pk, rx_id):
         index = 0
     services.move_prescription(rx, target, index)
     return render_editor(request, athlete, target.day.week_id)
+
+
+# ---------------------------------------------------------------- undo
+
+
+def _undo_button_oob(request, athlete, week):
+    """For saves that don't redraw the board: refresh the Undo button out of band."""
+    return TemplateResponse(
+        request,
+        "programs/_undo_button.html",
+        {"athlete": athlete, "week": week, "undo_entry": undo.latest(week), "oob": True},
+    )
+
+
+@coach_required
+@require_POST
+def week_undo(request, pk, week_id):
+    athlete = coach_athlete(request, pk)
+    week = _week(athlete, week_id)
+    label = undo.undo(week)
+    message = f"Undone: {label}" if label else "Nothing to undo in this week"
+    return render_editor(request, athlete, week.pk, message)

@@ -70,6 +70,7 @@
           {% if week.published %}<span class="chip chip--good" title="{{ athlete.user.get_short_name }} can see this week; edits go live immediately">Live — {{ athlete.user.get_short_name }} sees edits immediately</span>{% else %}<span class="chip">Draft — not visible to {{ athlete.user.get_short_name }}</span>{% endif %}
         </div>
         <div class="row" style="gap:6px">
+          {% include "programs/_undo_button.html" %}
           <select class="input" name="week_type" style="width:auto;padding:6px 30px 6px 10px;font-size:.8rem" aria-label="Week type"
                   hx-post="{% url 'coach:week_settings' athlete.pk week.pk %}" hx-trigger="change" hx-target="#programEditor" hx-swap="outerHTML">
             {% for wt in week_types %}<option value="{{ wt.pk }}"{% if wt.pk == week.week_type_id %} selected{% endif %}>{{ wt.name }}{% if wt.archived %} (archived){% endif %}</option>{% endfor %}

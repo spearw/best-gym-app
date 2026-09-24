@@ -14,11 +14,13 @@
     <h4>No program yet</h4>
     <p class="tiny muted" style="margin:0">{{ coach_name }} is putting your training together. Your week shows up here as soon as it's published.</p>
   </div>
+  {% include "app/_habits.html" %}
 {% elif not week %}
   <div class="mcard" style="text-align:center">
     <h4>{{ program.name }}</h4>
     <p class="tiny muted" style="margin:0">{{ coach_name }} hasn't published a week of it yet. Check back soon.</p>
   </div>
+  {% include "app/_habits.html" %}
 {% else %}
   <div class="week-label">
     <span class="row" style="gap:6px">
@@ -63,6 +65,8 @@
     <div class="today-card" style="{{ wt.css_vars }};text-align:center"><h3>{% if selected.is_today %}Today{% else %}{{ day.date|date:"l" }}{% endif %} — rest day</h3><p class="sub">No training scheduled. Recovery is part of the program.</p></div>
   {% endfor %}
   {% endwith %}
+
+  {% include "app/_habits.html" %}
 
   {% if week.focus_note %}
     <div class="mcard">

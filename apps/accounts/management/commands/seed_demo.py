@@ -1,5 +1,6 @@
 """Load the mockup's demo data. Grows with every phase (docs/BUILD_PLAN.md, "Seed data").
 
+Phase 7 adds the mockup's habits (seed_habits in _seed_sessions.py).
 Phase 5 adds the mockup's templates, saved weeks and saved sessions (_seed_library.py).
 Phase 4 adds the mockup's logged sessions and check-ins (_seed_sessions.py).
 Phase 1: Iron Ridge Weightlifting, coach Dana, six athletes with their profiles,
@@ -28,7 +29,7 @@ from apps.workouts.models import CheckinQuestion, copy_defaults_to, install_defa
 
 from ._seed_library import seed_library
 from ._seed_programs import seed_programs
-from ._seed_sessions import seed_sessions
+from ._seed_sessions import seed_habits, seed_sessions
 
 DEMO_PASSWORD = "demo-password-123"
 TZ = "America/New_York"
@@ -185,6 +186,7 @@ class Command(BaseCommand):
         seed_programs(athletes_by_email, exercises, coach_user, today)
         seed_sessions(athletes_by_email, exercises, today)
         seed_library(gym, exercises, coach_user)
+        seed_habits(athletes_by_email, today)
         self.stdout.write(
             self.style.SUCCESS(
                 f"Demo data ready: {GYM_NAME}, coach {COACH[0]}, {len(ATHLETES)} athletes, "

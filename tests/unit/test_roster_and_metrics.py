@@ -50,7 +50,7 @@ def test_archived_athletes_leave_the_roster(coach_client, athlete):
 @pytest.mark.parametrize(
     "tab,text",
     [
-        ("overview", "arrives in phase 7"),
+        ("overview", "Estimated 1RM trend"),
         ("program", "Start a program for Maya"),
         ("sessions", "No sessions logged in this range"),
         ("messages", "No messages yet."),

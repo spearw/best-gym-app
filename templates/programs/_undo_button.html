@@ -1,0 +1,3 @@
+{# Undo for edits within this week (apps/programs/undo.py). Ctrl+Z / Cmd+Z presses it. #}
+<button class="btn btn--ghost btn--sm" type="button" id="undoBtn" data-undo{% if oob %} hx-swap-oob="true"{% endif %}{% if undo_entry %} title="Undo: {{ undo_entry.label }} (Ctrl+Z)"{% else %} disabled{% endif %}
+        hx-post="{% url 'coach:week_undo' athlete.pk week.pk %}" hx-target="#programEditor" hx-swap="outerHTML">{% if undo_entry %}Undo: {{ undo_entry.label|truncatechars:28 }}{% else %}Undo{% endif %}</button>

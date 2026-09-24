@@ -31,7 +31,7 @@
         {% if s.new_program %} · starts a new program{% if program %} (“{{ program.name }}” ends and is kept){% endif %}{% endif %}
         {% if s.replaced %} · replaces {{ s.replaced }} empty week{{ s.replaced|pluralize }}{% endif %}{% if s.moved %} · {{ s.moved }} scheduled week{{ s.moved|pluralize }} move{{ s.moved|pluralize:"s," }} after{% endif %}
         · {% if draft.publish %}published straight away{% else %}arrives unpublished{% endif %}
-        {% if s.habits %} · its {{ s.habits }} habit{{ s.habits|pluralize }} aren't copied yet (athlete habits arrive later){% endif %}
+        {% if s.habits %} · {{ s.habits }} habit{{ s.habits|pluralize }} prescribed (unless {{ athlete.user.get_short_name }} already has them){% endif %}
         <span class="muted">— click the dashed weeks to review each one.</span>
       {% endif %}
       {% endwith %}

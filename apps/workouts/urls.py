@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.accounts import views as account_views
 from apps.messaging import views as mv
+from apps.programs import habit_views as hv
 
 from . import views
 
@@ -19,6 +20,8 @@ urlpatterns = [
     path("log/<int:log_id>/finish/", views.finish, name="finish"),
     path("log/<int:log_id>/issue/", views.issue, name="issue"),
     path("log/<int:log_id>/done/", views.done, name="done"),
+    path("habits/", hv.athlete_card, name="habits"),
+    path("habits/<int:habit_id>/tick/", hv.tick, name="habit_tick"),
     path("progress/", views.progress, name="progress"),
     path("coach/", mv.athlete_tab, name="messages"),
     path("coach/thread/", mv.athlete_thread, name="message_thread"),

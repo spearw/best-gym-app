@@ -207,7 +207,9 @@ def test_tag_slots_resolve_to_recent_lifts(template, athlete, gym, program, coac
 
 def test_confirm_appends_unpublished_weeks_with_the_exact_dose(template, athlete, coach, program):
     program_before = program.weeks.count()
-    prog, first = apply.confirm(athlete, template, [0, 2, 4], apply.DEFAULTS, "append", False, coach.user)
+    prog, first, _habits = apply.confirm(
+        athlete, template, [0, 2, 4], apply.DEFAULTS, "append", False, coach.user
+    )
     assert prog == program and first.order == program_before and program.weeks.count() == program_before + 2
     assert not first.published and first.start_date == program.start_date + apply.WEEK * first.order
     rx = Prescription.objects.filter(session__day__week=first, exercise__key="sn").get()
@@ -218,7 +220,9 @@ def test_confirm_appends_unpublished_weeks_with_the_exact_dose(template, athlete
 
 
 def test_confirm_as_a_new_program(template, athlete, coach, program):
-    new, first = apply.confirm(athlete, template, [0, 2, 4], apply.DEFAULTS, "new:next", True, coach.user)
+    new, first, _habits = apply.confirm(
+        athlete, template, [0, 2, 4], apply.DEFAULTS, "new:next", True, coach.user
+    )
     program.refresh_from_db()
     assert not program.active and new.active and new.name == "Comp Cycle" and new.source_template == template
     assert first.published and first.start_date == athlete.gym.week_start_for(athlete.today()) + apply.WEEK

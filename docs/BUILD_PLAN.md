@@ -514,6 +514,12 @@ The review settled most of the original list. What remains is below; decide the 
 - Items clear themselves when handled (thread read or replied to, PR decided, issue marked resolved, weeks added, metrics filled in, a missed day logged afterwards); ✓ marks one read and "Clear read" removes read items.
 - Athletes see an unread-message badge on the message icon and the Coach tab; a newly published week just appears on their strip.
 
+### Decided (24 September, before phase 7)
+
+- Habit cadences are target-based: every day (streak in days); training days (due only on days with a session; streak over those days); 3× / 5× a week (due until the week's target is met, then "done for this week"; streak in weeks). Today never breaks a streak before it's over.
+- Athletes can tick habits for today and yesterday.
+- Undo covers edits within a week (exercises, sessions, names, clear week, week type, focus note), the last 50 per week, with Ctrl+Z. Adding, duplicating or deleting weeks and applying templates aren't undoable. Undo never removes a session an athlete has logged.
+
 ### Still open
 
 - [ ] Product name and domain (the mockup says "Platform"; the repo is GymTrainer).

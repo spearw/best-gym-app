@@ -23,7 +23,7 @@ from apps.exercises.models import Measure
 from apps.programs.models import LoadBasis, ProgramSession
 from apps.programs.prescriptions import load_text, summary
 
-from . import history, sessions
+from . import charts, history, sessions
 from .forms import RIR_CHOICES, FinishForm, IssueForm, SetForm
 from .models import EDIT_WINDOW, OTHER_OPTION, CheckinAnswer, CheckinQuestion, QuestionType, SessionLog
 
@@ -101,12 +101,15 @@ def home(request):
     program = athlete.programs.active().first()
     weeks = _published_weeks(program)
     week = _pick_week(weeks, today, _parse_date(request.GET.get("week")))
+    from apps.programs.habit_views import athlete_card_context
+
     context = {
         "tab": "week",
         "program": program,
         "week": week,
         "today": today,
         "coach_name": _coach_first_name(athlete),
+        **athlete_card_context(athlete),
     }
     paused = list(athlete.session_logs.unfinished().order_by("-started_at"))
     if week is None:
@@ -568,7 +571,15 @@ def progress(request):
     ]
     recent = list(athlete.session_logs.finished().order_by("-date", "-finished_at")[:5])
     now = timezone.now()
+    lifts = [e for e in charts.chart_lifts(athlete) if len(charts.e1rm_points(athlete, e)) >= 2]
+    lift = next((e for e in lifts if str(e.pk) == request.GET.get("lift")), lifts[0] if lifts else None)
+    chart, change = charts.progress_chart(athlete, lift, unit) if lift else (None, None)
     context = {
+        "lifts": lifts,
+        "lift": lift,
+        "chart": chart,
+        "change": change,
+        "unit": unit,
         "tab": "progress",
         "prs": prs,
         "recent": [{"log": log, "editable": log.editable(now)} for log in recent],

@@ -7,6 +7,7 @@ from apps.exercises import tracked_views
 from apps.library import apply_views as av
 from apps.library import views as lv
 from apps.messaging import views as mv
+from apps.programs import habit_views as hv
 from apps.programs import program_views as pv
 from apps.programs import views as week_type_views
 from apps.workouts import question_views as qv
@@ -75,6 +76,9 @@ urlpatterns = [
     path("athletes/<int:pk>/program/rx/<int:rx_id>/remove/", pv.rx_remove, name="rx_remove"),
     path("athletes/<int:pk>/program/rx/<int:rx_id>/swap/", pv.rx_swap, name="rx_swap"),
     path("athletes/<int:pk>/program/rx/<int:rx_id>/move/", pv.rx_move, name="rx_move"),
+    path("athletes/<int:pk>/program/weeks/<int:week_id>/undo/", pv.week_undo, name="week_undo"),
+    path("athletes/<int:pk>/habits/add/", hv.add, name="habit_add"),
+    path("athletes/<int:pk>/habits/<int:habit_id>/remove/", hv.remove, name="habit_remove"),
     path("athletes/<int:pk>/program/apply/start/", av.apply_start, name="apply_start"),
     path("athletes/<int:pk>/program/apply/", av.apply_update, name="apply_update"),
     path("athletes/<int:pk>/program/apply/cancel/", av.apply_cancel, name="apply_cancel"),

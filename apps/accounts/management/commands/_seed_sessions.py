@@ -265,3 +265,55 @@ def _seed_messages(athlete, messages):
         Message.objects.filter(pk=message.pk).update(sent_at=sent, read_at=sent if read else None)
         if from_athlete and not read:
             alerts.message_sent(message)
+
+
+# email: [(name, emoji, cadence, note, streak, template it came from)] — the mockup's habits.
+HABITS = {
+    "maya@ironridge.example": [
+        ("Eat 2 pieces of fruit", "🍎", "daily", "", 11, None),
+        ("In bed by 10:30pm", "😴", "daily", "Sleep is part of the program this block", 4, None),
+        ("10-min ankle mobility", "🧘", "training", "Before every session", 7, "12-Week Competition Cycle"),
+    ],
+    "jonas@ironridge.example": [
+        ("Shoulder rehab band work", "💪", "training", "Physio protocol, 2 rounds", 2, None),
+    ],
+}
+
+
+def seed_habits(athletes_by_email, today):
+    """Habits with enough ticks behind them to show the mockup's streaks."""
+    from django.utils import timezone
+
+    from apps.library.models import Template
+    from apps.programs.habits import training_dates
+    from apps.programs.models import Habit, HabitLog
+
+    for email, athlete in athletes_by_email.items():
+        athlete.habits.all().delete()  # demo data only: rebuilt on every seed
+        for order, (name, emoji, cadence, note, streak, source) in enumerate(HABITS.get(email, [])):
+            habit = Habit.objects.create(
+                athlete=athlete,
+                order=order,
+                name=name,
+                emoji=emoji,
+                cadence=cadence,
+                note=note,
+                source_template=Template.objects.filter(gym=athlete.gym, name=source).first()
+                if source
+                else None,
+            )
+            Habit.objects.filter(pk=habit.pk).update(created_at=timezone.now() - datetime.timedelta(days=60))
+            if cadence == "training":
+                days = sorted(
+                    (
+                        d
+                        for d in training_dates(athlete, today - datetime.timedelta(days=60), today)
+                        if d < today
+                    ),
+                    reverse=True,
+                )
+            else:
+                days = [today - datetime.timedelta(days=i) for i in range(1, 61)]
+            # The streak, then a missed day, then a few scattered earlier ticks.
+            done = days[:streak] + days[streak + 1 : streak + 6 : 2]
+            HabitLog.objects.bulk_create([HabitLog(habit=habit, date=d) for d in done])

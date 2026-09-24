@@ -223,3 +223,76 @@ class PrescribedSet(PrescribedSetBase):
 
     def __str__(self):
         return f"Set {self.set_number} of {self.prescription}"
+
+
+# ---------------------------------------------------------------- habits (phase 7)
+
+
+class Habit(models.Model):
+    """A habit prescribed to an athlete (by hand, or copied from a template on apply).
+    Removing one archives it, so its history stays."""
+
+    class Cadence(models.TextChoices):
+        DAILY = "daily", "Every day"
+        TRAINING = "training", "Training days"
+        THREE = "3x", "3× a week"
+        FIVE = "5x", "5× a week"
+
+    athlete = models.ForeignKey("accounts.Athlete", on_delete=models.CASCADE, related_name="habits")
+    order = models.PositiveSmallIntegerField(default=0)
+    name = models.CharField(max_length=80)
+    emoji = models.CharField(max_length=8, default="🍎")
+    cadence = models.CharField(max_length=10, choices=Cadence.choices, default=Cadence.DAILY)
+    note = models.CharField(max_length=120, blank=True)
+    source_template = models.ForeignKey(
+        "library.Template", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"{self.athlete}: {self.name}"
+
+    @property
+    def weekly_target(self):
+        return {self.Cadence.THREE: 3, self.Cadence.FIVE: 5}.get(self.cadence)
+
+
+class HabitLog(models.Model):
+    """A habit done on a day (a row means done)."""
+
+    habit = models.ForeignKey(Habit, on_delete=models.CASCADE, related_name="logs")
+    date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date"]
+        constraints = [models.UniqueConstraint(fields=["habit", "date"], name="one_log_per_habit_day")]
+
+    def __str__(self):
+        return f"{self.habit} on {self.date}"
+
+
+# ---------------------------------------------------------------- undo (phase 7)
+
+
+class EditHistory(models.Model):
+    """A snapshot of one program week taken before a board edit; undo restores the
+    latest and deletes it. Kept to the last UNDO_DEPTH per week."""
+
+    program_week = models.ForeignKey(ProgramWeek, on_delete=models.CASCADE, related_name="edit_history")
+    coach = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    label = models.CharField(max_length=120)
+    snapshot = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.program_week}: {self.label}"

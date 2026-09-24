@@ -1,0 +1,50 @@
+{% extends "coach/athlete/_base.html" %}
+{% block tab_content %}
+<div class="dash-grid" style="grid-template-columns:1fr 1fr;align-items:stretch">
+  <div class="card chart-card">
+    <div class="spread"><h4>Estimated 1RM trend</h4>
+      {% if lifts %}
+        <select class="input" name="lift" style="width:auto;padding:5px 28px 5px 10px;font-size:.78rem" aria-label="Lift"
+                hx-get="{% url 'coach:athlete_tab' athlete.pk 'overview' %}" hx-target="#e1rmChart" hx-swap="outerHTML" hx-trigger="change">
+          {% for e in lifts %}<option value="{{ e.pk }}"{% if e.pk == lift.pk %} selected{% endif %}>{{ e.name }}</option>{% endfor %}
+        </select>
+      {% endif %}
+    </div>
+    {% if lift %}{% include "coach/athlete/_e1rm_chart.html" %}{% else %}<p class="empty-note">Track a lift in Settings to chart it here.</p>{% endif %}
+    <div class="legend"><span><i style="background:var(--brand)"></i>e1RM ({{ unit }})</span><span><i style="background:var(--ink-4)"></i>bodyweight (dashed)</span><span>shaded bands = training phase</span></div>
+  </div>
+  <div class="card chart-card">
+    <div class="spread"><h4>Weekly volume &amp; compliance</h4><span class="tiny muted">last 8 weeks</span></div>
+    <svg class="spark" viewBox="0 0 460 170" role="img" aria-label="Weekly training volume and compliance">{{ volume_svg }}</svg>
+    <div class="legend"><span><i style="background:var(--wk-accum)"></i>volume (k·{{ unit }})</span><span><i style="background:var(--brand)"></i>compliance %</span></div>
+  </div>
+</div>
+<div class="dash-grid" style="grid-template-columns:1fr 1fr;margin-top:18px;align-items:start">
+  <div class="card" style="padding:16px 18px">
+    <h4 style="font-size:.95rem;margin-bottom:10px">Recent check-ins</h4>
+    <div class="stack">
+      {% for c in checkins %}{% with log=c.log %}
+        <div class="spread" style="align-items:flex-start;border-bottom:1px solid var(--line-2);padding-bottom:8px">
+          <span style="min-width:0"><b class="tiny">{{ log.date|date:"D j M" }}</b><br><span class="tiny muted">{% if c.scale %}Readiness {{ c.scale.value }}/10{% else %}Check-in skipped{% endif %}{% if c.choice %} · “{{ c.choice.value }}”{% if c.choice.other_text %} — <i>{{ c.choice.other_text }}</i>{% endif %}{% endif %}{% if log.comment %}<br>Post: “{{ log.comment }}”{% endif %}</span></span>
+          {% if log.session_rpe %}<span class="rpe-pill {% if log.session_rpe >= 9 %}hi{% elif log.session_rpe >= 7 %}mid{% else %}lo{% endif %}">RPE {{ log.session_rpe }}</span>{% endif %}
+        </div>
+      {% endwith %}{% empty %}
+        <p class="empty-note">No check-ins yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card" style="padding:16px 18px">
+    <h4 style="font-size:.95rem;margin-bottom:10px">This week at a glance</h4>
+    <div class="glance">{% for g in glance %}<div class="g-day{% if g.today %} today{% endif %}"><b>{{ g.date|date:"D" }}</b>{{ g.label }}</div>{% endfor %}</div>
+    <hr class="divider" style="margin:14px 0">
+    <h4 style="font-size:.95rem;margin-bottom:10px">Lifetime PRs</h4>
+    <div class="stack" style="gap:6px">
+      {% for pr in prs %}
+        <div class="spread tiny"><span class="row" style="gap:7px;flex-wrap:nowrap"><span class="svgi svgi--trophy" style="color:var(--warn);width:13px;height:13px"></span>{{ pr.name }}</span><b class="mono">{{ pr.heaviest }} <span class="muted" style="font-weight:400">· {{ pr.ago }}</span></b></div>
+      {% empty %}
+        <p class="empty-note">No loaded lifts logged yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

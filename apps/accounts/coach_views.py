@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from django import forms
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -22,7 +22,7 @@ from .models import Athlete, MaxUpdates, MeasurementSource, YearsTraining
 from .views import _invite_list_context
 
 DETAIL_TABS = [
-    ("overview", "Overview", 7),
+    ("overview", "Overview", None),
     ("program", "Program", None),
     ("sessions", "Sessions", None),
     ("metrics", "Metrics", None),
@@ -80,6 +80,10 @@ def athlete_detail(request, pk, tab="overview"):
     athlete = coach_athlete(request, pk)
     if tab == "metrics":
         return athlete_metrics(request, athlete)
+    if tab == "overview":
+        from apps.workouts.coach_views import overview_tab
+
+        return overview_tab(request, athlete, _header_context(request, athlete))
     if tab == "messages":
         from apps.messaging.views import coach_tab
 
@@ -88,13 +92,7 @@ def athlete_detail(request, pk, tab="overview"):
         from apps.workouts.coach_views import sessions_tab
 
         return sessions_tab(request, athlete, _header_context(request, athlete))
-    phase = dict((key, ph) for key, _label, ph in DETAIL_TABS)[tab]
-    label = dict((key, lbl) for key, lbl, _ph in DETAIL_TABS)[tab]
-    return TemplateResponse(
-        request,
-        "coach/athlete/placeholder.html",
-        {**_header_context(request, athlete), "tab": tab, "tab_label": label, "phase": phase},
-    )
+    raise Http404  # the Program tab has its own view (apps/programs/program_views.py)
 
 
 def _metric_cards(request, athlete):

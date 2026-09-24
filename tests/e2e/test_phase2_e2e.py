@@ -30,6 +30,7 @@ def test_exercise_library_search_filter_create_archive(page: Page, base, coach, 
     page.locator("#exlibFilters label.tagchip", has_text="overhead").click()
     page.locator("#exlibFilters label.tagchip", has_text="strength").click()
     expect(page.locator("#exlibResults")).to_contain_text("2 exercises matching")
+    htmx_idle(page)
 
     page.get_by_role("button", name="+ New exercise").click()
     modal = page.locator(".modal.open")
@@ -44,6 +45,7 @@ def test_exercise_library_search_filter_create_archive(page: Page, base, coach, 
     expect(page.locator("#exlibResults")).to_contain_text(
         "Behind-the-neck Jerk"
     )  # list refreshed, filters kept
+    htmx_idle(page)  # the list was just redrawn; let HTMX wire up its buttons before clicking
 
     page.once("dialog", lambda d: d.accept())
     page.get_by_role("button", name="Archive Behind-the-neck Jerk").click()

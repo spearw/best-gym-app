@@ -596,5 +596,9 @@ def week_undo(request, pk, week_id):
     athlete = coach_athlete(request, pk)
     week = _week(athlete, week_id)
     label = undo.undo(week)
-    message = f"Undone: {label}" if label else "Nothing to undo in this week"
+    message = (
+        f"Undone: {label}"
+        if label
+        else "Nothing to undo in this week — adding, duplicating or deleting weeks can't be undone"
+    )
     return render_editor(request, athlete, week.pk, message)

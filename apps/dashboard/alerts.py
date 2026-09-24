@@ -263,3 +263,46 @@ def unread_count(user):
     if coach is None:
         return 0
     return feed(coach).filter(read_at__isnull=True).count()
+
+
+# ---------------------------------------------------------------- where an item takes the coach
+
+
+def link_for(row):
+    """As close to the thing as possible: the message, the session with the issue, the PR
+    card, the program's last week, the metrics, the missed day. Worked out when the feed
+    is drawn (not stored), so it follows the data as it changes."""
+    from apps.programs.models import ProgramDay
+    from apps.workouts.models import IssueReport
+
+    athlete, key = row.athlete, row.dedupe_key
+    if athlete is None:
+        return row.link
+    kind = row.kind
+    if kind == NotificationKind.MESSAGE:
+        return _tab(athlete, "messages") + "#latest"
+    if kind == NotificationKind.ISSUE and key.startswith("issue:"):
+        issue = (
+            IssueReport.objects.filter(pk=key.removeprefix("issue:"), athlete=athlete)
+            .select_related("session_log")
+            .first()
+        )
+        if issue is None:
+            return _tab(athlete, "sessions")
+        older = issue.session_log and (athlete.today() - issue.session_log.date).days > 56
+        return _tab(athlete, "sessions") + ("?range=all" if older else "") + f"#issue-{issue.pk}"
+    if kind == NotificationKind.PR:
+        return _tab(athlete, "metrics") + "#sessionPrs"
+    if kind == NotificationKind.METRICS_MISSING:
+        return _tab(athlete, "metrics") + "#metricsPanel"
+    if kind == NotificationKind.PROGRAM_ENDING:
+        program, last = program_end_date(athlete)
+        if program is None or last is None:
+            return _tab(athlete, "program")
+        day = ProgramDay.objects.filter(week__program=program, date=last).first()
+        return _tab(athlete, "program") + (f"?week={day.week_id}#day-{day.pk}" if day else "")
+    if kind == NotificationKind.MISSED and key.startswith("day:"):
+        day = ProgramDay.objects.filter(pk=key.removeprefix("day:"), week__program__athlete=athlete).first()
+        if day:
+            return _tab(athlete, "program") + f"?week={day.week_id}#day-{day.pk}"
+    return row.link

@@ -269,14 +269,16 @@
     });
   }
 
-  // Ctrl+Z / Cmd+Z on the program board presses Undo (not while typing in a field).
+  // Ctrl+Z / Cmd+Z on the program board presses Undo. Not while typing in a field, except
+  // the library search: picking a day puts the cursor there, so it's usually where the
+  // coach is right after adding an exercise.
   document.addEventListener("keydown", function (e) {
     if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== "z") return;
-    if (e.target.closest("input, textarea, select, [contenteditable]")) return;
-    var button = document.querySelector("#programEditor [data-undo]:not([disabled])");
+    if (e.target.closest("input, textarea, select, [contenteditable]") && e.target.id !== "railSearch") return;
+    var button = document.querySelector("#programEditor [data-undo]");
     if (!button) return;
     e.preventDefault();
-    button.click();
+    button.click();  // with nothing to undo, the server answers with a toast saying why
   });
 
   // Library rail: tapping an athlete's history line opens their full log for that exercise.
@@ -304,14 +306,33 @@
   // events never reach the document.
   // HTMX's own scrollIntoViewOnBoost would then line up #coach-main's edge (74px down)
   // after settling, so it's turned off in favour of this.
+  // A link with a #target (e.g. an alert pointing at one session's issue) lands on that
+  // element instead: it's scrolled into view, a collapsed session around it is opened,
+  // and it flashes briefly.
+  function goToTarget(hash) {
+    var el = hash && hash.length > 1 ? document.getElementById(decodeURIComponent(hash.slice(1))) : null;
+    if (!el) return false;
+    var details = el.closest("details");
+    if (details) details.open = true;
+    el.scrollIntoView({ block: "center" });
+    el.classList.remove("is-target");
+    void el.offsetWidth;  // restart the highlight animation
+    el.classList.add("is-target");
+    return true;
+  }
   document.addEventListener("htmx:beforeSwap", function (e) {
     if (e.detail.boosted && e.detail.target && e.detail.target.id === "coach-main") {
-      setTimeout(function () { window.scrollTo(0, 0); }, 0);
+      var elt = e.detail.requestConfig && e.detail.requestConfig.elt;
+      var hash = elt && elt.href ? new URL(elt.href, window.location.href).hash : "";
+      var anchor = e.detail.pathInfo && e.detail.pathInfo.anchor;
+      if (!hash && anchor) hash = "#" + anchor;
+      setTimeout(function () { if (!goToTarget(hash)) window.scrollTo(0, 0); }, 0);
     }
   });
 
   document.addEventListener("DOMContentLoaded", function () {
     if (window.htmx) window.htmx.config.scrollIntoViewOnBoost = false;
+    goToTarget(window.location.hash);
     showInitialToasts(document);
     onReady(document);
     initSortables(document);

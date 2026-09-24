@@ -189,6 +189,7 @@ def feed_context(request):
     rows = list(alerts.feed(request.coach))
     for r in rows:
         r.icon, r.cls = FEED_ICONS.get(r.kind, "bell"), FEED_CLASS.get(r.kind, "prog")
+        r.href = alerts.link_for(r)
     return {
         "feed": rows,
         "unread": sum(1 for r in rows if r.read_at is None),

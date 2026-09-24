@@ -94,7 +94,7 @@
 
     <div class="week-board" :class="{ 'as-list': view === 'list' }" style="{{ week.week_type.css_vars }}">
       {% for d in days %}
-        <div class="day-col{% if not d.sessions %} rest{% endif %}" :class="{ selected: day === {{ d.day.pk }} }" @click="pick({{ d.day.pk }})" data-day-id="{{ d.day.pk }}">
+        <div class="day-col{% if not d.sessions %} rest{% endif %}" :class="{ selected: day === {{ d.day.pk }} }" @click="pick({{ d.day.pk }})" data-day-id="{{ d.day.pk }}" id="day-{{ d.day.pk }}">
           <div class="day-head">
             <b style="white-space:nowrap">{{ d.day.date|date:"D" }} <span class="muted" style="font-weight:500">{{ d.day.date|date:"j" }}</span></b>
             <span class="row" style="gap:4px;flex-wrap:nowrap">

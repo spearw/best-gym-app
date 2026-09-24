@@ -120,3 +120,15 @@ label.tagchip:has(input:focus-visible){outline:3px solid var(--brand);outline-of
 .adot--prog{background:var(--warn-lt)}
 .adot--pr{background:var(--good-lt)}
 .adot .svgi{width:13px;height:13px}
+
+/* The element an alert link points at flashes briefly when the page opens on it. */
+@keyframes target-flash{0%,60%{box-shadow:0 0 0 3px var(--brand)}100%{box-shadow:0 0 0 3px transparent}}
+.is-target{animation:target-flash 2.2s var(--ease);border-radius:var(--r)}
+a.adot{color:inherit}
+a.adot:hover{outline:2px solid var(--brand);outline-offset:1px}
+
+/* Template editor: let hover tips on a week's header buttons show above the card
+   (the mockup clipped the card to round its corners, which cut the tips off). */
+.tpl-week{overflow:visible}
+.tpl-week>.wkhead{border-top-left-radius:var(--r-l);border-top-right-radius:var(--r-l)}
+.tpl-week .tpl-sessions{border-bottom-left-radius:var(--r-l);border-bottom-right-radius:var(--r-l)}

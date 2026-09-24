@@ -243,3 +243,23 @@ def test_short_times():
         "2h ago",
         "3d ago",
     ]
+
+
+def test_alert_links_go_to_the_item(coach, athlete, program, gym):
+    from apps.workouts.models import SessionLog
+
+    alerts.sync_athlete(athlete)
+    links = {n.kind: alerts.link_for(n) for n in alerts.feed(coach)}
+    assert links["metrics_missing"].endswith("/metrics/#metricsPanel")
+    assert "program/?week=" in links["program_ending"] or links["program_ending"].endswith("/program/")
+    old = SessionLog.objects.create(athlete=athlete, date=athlete.today() - 70 * DAY, name="Old")
+    issue = IssueReport.objects.create(athlete=athlete, session_log=old, kind="pain")
+    alerts.issue_reported(issue)
+    row = alerts.feed(coach).get(kind="issue")
+    assert alerts.link_for(row).endswith(
+        f"/sessions/?range=all#issue-{issue.pk}"
+    )  # outside the default 8 weeks
+    session = plan(program, athlete.today() - DAY, athlete, gym)
+    alerts.sync_athlete(athlete)
+    missed = alerts.feed(coach).get(kind="missed")
+    assert alerts.link_for(missed).endswith(f"?week={session.day.week_id}#day-{session.day_id}")

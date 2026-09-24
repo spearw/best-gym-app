@@ -8,7 +8,7 @@
     {% for n in feed %}
       <div class="attn-row{% if n.read_at %} is-read{% endif %}">
         {# The card polls with hx-target="this"; links must name the main area or they'd inherit it. #}
-        <a class="attn attn--{{ n.cls }}" href="{{ n.link }}" hx-target="#coach-main" hx-swap="outerHTML">
+        <a class="attn attn--{{ n.cls }}" href="{{ n.href }}" hx-target="#coach-main" hx-swap="outerHTML">
           <span class="ic"><span class="svgi svgi--{{ n.icon }}"></span></span>
           <span style="min-width:0"><b>{{ n.athlete.user.name|default:n.athlete.user.email }}</b><p>{{ n.text }}</p></span>
           <time datetime="{{ n.created_at|date:'c' }}">{{ n.created_at|ago }}</time>

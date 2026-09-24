@@ -1,5 +1,7 @@
 """The coach's attention feed and coach–athlete messages in a real browser."""
 
+import re
+
 import pytest
 from playwright.sync_api import Page, expect
 
@@ -25,7 +27,7 @@ def test_message_round_trip_through_the_feed(page: Page, base, coach, athlete, s
     expect(feed).to_contain_text("78 or 80")
     expect(page.locator("a.navitem .n")).to_be_visible()
     feed.locator("a.attn", has_text="78 or 80").click()
-    expect(page).to_have_url(base + f"/coach/athletes/{athlete.pk}/messages/")
+    expect(page).to_have_url(base + f"/coach/athletes/{athlete.pk}/messages/#latest")
     expect(page.locator("#msgThread .mbubble.them")).to_contain_text("78 or 80")
     htmx_idle(page)
     page.get_by_label("Message this athlete…").fill("80, if the first one flies.")
@@ -52,3 +54,45 @@ def test_message_round_trip_through_the_feed(page: Page, base, coach, athlete, s
     expect(page.locator("#msgThread")).to_contain_text("80, if the first one flies.")
     page.goto(base + "/app/")
     expect(page.locator(".app-head .badge")).to_have_count(0)
+
+
+def test_alerts_go_straight_to_the_thing(page: Page, base, coach, athlete, sign_in):
+    import datetime
+
+    from apps.dashboard import alerts
+    from apps.programs import services as program_services
+    from apps.programs.models import WeekType
+    from apps.workouts import sessions
+    from apps.workouts.models import IssueReport
+
+    week_type = WeekType.objects.get(gym=coach.gym, name="Accumulation")
+    today = athlete.today()
+    program = program_services.start_program(
+        athlete, "Block", today - datetime.timedelta(days=21), 4, week_type, by=coach.user
+    )
+    old_day = program.weeks.first().days.first()
+    from apps.exercises.models import Exercise
+
+    program_services.add_prescription(old_day, Exercise.objects.get(gym=coach.gym, key="sn"), athlete)
+    for week in program.weeks.all():
+        program_services.set_published(week, True)
+    log = sessions.start(athlete, old_day.sessions.get())
+    sessions.finish(log, 8, "")
+    issue = IssueReport.objects.create(athlete=athlete, session_log=log, kind="pain", text="Left wrist")
+    alerts.issue_reported(issue)
+
+    sign_in(page, coach.user)
+    page.goto(base + "/coach/")
+    # The issue icon in the athletes table goes to the session with the issue, opened.
+    page.locator("#rosterBody a.adot--issue").click()
+    expect(page).to_have_url(base + f"/coach/athletes/{athlete.pk}/sessions/#issue-{issue.pk}")
+    target = page.locator(f"#issue-{issue.pk}")
+    expect(target).to_be_visible()
+    expect(target).to_be_in_viewport()
+    expect(target).to_have_class(re.compile("is-target"))
+
+    # The feed's "no metrics" item lands on the metrics cards.
+    page.locator("a.navitem", has_text="Dashboard").click()
+    page.locator("#attnCard a.attn", has_text="Missing:").click()
+    expect(page).to_have_url(base + f"/coach/athletes/{athlete.pk}/metrics/#metricsPanel")
+    expect(page.locator("#metricsPanel")).to_have_class(re.compile("is-target"))

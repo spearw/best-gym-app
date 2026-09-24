@@ -32,17 +32,20 @@ def test_undo_and_habits(page: Page, base, coach, athlete, program, sign_in):
     sign_in(page, coach.user)
     page.goto(base + f"/coach/athletes/{athlete.pk}/program/")
     undo = page.locator("#undoBtn")
-    expect(undo).to_be_disabled()
+    expect(undo).to_have_attribute("aria-disabled", "true")
     add(page, 0, "Snatch")
     add(page, 0, "Back Squat")
-    expect(undo).to_have_text("Undo: Add Back Squat")
+    expect(undo).to_have_text("↶ Undo: Add Back Squat")
     undo.click()
     expect(page.locator("#toastStack")).to_contain_text("Undone: Add Back Squat")
     expect(page.locator(".day-col").nth(0).locator(".rx-item")).to_have_count(1)
     htmx_idle(page)
-    page.locator("body").press("Control+z")  # the keyboard shortcut
+    page.locator("#railSearch").press("Control+z")  # the shortcut, from the library search box
     expect(page.locator(".day-col").nth(0).locator(".rx-item")).to_have_count(0)
     assert not Prescription.objects.exists()
+    htmx_idle(page)
+    page.locator("body").press("Control+z")  # nothing left: it says so
+    expect(page.locator("#toastStack")).to_contain_text("Nothing to undo in this week")
 
     # Prescribe a habit on the Program tab.
     card = page.locator("#habitCard")

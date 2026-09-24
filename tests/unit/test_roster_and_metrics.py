@@ -53,7 +53,7 @@ def test_archived_athletes_leave_the_roster(coach_client, athlete):
         ("overview", "arrives in phase 7"),
         ("program", "Start a program for Maya"),
         ("sessions", "No sessions logged in this range"),
-        ("messages", "arrives in phase 6"),
+        ("messages", "No messages yet."),
     ],
 )
 def test_detail_tabs_are_urls(coach_client, athlete, tab, text):

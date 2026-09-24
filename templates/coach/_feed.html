@@ -1,0 +1,23 @@
+{% load ago %}{# "Needs your attention" (apps/dashboard/alerts.py). Polled every 20 s; the sidebar count comes back out of band. #}
+<div id="attnCard" hx-get="{% url 'coach:feed' %}" hx-trigger="every 20s" hx-target="this" hx-swap="outerHTML">
+  <div class="spread" style="margin-bottom:10px">
+    <h3 style="font-size:1rem">Needs your attention</h3>
+    {% if has_read %}<button class="btn btn--sm btn--soft" type="button" hx-post="{% url 'coach:feed_clear' %}" hx-target="#attnCard" hx-swap="outerHTML">Clear read</button>{% endif %}
+  </div>
+  <div class="attn-feed">
+    {% for n in feed %}
+      <div class="attn-row{% if n.read_at %} is-read{% endif %}">
+        {# The card polls with hx-target="this"; links must name the main area or they'd inherit it. #}
+        <a class="attn attn--{{ n.cls }}" href="{{ n.link }}" hx-target="#coach-main" hx-swap="outerHTML">
+          <span class="ic"><span class="svgi svgi--{{ n.icon }}"></span></span>
+          <span style="min-width:0"><b>{{ n.athlete.user.name|default:n.athlete.user.email }}</b><p>{{ n.text }}</p></span>
+          <time datetime="{{ n.created_at|date:'c' }}">{{ n.created_at|ago }}</time>
+        </a>
+        {% if not n.read_at %}<button class="attn-done tip" type="button" data-tip="Mark as read" aria-label="Mark as read: {{ n.text }}" hx-post="{% url 'coach:feed_dismiss' n.pk %}" hx-target="#attnCard" hx-swap="outerHTML">✓</button>{% endif %}
+      </div>
+    {% empty %}
+      <p class="empty-note">All caught up — nothing needs your attention.</p>
+    {% endfor %}
+  </div>
+  {% if request.htmx.target == "attnCard" %}{% include "partials/coach_nav.html" with oob=True panel="dashboard" %}{% endif %}
+</div>

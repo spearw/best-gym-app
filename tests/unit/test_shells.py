@@ -40,7 +40,8 @@ def test_coach_shell_marks_active_nav(coach_client, url, active):
     assert 'hx-boost="true"' in html
     nav_href = "/coach/programming/" if active == "Programming" else url
     assert f'navitem active" href="{nav_href}"' in html
-    assert f"<h2>{active}</h2>" in html
+    title = "<h2>Good " if active == "Dashboard" else f"<h2>{active}</h2>"  # the dashboard greets the coach
+    assert title in html
     assert "Dana Whitfield" in html  # real signed-in coach in the sidebar
 
 
@@ -65,15 +66,9 @@ def test_base_layout_loads_htmx_alpine_and_ported_css(coach_client):
     assert '"X-CSRFToken"' in html  # CSRF header for every HTMX request
 
 
-def test_ping_returns_fragment_and_toast_trigger(coach_client):
-    response = coach_client.get("/coach/ping/", HTTP_HX_REQUEST="true")
-    assert 'id="pingResult"' in response.content.decode()
-    assert json.loads(response["HX-Trigger"])["toast"]["kind"] == "good"
-
-
 def test_nightly_command_runs(capsys):
     call_command("nightly")
-    assert "database reachable" in capsys.readouterr().out
+    assert "synced alerts" in capsys.readouterr().out
 
 
 def test_boosted_coach_request_returns_only_main_and_oob_nav(coach_client):

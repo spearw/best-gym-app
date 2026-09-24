@@ -1,0 +1,7 @@
+{% extends "base_app.html" %}
+{% block title %}Coach {{ coach_name }}{% endblock %}
+{% block content %}
+<h3 style="font-size:1.2rem;margin-bottom:12px">Coach {{ coach_name }}</h3>
+{% include "messaging/_thread.html" %}
+<div style="margin-top:12px">{% include "messaging/_compose.html" with placeholder="Message "|add:coach_name|add:"…" button="↑" %}</div>
+{% endblock %}

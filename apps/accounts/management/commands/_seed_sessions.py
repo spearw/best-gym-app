@@ -80,6 +80,22 @@ CHECKINS = {
     "theo@ironridge.example": [(1, 7, "Nothing — all good", "", 6, "Tempo work is humbling.")],
 }
 
+# email: [(hours ago, from the athlete?, text, read?)] — the mockup's message threads.
+MESSAGES = {
+    "maya@ironridge.example": [
+        (26, False, "Nice work Tuesday. Numbers looked crisp on video.", True),
+        (25, True, "Thanks! Felt the best it has all block.", True),
+        (2, True, "Coach — for Saturday, are we going 78 or 80 for the second snatch opener attempt?", False),
+    ],
+    "jonas@ironridge.example": [
+        (24, True, "Logged the shoulder thing in the issue report — not terrible but worth flagging.", True),
+    ],
+    "marcus@ironridge.example": [
+        (5, True, "What's the sauna protocol this week? Trying to be smart about the last 1.5kg.", False),
+    ],
+    "lena@ironridge.example": [(48, False, "Deload week — bar speed only, nothing heavy.", True)],
+}
+
 MISSED = {"marcus@ironridge.example"}  # planned sessions before today left unlogged
 ISSUES = {"jonas@ironridge.example": (1, IssueKind.PAIN, "Shoulder pinch at jerk lockout")}
 DEFAULT_RPE = 7
@@ -223,3 +239,29 @@ def seed_sessions(athletes_by_email, exercises, today):
                 kind=kind,
                 text=text,
             )
+        _seed_messages(athlete, MESSAGES.get(email, []))
+        if email in ISSUES:
+            from apps.dashboard import alerts
+
+            for issue in athlete.issues.all():
+                alerts.issue_reported(issue)
+
+
+def _seed_messages(athlete, messages):
+    from django.utils import timezone
+
+    from apps.dashboard import alerts
+    from apps.dashboard.models import Notification
+    from apps.messaging.models import Message, Thread
+
+    Thread.objects.filter(athlete=athlete).delete()
+    Notification.objects.filter(athlete=athlete).delete()
+    thread = Thread.for_athlete(athlete)
+    now = timezone.now()
+    for hours, from_athlete, text, read in messages:
+        sent = now - datetime.timedelta(hours=hours)
+        sender = athlete.user if from_athlete else athlete.coach.user
+        message = Message.objects.create(thread=thread, sender=sender, body=text)
+        Message.objects.filter(pk=message.pk).update(sent_at=sent, read_at=sent if read else None)
+        if from_athlete and not read:
+            alerts.message_sent(message)

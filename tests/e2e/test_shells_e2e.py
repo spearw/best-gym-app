@@ -28,14 +28,6 @@ def test_coach_shell_boosted_navigation_keeps_sidebar(page: Page, base, coach, s
     assert bg == "rgb(20, 24, 31)"
 
 
-def test_htmx_ping_swaps_fragment_and_shows_toast(page: Page, base, coach, sign_in):
-    sign_in(page, coach.user)
-    page.goto(base + "/coach/")
-    page.get_by_role("button", name="Ping the server").click()
-    expect(page.locator("#pingResult")).to_have_text("HTMX is wired")
-    expect(page.locator("#toastStack .toast")).to_have_text("Server replied")
-
-
 def test_athlete_shell_fills_a_phone_screen_and_tabs_work(page: Page, base, athlete, sign_in):
     sign_in(page, athlete.user)
     page.set_viewport_size({"width": 390, "height": 844})

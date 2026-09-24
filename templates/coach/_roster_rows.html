@@ -1,0 +1,14 @@
+<tbody id="rosterBody">
+  {% for r in rows %}{% with a=r.athlete %}
+    <tr onclick="this.querySelector('a').click()" style="cursor:pointer">
+      <td><span class="ct-name"><span class="avatar">{{ a.user.initials }}</span><span><b>{{ a.user.name|default:a.user.email }}</b><small>{% if a.weight_class %}{{ a.weight_class }} · {% endif %}{% if a.competition_name %}{{ a.competition_name }} — {{ a.competition_date|date:"M j" }}{% else %}no comp scheduled{% endif %}</small></span></span></td>
+      <td>{% if r.week %}<span class="wk-pill" style="{{ r.week.week_type.css_vars }}">{{ r.week.week_type.name }} · wk {{ r.week.order|add:1 }}</span>{% else %}<span class="tiny muted">no program this week</span>{% endif %}</td>
+      <td>{% if r.compliance is not None %}<span class="ring" style="--p:{{ r.compliance }};--ring-c:{{ r.ring }}"><span>{{ r.compliance }}%</span></span>{% else %}<span class="tiny muted">—</span>{% endif %}</td>
+      <td class="tiny muted">{% if r.last %}{{ r.last.date|date:"D j M" }}{% if r.last.session_rpe %} · RPE {{ r.last.session_rpe }}{% endif %}{% if r.readiness %} · readiness {{ r.readiness }}/10{% endif %}{% else %}—{% endif %}</td>
+      <td><span class="alert-dots">{% for al in r.alerts %}<span class="adot adot--{{ al.cls }} tip" data-tip="{{ al.row.text }}"><span class="svgi svgi--{{ al.icon }}"></span></span>{% empty %}<span class="tiny muted">—</span>{% endfor %}</span></td>
+      <td><a class="tiny" style="color:var(--brand);font-weight:600" href="{% url 'coach:athlete_tab' a.pk 'overview' %}" onclick="event.stopPropagation()">Open →</a></td>
+    </tr>
+  {% endwith %}{% empty %}
+    <tr><td colspan="6"><p class="empty-note">No athletes yet — invite your first one.</p></td></tr>
+  {% endfor %}
+</tbody>

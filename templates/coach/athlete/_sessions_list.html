@@ -27,7 +27,7 @@
           <div class="exline"><span class="muted">Session RPE</span><span>{% if log.session_rpe %}<b>{{ log.session_rpe }} / 10</b>{% else %}—{% endif %}</span></div>
           {% if log.comment %}<div class="note">“{{ log.comment }}”</div>{% endif %}
         </div>
-        {% for issue in item.issues %}<div class="note" style="background:var(--bad-lt)"><b>Issue reported:</b> {{ issue.get_kind_display }}{% if issue.text %} — {{ issue.text }}{% endif %}</div>{% endfor %}
+        {% for issue in item.issues %}{% include "coach/athlete/_issue_note.html" %}{% endfor %}
       </div>
     </details>
   {% endwith %}{% empty %}

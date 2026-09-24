@@ -258,6 +258,15 @@ def scheduled_days(athlete, until):
     return [(d.date, any(s.pk in done_ids for s in d.sessions.all())) for d in days]
 
 
+def compliance(athlete, today, days=7, end=None):
+    """(done, scheduled) over the `days` calendar days ending `end` (default today).
+    Today counts only once it's done, so it isn't a miss before the day is over."""
+    end = end or today
+    start = end - datetime.timedelta(days=days - 1)
+    rows = [(d, done) for d, done in scheduled_days(athlete, end) if d >= start and (d < today or done)]
+    return sum(1 for _d, done in rows if done), len(rows)
+
+
 def streak(athlete, today=None):
     today = today or athlete.today()
     count = 0

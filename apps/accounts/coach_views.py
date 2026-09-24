@@ -26,7 +26,7 @@ DETAIL_TABS = [
     ("program", "Program", None),
     ("sessions", "Sessions", None),
     ("metrics", "Metrics", None),
-    ("messages", "Messages", 6),
+    ("messages", "Messages", None),
 ]
 
 
@@ -80,6 +80,10 @@ def athlete_detail(request, pk, tab="overview"):
     athlete = coach_athlete(request, pk)
     if tab == "metrics":
         return athlete_metrics(request, athlete)
+    if tab == "messages":
+        from apps.messaging.views import coach_tab
+
+        return coach_tab(request, athlete)
     if tab == "sessions":
         from apps.workouts.coach_views import sessions_tab
 
@@ -256,6 +260,9 @@ def max_updates(request, pk):
     if value in MaxUpdates.values:
         athlete.max_updates = value
         athlete.save(update_fields=["max_updates"])
+        from apps.dashboard import alerts
+
+        alerts.sync_prs(athlete)
     name = athlete.user.get_short_name()
     message = (
         f"Session PRs now update {name}'s maxes automatically"
@@ -282,6 +289,9 @@ def pr_decide(request, pk, set_id):
     else:
         prs.dismiss(athlete, candidate)
         message = f"Kept {lift} at {units.display(candidate.current.kg, request.coach.gym.units)}"
+    from apps.dashboard import alerts
+
+    alerts.sync_prs(athlete)
     return hx.toast(athlete_metrics(request, athlete), message, "good")
 
 

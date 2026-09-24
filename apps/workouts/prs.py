@@ -60,11 +60,15 @@ def apply(log):
     MaxEntry.objects.filter(
         set_log__session_exercise__session_log=log, source=MeasurementSource.SESSION
     ).delete()
-    if not log.finished or log.athlete.max_updates != MaxUpdates.AUTO:
-        return []
+    from apps.dashboard import alerts
+
     created = []
-    for c in session_candidates(log):
-        created.append(_use(log.athlete, c.set_log, MeasurementSource.SESSION))
+    if log.finished and log.athlete.max_updates == MaxUpdates.AUTO:
+        for c in session_candidates(log):
+            entry = _use(log.athlete, c.set_log, MeasurementSource.SESSION)
+            alerts.max_updated(entry)
+            created.append(entry)
+    alerts.sync_prs(log.athlete)  # PRs waiting for the coach, in their feed
     return created
 
 

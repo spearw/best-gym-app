@@ -1,0 +1,5 @@
+{% extends "coach/athlete/_base.html" %}
+{% block tab_content %}
+{% include "messaging/_thread.html" %}
+{% include "messaging/_compose.html" with placeholder="Message this athlete…" %}
+{% endblock %}

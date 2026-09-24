@@ -1,5 +1,5 @@
 <nav id="snav-links" class="stack" style="gap:2px"{% if oob %} hx-swap-oob="true"{% endif %}>
-  <a class="navitem{% if panel == 'dashboard' %} active{% endif %}" href="{% url 'coach:dashboard' %}"><span class="ico"><span class="svgi svgi--grid"></span></span><span class="lbl">Dashboard</span></a>
+  <a class="navitem{% if panel == 'dashboard' %} active{% endif %}" href="{% url 'coach:dashboard' %}"><span class="ico"><span class="svgi svgi--grid"></span></span><span class="lbl">Dashboard</span>{% with n=alert_count %}{% if n %}<span class="n" aria-label="{{ n }} unread alert{{ n|pluralize }}">{{ n }}</span>{% endif %}{% endwith %}</a>
   <a class="navitem{% if panel == 'athletes' %} active{% endif %}" href="{% url 'coach:athletes' %}"><span class="ico"><span class="svgi svgi--users"></span></span><span class="lbl">Athletes</span></a>
   <a class="navitem{% if panel == 'programming' %} active{% endif %}" href="{% url 'coach:programming' %}"><span class="ico"><span class="svgi svgi--layers"></span></span><span class="lbl">Programming</span></a>
   <a class="navitem{% if panel == 'settings' %} active{% endif %}" href="{% url 'coach:settings' %}"><span class="ico"><span class="svgi svgi--sliders"></span></span><span class="lbl">Settings</span></a>

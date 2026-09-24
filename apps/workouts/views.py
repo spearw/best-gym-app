@@ -505,8 +505,11 @@ def issue(request, log_id):
         report = form.save(commit=False)
         report.athlete, report.session_log = request.athlete, log
         report.save()
+        from apps.dashboard import alerts
+
+        alerts.issue_reported(report)
         response = TemplateResponse(request, "app/_issue_list.html", {"issues": list(log.issues.all())})
-        hx.toast(response, f"Sent — {_coach_first_name(request.athlete)} sees it with this session", "good")
+        hx.toast(response, f"Sent — {_coach_first_name(request.athlete)} has been notified", "good")
         return hx.trigger_after_swap(response, closeModal=True)
     template = "app/_issue_modal.html" if request.method == "GET" else "app/_issue_form.html"
     response = TemplateResponse(
@@ -597,9 +600,3 @@ def profile(request):
         "coach_name": _coach_first_name(athlete),
     }
     return TemplateResponse(request, "app/profile.html", context)
-
-
-@athlete_required
-def messages_tab(request):
-    # The coach thread arrives in phase 6.
-    return TemplateResponse(request, "app/placeholder.html", {"tab": "coach", "title": "Coach"})

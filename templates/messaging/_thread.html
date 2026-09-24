@@ -1,0 +1,8 @@
+{% load ago %}{# One coach–athlete thread, polled every 20 s. Bubbles are "me" for the viewer's own messages. #}
+<div class="msg-thread{% if mobile %} mob-msgs{% endif %}" id="msgThread" hx-get="{{ poll_url }}" hx-trigger="every 20s" hx-target="this" hx-swap="outerHTML" data-count="{{ thread_messages|length }}">
+  {% for m in thread_messages %}
+    <div class="mbubble {% if m.sender_id == viewer.pk %}me{% else %}them{% endif %}">{{ m.body|linebreaksbr }}<time datetime="{{ m.sent_at|date:'c' }}">{{ m.sent_at|ago }}{% if m.sender_id == viewer.pk and m.read_at %} · read{% endif %}</time></div>
+  {% empty %}
+    <p class="empty-note">No messages yet.</p>
+  {% endfor %}
+</div>

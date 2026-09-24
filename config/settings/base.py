@@ -61,6 +61,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.dashboard.context_processors.shell_frames",
+                "apps.dashboard.context_processors.coach_alerts",
                 "apps.accounts.context_processors.gym",
             ],
         },

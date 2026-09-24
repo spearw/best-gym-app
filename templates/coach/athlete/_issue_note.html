@@ -1,0 +1,5 @@
+<div class="note" id="issue-{{ issue.pk }}" style="background:var(--bad-lt){% if issue.resolved_at %};opacity:.7{% endif %}">
+  <b>Issue reported:</b> {{ issue.get_kind_display }}{% if issue.text %} — {{ issue.text }}{% endif %}
+  {% if issue.resolved_at %}<span class="chip chip--good" style="margin-left:6px">resolved {{ issue.resolved_at|date:"j M" }}</span>
+  {% else %}<button class="btn btn--sm btn--ghost" type="button" style="margin-left:8px" hx-post="{% url 'coach:issue_resolve' athlete.pk issue.pk %}" hx-target="#issue-{{ issue.pk }}" hx-swap="outerHTML">Mark resolved</button>{% endif %}
+</div>

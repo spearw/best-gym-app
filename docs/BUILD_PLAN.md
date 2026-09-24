@@ -508,6 +508,12 @@ The review settled most of the original list. What remains is below; decide the 
 - An invite can carry a starting template; on joining it becomes an unpublished draft program from the next week, on the template's default days.
 - Deleting an exercise removes its fixed template slots; a tag slot that defaults to it switches to another exercise with the same tags (removed if there is none).
 
+### Decided (23 September, before phase 6)
+
+- The coach's feed shows issues, messages, session PRs (waiting, or applied automatically), programs running out within 7 days (or no program), missing metrics and sessions missed in the last 7 days. Form videos join in phase 8.
+- Items clear themselves when handled (thread read or replied to, PR decided, issue marked resolved, weeks added, metrics filled in, a missed day logged afterwards); ✓ marks one read and "Clear read" removes read items.
+- Athletes see an unread-message badge on the message icon and the Coach tab; a newly published week just appears on their strip.
+
 ### Still open
 
 - [ ] Product name and domain (the mockup says "Platform"; the repo is GymTrainer).

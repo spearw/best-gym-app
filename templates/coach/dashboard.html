@@ -1,0 +1,61 @@
+{% extends "base_coach.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Good {% now "A" as ampm %}{% if ampm == "AM" %}morning{% else %}afternoon{% endif %}, {{ user.get_short_name }} <span class="tiny muted" style="font-weight:500">{{ today|date:"l j F" }}</span>{% endblock %}
+{% block topbar_actions %}{% include "partials/invite_button.html" %}{% endblock %}
+{% block content %}
+<div class="kpi-row">
+  <div class="kpi"><div class="v">{{ kpis.active }}</div><div class="l">Active athletes</div>{% if kpis.joined %}<div class="d up">▲ {{ kpis.joined }} this month</div>{% endif %}</div>
+  <div class="kpi"><div class="v">{% if kpis.compliance is not None %}{{ kpis.compliance }}%{% else %}—{% endif %}</div><div class="l">7-day compliance</div>
+    {% if kpis.compliance_change %}<div class="d {{ kpis.compliance_dir }}">{% if kpis.compliance_dir == "up" %}▲{% else %}▼{% endif %} {{ kpis.compliance_change }} pts</div>{% endif %}</div>
+  <div class="kpi"><div class="v">{{ kpis.sessions }}</div><div class="l">Sessions completed this week</div>
+    {% if kpis.sessions_change %}<div class="d {{ kpis.sessions_dir }}">{% if kpis.sessions_dir == "up" %}▲{% else %}▼{% endif %} {{ kpis.sessions_change }} vs last week</div>{% endif %}</div>
+  <div class="kpi"><div class="v"{% if kpis.need_programming %} style="color:var(--warn)"{% endif %}>{{ kpis.need_programming }}</div><div class="l">Need programming</div><div class="d{% if kpis.need_programming %} down{% endif %}">runs out &lt; 7 days</div></div>
+</div>
+
+<div class="dash-grid">
+  <div class="card" style="overflow:hidden">
+    <div class="spread" style="padding:16px 18px 0">
+      <h3 style="font-size:1.02rem">Your athletes</h3>
+      <select class="input" name="sort" style="width:auto;padding:6px 30px 6px 10px;font-size:.8rem" aria-label="Sort athletes"
+              hx-get="{% url 'coach:dashboard' %}" hx-target="#rosterBody" hx-swap="outerHTML" hx-trigger="change">
+        {% for value, label in sorts %}<option value="{{ value }}"{% if value == sort %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div style="overflow-x:auto"><table class="client-table">
+      <thead><tr><th>Athlete</th><th>Current week</th><th>Compliance</th><th>Last session</th><th>Attention</th><th></th></tr></thead>
+      {% include "coach/_roster_rows.html" %}
+    </table></div>
+  </div>
+
+  <div class="stack">
+    <div class="card" style="padding:16px 18px">
+      {% include "coach/_feed.html" %}
+    </div>
+    <div class="card" style="padding:16px 18px">
+      <h3 style="font-size:1rem;margin-bottom:10px">Sessions today</h3>
+      <div class="stack" style="gap:8px">
+        {% for item in today_list %}
+          <a class="spread tiny" style="color:inherit" href="{% url 'coach:athlete_tab' item.athlete.pk 'program' %}">
+            <span class="row" style="gap:8px;flex-wrap:nowrap"><span class="avatar avatar--sm">{{ item.athlete.user.initials }}</span>{{ item.athlete.user.name|default:item.athlete.user.email }}</span>
+            {% if not item.count %}<span class="muted">rest day</span>{% elif item.done %}<span class="chip chip--good">✓ completed</span>{% else %}<span class="chip chip--brand">{{ item.count }} exercise{{ item.count|pluralize }}</span>{% endif %}
+          </a>
+        {% empty %}
+          <p class="empty-note">No athletes yet — invite your first one.</p>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card" style="padding:16px 18px">
+      <div class="spread" style="margin-bottom:6px"><h3 style="font-size:1rem">Recent sessions</h3><span class="tiny muted">last 7 days · all athletes</span></div>
+      {% for log in recent %}
+        <a class="sess-feed-row" style="color:inherit" href="{% url 'coach:athlete_tab' log.athlete.pk 'sessions' %}">
+          <span class="avatar avatar--sm">{{ log.athlete.user.initials }}</span>
+          <span style="min-width:0;flex:1"><b class="tiny">{{ log.athlete.user.name|default:log.athlete.user.email }}</b> <span class="tiny muted">· {{ log.date|date:"D j M" }}</span><br><span class="tiny muted">{{ log.name }}{% if log.comment %} — “{{ log.comment|truncatechars:60 }}”{% endif %}</span></span>
+          <span class="row" style="gap:6px;flex-wrap:nowrap">{% if log.issues.all %}<span class="svgi svgi--alert tip" data-tip="Issue reported" style="color:var(--bad)"></span>{% endif %}{% if log.session_rpe %}<span class="rpe-pill {% if log.session_rpe >= 9 %}hi{% elif log.session_rpe >= 7 %}mid{% else %}lo{% endif %}">RPE {{ log.session_rpe }}</span>{% endif %}</span>
+        </a>
+      {% empty %}
+        <p class="empty-note">No sessions in the last 7 days.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

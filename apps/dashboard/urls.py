@@ -6,6 +6,7 @@ from apps.accounts import views as account_views
 from apps.exercises import tracked_views
 from apps.library import apply_views as av
 from apps.library import views as lv
+from apps.messaging import views as mv
 from apps.programs import program_views as pv
 from apps.programs import views as week_type_views
 from apps.workouts import question_views as qv
@@ -33,6 +34,12 @@ def question_patterns(prefix, name_prefix):
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
+    path("feed/", views.feed, name="feed"),
+    path("feed/<int:pk>/read/", views.dismiss, name="feed_dismiss"),
+    path("feed/clear/", views.clear_read, name="feed_clear"),
+    path("athletes/<int:pk>/issues/<int:issue_id>/resolve/", views.resolve_issue, name="issue_resolve"),
+    path("athletes/<int:pk>/messages/thread/", mv.coach_thread, name="message_thread"),
+    path("athletes/<int:pk>/messages/send/", mv.coach_send, name="message_send"),
     # Athletes: roster, detail tabs, metrics, per-athlete check-in questions.
     path("athletes/", coach_views.roster, name="athletes"),
     path("athletes/<int:pk>/", coach_views.athlete_detail, name="athlete"),
@@ -147,5 +154,4 @@ urlpatterns = [
     path("invites/", account_views.invite_create, name="invite_create"),
     path("invites/pending/", account_views.invite_list, name="invite_list"),
     path("invites/<int:pk>/revoke/", account_views.invite_revoke, name="invite_revoke"),
-    path("ping/", views.ping, name="ping"),
 ]

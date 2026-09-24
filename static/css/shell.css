@@ -108,3 +108,15 @@ label.tagchip:has(input:focus-visible){outline:3px solid var(--brand);outline-of
 .daypick-day:hover span{border-color:var(--brand)}
 .daypick-day input:checked + span{background:var(--brand);border-color:var(--brand);color:#fff}
 .daypick-day input:focus-visible + span{outline:3px solid var(--brand);outline-offset:2px}
+
+/* Attention feed: each item links to the athlete; ✓ marks it read (dimmed until "Clear read"). */
+.attn-row{display:flex;gap:6px;align-items:stretch}
+.attn-row .attn{flex:1;min-width:0;color:inherit}
+.attn-row.is-read .attn{opacity:.55}
+.attn-done{width:30px;height:30px;align-self:center;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink-3);font-size:.8rem;flex-shrink:0}
+.attn-done:hover{border-color:var(--good);color:var(--good)}
+.attn.attn--metrics .ic,.adot--metrics{background:var(--warn-lt)}
+.attn.attn--missed .ic,.adot--missed{background:var(--bad-lt)}
+.adot--prog{background:var(--warn-lt)}
+.adot--pr{background:var(--good-lt)}
+.adot .svgi{width:13px;height:13px}

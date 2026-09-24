@@ -20,6 +20,7 @@ def test_exercise_library_search_filter_create_archive(page: Page, base, coach, 
     page.locator(".tabs a", has_text="Exercises").click()
     expect(page).to_have_url(base + "/coach/programming/exercises/")
     expect(page.locator("#exlibResults")).to_contain_text("24 exercises")
+    htmx_idle(page)  # the page was just swapped in; let HTMX wire it up before typing
 
     page.get_by_label("Search exercises").fill("squat")
     expect(page.locator("#exlibResults")).to_contain_text("Front Squat")

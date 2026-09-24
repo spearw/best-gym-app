@@ -1,0 +1,4 @@
+<form class="msg-compose" hx-post="{{ send_url }}" hx-target="#msgThread" hx-swap="outerHTML" hx-on::after-request="if (event.detail.successful) this.reset()">
+  <input class="input" name="body" placeholder="{{ placeholder }}" aria-label="{{ placeholder }}" maxlength="4000" autocomplete="off" required>
+  <button class="btn btn--brand" type="submit">{{ button|default:"Send" }}</button>
+</form>

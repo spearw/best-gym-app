@@ -28,6 +28,7 @@
           {% if log.comment %}<div class="note">“{{ log.comment }}”</div>{% endif %}
         </div>
         {% for issue in item.issues %}{% include "coach/athlete/_issue_note.html" %}{% endfor %}
+        {% for video in item.videos %}{% include "coach/athlete/_video_note.html" %}{% endfor %}
       </div>
     </details>
   {% endwith %}{% empty %}

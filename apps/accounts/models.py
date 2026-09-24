@@ -135,9 +135,15 @@ class Coach(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="coach")
     gym = models.ForeignKey(Gym, on_delete=models.PROTECT, related_name="coaches")
     title = models.CharField(max_length=60, default="Head coach", blank=True)
+    digest = models.BooleanField(default=True, help_text="Email a morning digest of new attention items.")
+    last_digest_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return str(self.user)
+
+    @property
+    def gym_zone(self):
+        return zoneinfo.ZoneInfo(self.gym.timezone)
 
 
 class YearsTraining(models.TextChoices):

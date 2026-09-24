@@ -1,6 +1,8 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
+from apps.ratelimit import rate_limit
+
 from . import views
 
 app_name = "accounts"
@@ -8,7 +10,9 @@ app_name = "accounts"
 urlpatterns = [
     path(
         "login/",
-        auth_views.LoginView.as_view(template_name="accounts/login.html", redirect_authenticated_user=True),
+        views.RateLimitedLoginView.as_view(
+            template_name="accounts/login.html", redirect_authenticated_user=True
+        ),
         name="login",
     ),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
@@ -17,11 +21,13 @@ urlpatterns = [
     path("join/<str:token>/", views.join, name="join"),
     path(
         "password-reset/",
-        auth_views.PasswordResetView.as_view(
-            template_name="accounts/password_reset_form.html",
-            email_template_name="emails/password_reset.txt",
-            subject_template_name="emails/password_reset_subject.txt",
-            success_url=reverse_lazy("accounts:password_reset_done"),
+        rate_limit("password_reset", 5, 60 * 60)(
+            auth_views.PasswordResetView.as_view(
+                template_name="accounts/password_reset_form.html",
+                email_template_name="emails/password_reset.txt",
+                subject_template_name="emails/password_reset_subject.txt",
+                success_url=reverse_lazy("accounts:password_reset_done"),
+            )
         ),
         name="password_reset",
     ),

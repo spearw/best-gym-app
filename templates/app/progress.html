@@ -1,7 +1,7 @@
 {% extends "base_app.html" %}
 {% block title %}Your progress{% endblock %}
 {% block content %}
-<h3 style="font-size:1.2rem;margin-bottom:12px">Your progress</h3>
+<h1 style="font-size:1.2rem;margin-bottom:12px">Your progress</h1>
 {% if lift %}
   <div class="mcard" id="progressChart">
     <div class="spread">
@@ -10,13 +10,13 @@
                 hx-get="{% url 'app:progress' %}" hx-target="#app-body" hx-select="#app-body" hx-swap="outerHTML" hx-trigger="change">
           {% for e in lifts %}<option value="{{ e.pk }}"{% if e.pk == lift.pk %} selected{% endif %}>{{ e.name }} e1RM</option>{% endfor %}
         </select>
-      {% else %}<h4>{{ lift.name }} e1RM</h4>{% endif %}
+      {% else %}<h2 class="h4">{{ lift.name }} e1RM</h2>{% endif %}
       {% if change.change %}<span class="chip {% if change.change > 0 %}chip--good{% endif %}">{% if change.change > 0 %}▲ +{{ change.change }}{% else %}▼ {{ change.drop }}{% endif %} {{ unit }} / {{ change.weeks }} wk</span>{% endif %}
     </div>
     <svg class="spark" viewBox="0 0 340 120" role="img" aria-label="{{ lift.name }} progress chart">{{ chart }}</svg>
   </div>
 {% endif %}
-<h4 style="font-size:.92rem;margin:14px 0 8px">Personal records</h4>
+<h2 class="h4" style="font-size:.92rem;margin:14px 0 8px">Personal records</h2>
 <div class="pr-list">
   {% for pr in prs %}
     <div class="pr-row"><span class="medal"><span class="svgi svgi--trophy"></span></span>
@@ -26,7 +26,7 @@
     <p class="empty-note">Your records show up here once you've logged a loaded lift.</p>
   {% endfor %}
 </div>
-<h4 style="font-size:.92rem;margin:16px 0 8px">Recent sessions</h4>
+<h2 class="h4" style="font-size:.92rem;margin:16px 0 8px">Recent sessions</h2>
 <div class="pr-list">
   {% for item in recent %}{% with log=item.log %}
     <a class="pr-row" href="{% url 'app:player' log.pk 1 %}" style="color:inherit"><span class="medal" style="background:var(--good-lt);color:var(--good)"><span class="svgi svgi--check"></span></span>

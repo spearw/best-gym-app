@@ -11,7 +11,7 @@
   </div>
   {% if history %}
   <div class="card" style="padding:14px 18px;margin-top:14px;max-width:720px">
-    <h4 style="font-size:.9rem;margin-bottom:6px">Recent measurements</h4>
+    <h2 class="h4" style="font-size:.9rem;margin-bottom:6px">Recent measurements</h2>
     <table class="client-table"><thead><tr><th>Date</th><th>What</th><th>Value</th><th>Entered by</th></tr></thead><tbody>
       {% for h in history %}<tr><td class="tiny">{{ h.date|date:"j M Y" }}</td><td>{{ h.what }}</td><td class="mono">{{ h.value }}</td><td class="tiny muted">{{ h.source }}</td></tr>{% endfor %}
     </tbody></table>

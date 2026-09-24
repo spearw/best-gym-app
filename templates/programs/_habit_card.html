@@ -1,6 +1,6 @@
 {# Habits prescribed to this athlete (apps/programs/habit_views.py). #}
 <div class="card" id="habitCard" style="padding:16px 18px;margin-top:18px">
-  <div class="spread"><h4 style="font-size:.95rem">Habits</h4><span class="tiny muted">prescribed to this athlete · ticked off in their app · last 7 days shown</span></div>
+  <div class="spread"><h2 class="h4" style="font-size:.95rem">Habits</h2><span class="tiny muted">prescribed to this athlete · ticked off in their app · last 7 days shown</span></div>
   <div class="stack" style="margin-top:10px">
     {% for item in habit_items %}{% with h=item.habit %}
       <div class="spread" style="border-bottom:1px solid var(--line-2);padding-bottom:8px">

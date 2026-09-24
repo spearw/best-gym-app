@@ -6,3 +6,4 @@ psycopg[binary]>=3.2
 whitenoise>=6.9
 gunicorn>=23.0
 django-anymail>=13.0
+boto3>=1.35

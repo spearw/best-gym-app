@@ -1,5 +1,5 @@
 <div class="card" style="padding:20px" id="trackedLifts" hx-sync="#trackedLifts:queue all">
-  <div class="spread"><h4 style="font-size:.95rem">Tracked lifts</h4><span class="tiny muted">{{ tracked|length }} of {{ max_tracked }}</span></div>
+  <div class="spread"><h2 class="h4" style="font-size:.95rem">Tracked lifts</h2><span class="tiny muted">{{ tracked|length }} of {{ max_tracked }}</span></div>
   <p class="tiny muted">The maxes you program percentages from. Athletes are asked for these when they join, and they appear on each athlete's Metrics tab and header, in this order. Bodyweight, height and years training are always included.</p>
   <div class="stack" style="gap:6px;margin-top:10px">
     {% for t in tracked %}

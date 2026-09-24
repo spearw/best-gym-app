@@ -1,18 +1,28 @@
 {% extends "base_app.html" %}
 {% block title %}Profile & metrics{% endblock %}
 {% block content %}
-<h3 style="font-size:1.2rem;margin-bottom:12px">Profile &amp; metrics</h3>
+<h1 style="font-size:1.2rem;margin-bottom:12px">Profile &amp; metrics</h1>
 <div class="mcard">
   <div class="row" style="gap:14px"><span class="avatar avatar--lg">{{ user.initials }}</span><span><b style="font-family:var(--font-d);font-size:1.05rem">{{ user.name|default:user.email }}</b><br><span class="tiny muted">{% if request.athlete.weight_class %}{{ request.athlete.weight_class }} class · {% endif %}joined {{ request.athlete.joined_at|date:"M Y" }}</span></span></div>
 </div>
 <div class="mcard">
-  <h4>Training metrics</h4>
+  <h2 class="h4">Training metrics</h2>
   <p class="tiny muted" style="margin:0 0 10px">{{ coach_name }} uses these to set your percentages. Anything marked missing you can add any time.</p>
   <div class="stack" style="gap:8px">
     {% for row in rows %}
       <div class="spread tiny" style="border-bottom:1px solid var(--line-2);padding-bottom:8px"><span class="muted">{{ row.label }}</span>{% if row.value %}<b>{{ row.value }}</b>{% else %}<a class="chip chip--warn" href="{% url 'app:numbers' %}">missing — tap to add</a>{% endif %}</div>
     {% endfor %}
   </div>
+</div>
+<div class="mcard">
+  <form class="spread" method="post" action="{% url 'app:units' %}">
+    {% csrf_token %}
+    <span><h2 class="h4" style="margin:0">Units</h2><span class="tiny muted">Weights in the app and your suggested loads</span></span>
+    <div class="segmini" role="radiogroup" aria-label="Units">
+      <label style="cursor:pointer"><input class="visually-hidden" type="radio" name="units" value="kg"{% if request.athlete.units == "kg" %} checked{% endif %} onchange="this.form.requestSubmit()"><span class="seg-opt">kg</span></label>
+      <label style="cursor:pointer"><input class="visually-hidden" type="radio" name="units" value="lb"{% if request.athlete.units == "lb" %} checked{% endif %} onchange="this.form.requestSubmit()"><span class="seg-opt">lb</span></label>
+    </div>
+  </form>
 </div>
 {% if missing_count %}<a class="btn btn--brand btn--block" href="{% url 'app:numbers' %}" style="margin-bottom:8px">Add missing numbers ({{ missing_count }})</a>{% endif %}
 {% if user.coach_profile %}<a class="btn btn--ghost btn--block" href="{% url 'coach:dashboard' %}" hx-boost="false" style="margin-bottom:8px">Open the coach app</a>{% endif %}

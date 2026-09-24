@@ -8,7 +8,8 @@ export
 dev: db migrate seed run
 
 db:
-	docker compose up -d --wait db
+	docker compose up -d --wait db storage
+	$(PY) manage.py storage_setup
 
 migrate:
 	$(PY) manage.py migrate

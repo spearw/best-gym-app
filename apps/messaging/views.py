@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from apps.accounts.access import athlete_required, coach_required
 from apps.accounts.coach_views import _header_context, coach_athlete
 from apps.dashboard import alerts
+from apps.ratelimit import by_user, rate_limit
 
 from .models import Message, Thread
 
@@ -78,6 +79,7 @@ def coach_thread(request, pk):
 
 @coach_required
 @require_POST
+@rate_limit("message", 30, 60, key=by_user)
 def coach_send(request, pk):
     athlete = coach_athlete(request, pk)
     thread = Thread.for_athlete(athlete)
@@ -116,6 +118,7 @@ def athlete_thread(request):
 
 @athlete_required
 @require_POST
+@rate_limit("message", 30, 60, key=by_user)
 def athlete_send(request):
     thread = Thread.for_athlete(request.athlete)
     _send(request, thread)

@@ -1,0 +1,22 @@
+{% extends "partials/modal.html" %}
+{% block modal_attrs %}style="width:min(94vw,720px)"{% endblock %}
+{% block modal_title %}{{ video.exercise_name }} — {{ video.session_log.date|date:"D j M" }}{% endblock %}
+{% block modal_content %}
+<form hx-post="{% url 'coach:video_review' athlete.pk video.pk %}" hx-target="#video-{{ video.pk }}" hx-swap="outerHTML">
+  <div class="modal-body">
+    {% if video.note %}<p class="tiny" style="margin:0"><b>{{ athlete.user.get_short_name }}:</b> “{{ video.note }}”</p>{% endif %}
+    <video src="{{ src }}" controls playsinline preload="metadata" style="width:100%;max-height:60vh;border-radius:10px;background:#000"></video>
+    {% if video.reviewed_at %}
+      <p class="tiny muted" style="margin:0">Reviewed {{ video.reviewed_at|date:"j M" }}{% if video.feedback %}: “{{ video.feedback }}”{% endif %}</p>
+    {% else %}
+      <div class="field"><label for="videoFeedback">Feedback for {{ athlete.user.get_short_name }}</label>
+        <textarea class="input" id="videoFeedback" name="feedback" rows="3" maxlength="4000" placeholder="e.g. Bar drifts forward off the floor — keep the lats on and stay over it longer."></textarea>
+        <span class="help">Sent to {{ athlete.user.get_short_name }}'s messages, quoting this video.</span></div>
+    {% endif %}
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn--ghost" type="button" onclick="closeModal()">Close</button>
+    {% if not video.reviewed_at %}<button class="btn btn--brand" type="submit">Send &amp; mark reviewed</button>{% endif %}
+  </div>
+</form>
+{% endblock %}

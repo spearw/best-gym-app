@@ -37,21 +37,48 @@ services:
         sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
+      # Form videos: a Cloudflare R2 bucket (docs/OPERATIONS.md). Without them uploads are off.
+      - key: STORAGE_ENDPOINT
+        sync: false
+      - key: STORAGE_BUCKET
+        sync: false
+      - key: STORAGE_ACCESS_KEY
+        sync: false
+      - key: STORAGE_SECRET
+        sync: false
 
+  # Hourly: alerts, form-video clean-up, and each gym's 7am digest (manage.py cron).
   - type: cron
-    name: gymtrainer-nightly
+    name: gymtrainer-cron
     runtime: python
     plan: starter
     branch: main
-    schedule: "0 3 * * *"
+    schedule: "0 * * * *"
     buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py nightly
+    startCommand: python manage.py cron
     envVars:
       - fromGroup: gymtrainer-shared
       - key: DATABASE_URL
         fromDatabase:
           name: gymtrainer-db
           property: connectionString
+      # The digest's links and sending, and video clean-up, need these too.
+      - key: SITE_URL
+        sync: false
+      - key: EMAIL_PROVIDER
+        sync: false
+      - key: EMAIL_API_KEY
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: STORAGE_ENDPOINT
+        sync: false
+      - key: STORAGE_BUCKET
+        sync: false
+      - key: STORAGE_ACCESS_KEY
+        sync: false
+      - key: STORAGE_SECRET
+        sync: false
 
 databases:
   - name: gymtrainer-db

@@ -176,6 +176,11 @@ class InviteForm(InputClassMixin, forms.Form):
 class GymSettingsForm(InputClassMixin, forms.Form):
     gym_name = forms.CharField(max_length=120, label="Gym or team name")
     coach_title = forms.CharField(max_length=60, required=False, label="Your title")
+    digest = forms.BooleanField(
+        required=False,
+        label="Email me a morning digest",
+        help_text="At 7am (gym time), only when something new needs your attention.",
+    )
     timezone = forms.ChoiceField(label="Gym time zone")
     units = forms.ChoiceField(choices=Units.choices, widget=forms.RadioSelect)
     week_start = forms.TypedChoiceField(

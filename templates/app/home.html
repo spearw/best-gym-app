@@ -2,6 +2,13 @@
 {% block title %}This week{% endblock %}
 {% block app_subtitle %}{% if program and week %}{{ program.name }} · wk {{ week_number }} · {% endif %}{{ current_gym.name }}{% endblock %}
 {% block content %}
+<h1 class="visually-hidden">Your week</h1>
+<div class="mcard" id="installCard" hidden>
+  <div class="spread"><h2 class="h4" style="margin:0">Put the app on your home screen</h2><button class="tiny muted" type="button" data-install-dismiss aria-label="Don't show this again">✕</button></div>
+  <p class="tiny muted" style="margin:6px 0 10px">Opens straight to your week, full screen, like any other app.</p>
+  <button class="btn btn--brand btn--block" type="button" data-install>Install the app</button>
+  <p class="tiny" data-ios hidden style="margin:0">In Safari, tap <b>Share</b> <span aria-hidden="true">⎋</span> then <b>Add to Home Screen</b>.</p>
+</div>
 {% for log in paused %}
   <div class="mcard spread" style="gap:10px">
     <span style="min-width:0"><b style="font-size:.85rem">Paused session</b><br><span class="tiny muted">{{ log.date|date:"D j M" }} · {{ log.name }}</span></span>
@@ -11,13 +18,13 @@
 
 {% if not program %}
   <div class="mcard" style="text-align:center">
-    <h4>No program yet</h4>
+    <h2 class="h4">No program yet</h2>
     <p class="tiny muted" style="margin:0">{{ coach_name }} is putting your training together. Your week shows up here as soon as it's published.</p>
   </div>
   {% include "app/_habits.html" %}
 {% elif not week %}
   <div class="mcard" style="text-align:center">
-    <h4>{{ program.name }}</h4>
+    <h2 class="h4">{{ program.name }}</h2>
     <p class="tiny muted" style="margin:0">{{ coach_name }} hasn't published a week of it yet. Check back soon.</p>
   </div>
   {% include "app/_habits.html" %}
@@ -43,7 +50,7 @@
   {% for card in selected.cards %}
     <div class="today-card" style="{{ wt.css_vars }}">
       <span class="wk-pill" style="{{ wt.css_vars }}">{% if selected.is_today %}Today's session{% else %}{{ day.date|date:"D" }}'s session{% endif %}{% if card.session.name %} · {{ card.session.name }}{% endif %}</span>
-      <h3>{% if card.state == "done" %}Completed ✓{% else %}{{ card.count }} exercise{{ card.count|pluralize }}{% endif %}</h3>
+      <h2>{% if card.state == "done" %}Completed ✓{% else %}{{ card.count }} exercise{{ card.count|pluralize }}{% endif %}</h2>
       <div class="sub">{{ wt.name }} week{% if wt.description %} · {{ wt.description }}{% endif %}</div>
       <div class="exs">
         {% for item in card.items %}<div class="e" style="gap:10px"><span>{{ item.name }}</span><span class="rx" style="text-align:right">{{ item.dose }}</span></div>{% endfor %}
@@ -62,7 +69,7 @@
       {% endif %}
     </div>
   {% empty %}
-    <div class="today-card" style="{{ wt.css_vars }};text-align:center"><h3>{% if selected.is_today %}Today{% else %}{{ day.date|date:"l" }}{% endif %} — rest day</h3><p class="sub">No training scheduled. Recovery is part of the program.</p></div>
+    <div class="today-card" style="{{ wt.css_vars }};text-align:center"><h2>{% if selected.is_today %}Today{% else %}{{ day.date|date:"l" }}{% endif %} — rest day</h2><p class="sub">No training scheduled. Recovery is part of the program.</p></div>
   {% endfor %}
   {% endwith %}
 
@@ -70,7 +77,7 @@
 
   {% if week.focus_note %}
     <div class="mcard">
-      <div class="spread"><h4>Coach's focus this week</h4><span class="tiny muted">from {{ coach_name }}</span></div>
+      <div class="spread"><h2 class="h4">Coach's focus this week</h2><span class="tiny muted">from {{ coach_name }}</span></div>
       <p style="font-size:.83rem;margin:4px 0 0;white-space:pre-line">{{ week.focus_note }}</p>
     </div>
   {% endif %}

@@ -40,7 +40,7 @@ def test_coach_shell_marks_active_nav(coach_client, url, active):
     assert 'hx-boost="true"' in html
     nav_href = "/coach/programming/" if active == "Programming" else url
     assert f'navitem active" href="{nav_href}"' in html
-    title = "<h2>Good " if active == "Dashboard" else f"<h2>{active}</h2>"  # the dashboard greets the coach
+    title = "<h1>Good " if active == "Dashboard" else f"<h1>{active}</h1>"  # the dashboard greets the coach
     assert title in html
     assert "Dana Whitfield" in html  # real signed-in coach in the sidebar
 

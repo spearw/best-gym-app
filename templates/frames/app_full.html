@@ -11,9 +11,9 @@
       <span class="hi"><b>Hi, {{ user.get_short_name }}</b><small>{% block app_subtitle %}{{ current_gym.name }}{% endblock %}</small></span>
       <a class="iconbtn" href="{% url 'app:messages' %}" aria-label="Messages{% with n=unread_messages %}{% if n %}, {{ n }} unread{% endif %}{% endwith %}"><span class="svgi svgi--msg"></span>{% with n=unread_messages %}{% if n %}<span class="badge">{{ n }}</span>{% endif %}{% endwith %}</a>
     </header>
-    <div class="app-body" id="app-body">
+    <main class="app-body" id="app-body">
       {% block content %}{% endblock %}
-    </div>
+    </main>
     {% include "partials/app_tabbar.html" %}
   </div>
 </div>

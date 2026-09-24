@@ -1,5 +1,5 @@
 <div class="card" style="padding:18px" id="categoriesCard" hx-sync="#categoriesCard:queue all" hx-include="#categoriesCard [name^=name_]">
-  <div class="spread"><h4 style="font-size:.95rem">Categories</h4><span class="tiny muted">{{ categories|length }}</span></div>
+  <div class="spread"><h2 class="h4" style="font-size:.95rem">Categories</h2><span class="tiny muted">{{ categories|length }}</span></div>
   <div class="stack" style="gap:6px;margin-top:10px">
     {% for c in categories %}
       <div class="row" style="gap:6px;flex-wrap:nowrap">

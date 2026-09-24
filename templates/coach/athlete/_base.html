@@ -11,7 +11,7 @@
 {% block content %}
 <div class="cd-head">
   <span class="avatar avatar--lg">{{ athlete.user.initials }}</span>
-  <span class="meta"><h3>{{ athlete.user.name|default:athlete.user.email }}</h3>
+  <span class="meta"><h2 class="h3">{{ athlete.user.name|default:athlete.user.email }}</h2>
     <div class="row" style="gap:8px;margin-top:4px">
       {% if athlete.weight_class %}<span class="chip">{{ athlete.weight_class }} class</span>{% endif %}
       <span class="chip">{{ athlete.user.email }}</span>
@@ -20,8 +20,8 @@
   </span>
   {% include "coach/athlete/_stats.html" %}
 </div>
-<div class="tabs" role="tablist">
-  {% for key, label, phase in tabs %}<a class="{% if key == tab %}active{% endif %}" href="{% url 'coach:athlete_tab' athlete.pk key %}">{{ label }}</a>{% endfor %}
-</div>
+<nav class="tabs" aria-label="{{ athlete.user.get_short_name }}'s sections">
+  {% for key, label, phase in tabs %}<a class="{% if key == tab %}active{% endif %}" href="{% url 'coach:athlete_tab' athlete.pk key %}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+</nav>
 {% block tab_content %}{% endblock %}
 {% endblock %}

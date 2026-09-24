@@ -1,0 +1,1 @@
+{{ items|length }} new thing{{ items|length|pluralize }} need{{ items|length|pluralize:"s," }} your attention — {{ coach.gym.name }}

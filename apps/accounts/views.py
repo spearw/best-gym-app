@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
@@ -12,6 +13,7 @@ from apps.exercises.models import MAX_TRACKED_LIFTS, TrackedLift
 from apps.exercises.starter import install_pack
 from apps.exercises.tracked_views import trackable
 from apps.programs.views import card_context as week_type_card_context
+from apps.ratelimit import by_ip, by_user, client_ip, hit, rate_limit
 from apps.workouts.models import copy_defaults_to, install_default_questions
 
 from .access import athlete_required, coach_required, home_url_for
@@ -36,6 +38,20 @@ from .models import (
 )
 
 
+class RateLimitedLoginView(auth_views.LoginView):
+    """Sign-in, limited to 10 tries per 15 minutes for each address and email."""
+
+    def post(self, request, *args, **kwargs):
+        email = request.POST.get("username", "").strip().lower()
+        if not hit("login", f"{client_ip(request)}:{email}", 10, 15 * 60):
+            form = self.get_form()
+            form.is_valid()  # bind it so the page shows what was typed
+            form.errors.clear()
+            form.add_error(None, "Too many sign-in attempts. Wait 15 minutes, or reset your password.")
+            return self.render_to_response(self.get_context_data(form=form), status=429)
+        return super().post(request, *args, **kwargs)
+
+
 def index(request):
     if request.user.is_authenticated:
         return redirect(home_url_for(request.user))
@@ -52,6 +68,7 @@ def no_profile(request):
 # ---------------------------------------------------------------- coach sign-up
 
 
+@rate_limit("signup", 10, 60 * 60, key=by_ip)
 def signup(request):
     if request.user.is_authenticated:
         return redirect(home_url_for(request.user))
@@ -83,6 +100,7 @@ def invite_new(request):
 
 @coach_required
 @require_POST
+@rate_limit("invite", 30, 60 * 60, key=by_user)
 def invite_create(request):
     form = InviteForm(request.POST, gym=request.coach.gym)
     if not form.is_valid():
@@ -126,6 +144,7 @@ def invite_revoke(request, pk):
 # ---------------------------------------------------------------- joining (athlete side)
 
 
+@rate_limit("join", 10, 60 * 60, key=by_ip)
 def join(request, token):
     invite = Invite.objects.select_related("coach__user", "coach__gym").filter(token=token).first()
     if invite is None or not invite.is_usable:
@@ -220,6 +239,7 @@ def settings_page(request):
     initial = {
         "gym_name": gym.name,
         "coach_title": request.coach.title,
+        "digest": request.coach.digest,
         "timezone": gym.timezone,
         "units": gym.units,
         "week_start": gym.week_start,
@@ -234,7 +254,8 @@ def settings_page(request):
         gym.full_clean()
         gym.save()
         request.coach.title = data["coach_title"]
-        request.coach.save(update_fields=["title"])
+        request.coach.digest = data["digest"]
+        request.coach.save(update_fields=["title", "digest"])
         messages.success(request, "Settings saved")
         return redirect("coach:settings")
     return TemplateResponse(

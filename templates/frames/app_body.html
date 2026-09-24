@@ -1,7 +1,7 @@
 {# Boosted swap inside the phone shell: only #app-body, plus the tab bar out of band. #}
 <title>{% block title %}Platform{% endblock %} · Platform</title>
 {% include "partials/app_tabbar.html" with oob=True %}
-<div class="app-body" id="app-body">
+<main class="app-body" id="app-body">
       {% block content %}{% endblock %}
       {% if initial_toasts %}{{ initial_toasts|json_script:"initialToasts" }}{% endif %}
-    </div>
+    </main>

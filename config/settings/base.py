@@ -105,6 +105,28 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Form videos (athletes' uploads for the coach to check) live in an S3-compatible bucket:
+# Cloudflare R2 in production. Uploads go straight from the browser to the bucket with a
+# short-lived signed URL. With no STORAGE_* settings the upload button doesn't appear.
+FORM_VIDEOS = {
+    "endpoint": os.environ.get("STORAGE_ENDPOINT", ""),  # e.g. https://<account id>.r2.cloudflarestorage.com
+    "bucket": os.environ.get("STORAGE_BUCKET", ""),
+    "access_key": os.environ.get("STORAGE_ACCESS_KEY", ""),
+    "secret": os.environ.get("STORAGE_SECRET", ""),
+    "region": os.environ.get("STORAGE_REGION", "auto"),
+    "max_bytes": 200 * 1024 * 1024,  # about 1–2 minutes of phone video
+    "keep_days": 90,  # deleted this long after upload
+}
+
+# The database cache holds rate-limit counts (apps/ratelimit.py), shared by every web worker.
+# Its table is created by a migration (dashboard 0002_cache_table).
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.db.DatabaseCache", "LOCATION": "cache"}}
+
+# The site's address for links in emails sent outside a request (the coach digest).
+SITE_URL = os.environ.get("SITE_URL", os.environ.get("RENDER_EXTERNAL_URL", "http://localhost:8000")).rstrip(
+    "/"
+)
+
 # Email: invites and password resets. Set EMAIL_PROVIDER to "resend" or "postmark"
 # and EMAIL_API_KEY to send for real; otherwise email is printed to the console.
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Platform <no-reply@localhost>")

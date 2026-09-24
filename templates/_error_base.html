@@ -1,0 +1,18 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1F4FD8">
+  <title>{% block title %}{% endblock %} · Platform</title>
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}"><link rel="stylesheet" href="{% static 'css/app.css' %}"><link rel="stylesheet" href="{% static 'css/shell.css' %}">
+</head>
+<body>
+  {% comment %}Stands alone (no shell, no context processors) so it still renders when the database is down.{% endcomment %}
+  <main class="error-page">
+    <p class="error-code">{% block code %}{% endblock %}</p>
+    <h1>{% block heading %}{% endblock %}</h1>
+    <p>{% block message %}{% endblock %}</p>
+    <a class="btn btn--brand" href="/">Go to your home screen</a>
+  </main>
+</body>
+</html>

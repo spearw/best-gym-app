@@ -11,7 +11,7 @@
 {% endif %}
 <div class="player-head">
   <span class="count">{% if exercise %}{{ exercise.category.name|upper }} · {% endif %}{% if last %}last: {{ last }}{% else %}first time{% endif %}</span>
-  <h3>{{ se.exercise_name }}</h3>
+  <h1>{{ se.exercise_name }}</h1>
 </div>
 {% if banner %}
   <div class="rx-banner">
@@ -40,6 +40,7 @@
     </div>
   {% endfor %}
 </div>
+{% include "app/_videos.html" %}
 {% if exercise.cue %}<p class="tiny muted" style="text-align:center">Cue — {{ exercise.cue }}</p>{% endif %}
 <div class="ex-dots">{% for d in dots %}<i class="{{ d }}"></i>{% endfor %}</div>
 <div class="player-nav">

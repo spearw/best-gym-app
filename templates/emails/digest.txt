@@ -1,0 +1,10 @@
+Good morning {{ coach.user.get_short_name }},
+
+New since yesterday's digest:
+{% for item in items %}
+- {{ item.row.athlete.user.name|default:item.row.athlete.user.email }}: {{ item.row.text }}
+  {{ item.url }}
+{% endfor %}
+Everything else is on your dashboard: {{ dashboard }}
+
+You get this at 7am when something new needs your attention. Turn it off in Settings: {{ settings_url }}

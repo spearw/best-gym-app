@@ -1,7 +1,7 @@
 {% load ago %}{# "Needs your attention" (apps/dashboard/alerts.py). Polled every 20 s; the sidebar count comes back out of band. #}
 <div id="attnCard" hx-get="{% url 'coach:feed' %}" hx-trigger="every 20s" hx-target="this" hx-swap="outerHTML">
   <div class="spread" style="margin-bottom:10px">
-    <h3 style="font-size:1rem">Needs your attention</h3>
+    <h2 class="h3" style="font-size:1rem">Needs your attention</h2>
     {% if has_read %}<button class="btn btn--sm btn--soft" type="button" hx-post="{% url 'coach:feed_clear' %}" hx-target="#attnCard" hx-swap="outerHTML">Clear read</button>{% endif %}
   </div>
   <div class="attn-feed">

@@ -8,7 +8,7 @@
 </div>
 <form method="post" x-data="{ value: '', other: false }" x-init="value = $el.dataset.initial" data-initial="{{ answer.value|default:'' }}">
   {% csrf_token %}
-  <h3 style="font-size:1.2rem">{{ question.text }}</h3>
+  <h1 style="font-size:1.2rem">{{ question.text }}</h1>
   {% if question.type == "scale" %}
     <p class="tiny muted">Shared with {{ coach_name }} before your session.</p>
     <div class="scale-row">

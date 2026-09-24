@@ -18,7 +18,7 @@ def test_coach_shell_boosted_navigation_keeps_sidebar(page: Page, base, coach, s
     page.evaluate("document.querySelector('.snav').dataset.marker = 'kept'")
     page.locator(".snav a.navitem", has_text="Athletes").click()
     expect(page).to_have_url(base + "/coach/athletes/")
-    expect(page.locator(".coach-topbar h2")).to_have_text("Athletes")
+    expect(page.locator(".coach-topbar h1")).to_have_text("Athletes")
     assert page.evaluate("document.querySelector('.snav').dataset.marker") == "kept"
     expect(page.locator(".snav a.navitem.active")).to_have_text("Athletes")
     expect(page).to_have_title(re.compile("Athletes"))
@@ -42,7 +42,7 @@ def test_athlete_shell_fills_a_phone_screen_and_tabs_work(page: Page, base, athl
     page.locator("#mTabbar a", has_text="Progress").click()
     expect(page).to_have_url(base + "/app/progress/")
     expect(page.locator("#mTabbar a.active")).to_have_text("Progress")
-    expect(page.locator("#app-body h3")).to_have_text("Your progress")
+    expect(page.locator("#app-body h1")).to_have_text("Your progress")
 
 
 def test_coach_pages_open_at_the_top(page: Page, base, coach, sign_in):
@@ -63,4 +63,4 @@ def test_coach_pages_open_at_the_top(page: Page, base, coach, sign_in):
         page.wait_for_function("() => window.scrollY === 0")
         page.wait_for_timeout(300)  # and it stays there once HTMX has settled
         assert page.evaluate("window.scrollY") == 0
-    expect(page.locator("h2").first).to_be_in_viewport()
+    expect(page.locator("h1").first).to_be_in_viewport()

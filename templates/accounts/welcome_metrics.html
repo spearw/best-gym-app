@@ -4,7 +4,7 @@
 <div class="ob-wrap">
   {% include "accounts/_onboard_head.html" with coach_name=request.athlete.coach.user.name gym_name=request.athlete.gym.name %}
   <div class="ob-step active">
-    <h3>Your training numbers</h3>
+    <h2 class="h3">Your training numbers</h2>
     <p class="tiny muted">{{ request.athlete.coach.user.get_short_name }} programs off these. <b>Skip anything you don't know</b> — your coach can fill it in later.</p>
     <form method="post" novalidate>
       {% csrf_token %}

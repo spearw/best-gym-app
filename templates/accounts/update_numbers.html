@@ -1,7 +1,7 @@
 {% extends "base_app.html" %}
 {% block title %}Your numbers{% endblock %}
 {% block content %}
-<h3 style="font-size:1.2rem;margin-bottom:4px">Your numbers</h3>
+<h2 class="h3" style="font-size:1.2rem;margin-bottom:4px">Your numbers</h2>
 <p class="tiny muted" style="margin:0 0 12px">{{ request.athlete.coach.user.get_short_name }} programs your percentages from these. Fill in what you know and leave the rest blank.</p>
 <form method="post" novalidate class="mcard">
   {% csrf_token %}

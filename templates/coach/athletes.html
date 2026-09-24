@@ -9,7 +9,7 @@
 {% block content %}
 {% include "coach/_roster_cards.html" %}
 <div class="card" style="padding:16px 18px;margin-top:18px;max-width:720px">
-  <h3 style="font-size:1rem;margin-bottom:10px">Pending invites</h3>
+  <h2 class="h3" style="font-size:1rem;margin-bottom:10px">Pending invites</h2>
   <div id="inviteList" hx-get="{% url 'coach:invite_list' %}" hx-trigger="invitesChanged from:body" hx-target="this" hx-swap="innerHTML">
     {% include "partials/invite_list.html" %}
   </div>

@@ -49,6 +49,7 @@ def _session_item(log, unit, pr_ids):
     answers = list(log.answers.all())
     scale = next((a for a in answers if a.type == QuestionType.SCALE), None)
     issues = list(log.issues.all())
+    form_videos = [v for v in log.videos.all() if v.uploaded_at]
     rpe = log.session_rpe
     return {
         "log": log,
@@ -56,6 +57,7 @@ def _session_item(log, unit, pr_ids):
         "answers": answers,
         "readiness": scale.value if scale else None,
         "issues": issues,
+        "videos": form_videos,
         "pr_day": any(e["pr"] for e in exercises),
         "rpe_class": "" if rpe is None else "hi" if rpe >= 9 else "mid" if rpe >= 7 else "lo",
         "status": "partial" if issues or not log.finished else "done",
@@ -68,7 +70,7 @@ def sessions_tab(request, athlete, header_context):
     range_key = request.GET.get("range", "8")
     days = dict((k, d) for k, _label, d in RANGES).get(range_key, 56)
     logs = athlete.session_logs.select_related("week_type", "athlete__user").prefetch_related(
-        "answers", "issues", "exercises__sets", "exercises__session_log"
+        "answers", "issues", "videos", "exercises__sets", "exercises__session_log"
     )
     if days:
         logs = logs.filter(date__gte=athlete.today() - datetime.timedelta(days=days))

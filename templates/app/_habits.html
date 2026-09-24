@@ -1,6 +1,6 @@
 {# Today's (or yesterday's) habits on the athlete's Home (apps/programs/habit_views.py). #}
 <div class="mcard" id="mHabits"{% if not has_habits %} hidden{% endif %}>
-  <div class="spread"><h4>{% if habit_day == "yesterday" %}Yesterday's habits{% else %}Today's habits{% endif %}</h4>
+  <div class="spread"><h2 class="h4">{% if habit_day == "yesterday" %}Yesterday's habits{% else %}Today's habits{% endif %}</h2>
     <span class="row" style="gap:8px"><span class="tiny muted">{{ habits_done }}/{{ habit_items|length }} done</span>
       <button class="tiny" type="button" style="color:var(--brand);font-weight:600" hx-get="{% url 'app:habits' %}?day={% if habit_day == 'yesterday' %}today{% else %}yesterday{% endif %}" hx-target="#mHabits" hx-swap="outerHTML">{% if habit_day == "yesterday" %}Back to today{% else %}Forgot yesterday?{% endif %}</button></span>
   </div>

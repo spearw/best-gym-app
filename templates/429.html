@@ -1,0 +1,5 @@
+{% extends "_error_base.html" %}
+{% block title %}Slow down{% endblock %}
+{% block code %}429{% endblock %}
+{% block heading %}Slow down a moment{% endblock %}
+{% block message %}{{ message|default:"Too many attempts. Wait a few minutes and try again." }}{% endblock %}

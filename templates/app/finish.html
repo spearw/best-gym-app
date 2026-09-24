@@ -7,7 +7,7 @@
 </div>
 <form method="post" x-data="{ rpe: '' }" x-init="rpe = $el.dataset.initial" data-initial="{{ rpe|default:'' }}">
   {% csrf_token %}
-  <h3 style="font-size:1.2rem">How hard was this session?</h3>
+  <h1 style="font-size:1.2rem">How hard was this session?</h1>
   <p class="tiny muted">Session RPE — 1 is very easy, 10 is maximal effort.</p>
   <div class="scale-row">
     {% for i in scale %}<button type="button" class="scale-btn" data-v="{{ i }}" :class="{ sel: rpe === $el.dataset.v }" @click="rpe = $el.dataset.v" aria-label="RPE {{ i }}">{{ i }}</button>{% endfor %}

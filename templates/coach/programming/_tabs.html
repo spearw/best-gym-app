@@ -1,7 +1,7 @@
-<div class="tabs" role="tablist">
-  <a class="{% if ptab == 'templates' %}active{% endif %}" href="{% url 'coach:programming_templates' %}">Templates</a>
-  <a class="{% if ptab == 'weeks' %}active{% endif %}" href="{% url 'coach:programming_weeks' %}">Weeks</a>
-  <a class="{% if ptab == 'sessions' %}active{% endif %}" href="{% url 'coach:programming_sessions' %}">Sessions</a>
-  <a class="{% if ptab == 'exercises' %}active{% endif %}" href="{% url 'coach:exercises' %}">Exercises</a>
-  <a class="{% if ptab == 'questions' %}active{% endif %}" href="{% url 'coach:questions' %}">Check-in questions</a>
-</div>
+<nav class="tabs" aria-label="Programming sections">
+  <a class="{% if ptab == 'templates' %}active{% endif %}"{% if ptab == 'templates' %} aria-current="page"{% endif %} href="{% url 'coach:programming_templates' %}">Templates</a>
+  <a class="{% if ptab == 'weeks' %}active{% endif %}"{% if ptab == 'weeks' %} aria-current="page"{% endif %} href="{% url 'coach:programming_weeks' %}">Weeks</a>
+  <a class="{% if ptab == 'sessions' %}active{% endif %}"{% if ptab == 'sessions' %} aria-current="page"{% endif %} href="{% url 'coach:programming_sessions' %}">Sessions</a>
+  <a class="{% if ptab == 'exercises' %}active{% endif %}"{% if ptab == 'exercises' %} aria-current="page"{% endif %} href="{% url 'coach:exercises' %}">Exercises</a>
+  <a class="{% if ptab == 'questions' %}active{% endif %}"{% if ptab == 'questions' %} aria-current="page"{% endif %} href="{% url 'coach:questions' %}">Check-in questions</a>
+</nav>

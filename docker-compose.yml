@@ -1,4 +1,4 @@
-# Local Postgres. Start it with:  docker compose up -d db
+# Local Postgres (and MinIO for form videos). Start them with:  make db
 services:
   db:
     image: postgres:16
@@ -15,5 +15,23 @@ services:
       interval: 2s
       timeout: 3s
       retries: 20
+  # Stands in for Cloudflare R2 (form videos) locally and in tests. Start: docker compose up -d storage
+  storage:
+    image: quay.io/minio/minio:latest  # MinIO no longer publishes to Docker Hub
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: gymtrainer
+      MINIO_ROOT_PASSWORD: gymtrainer-local-only
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - videos:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
 volumes:
   pgdata:
+  videos:

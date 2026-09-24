@@ -1,0 +1,8 @@
+{% load ago %}
+<div class="note" id="video-{{ video.pk }}" style="background:var(--grape-lt)">
+  <b>Form video:</b> {{ video.exercise_name }}{% if video.note %} — “{{ video.note }}”{% endif %}
+  {% if video.deleted_at %}<span class="tiny muted"> · removed after 90 days</span>
+  {% elif video.reviewed_at %}<span class="chip chip--good" style="margin-left:6px">reviewed {{ video.reviewed_at|date:"j M" }}</span>{% if video.feedback %}<br><span class="tiny">Your feedback: “{{ video.feedback|truncatechars:160 }}”</span>{% endif %}
+    <button class="btn btn--sm btn--ghost" type="button" style="margin-left:8px" hx-get="{% url 'coach:video_review' athlete.pk video.pk %}" hx-target="#modal" hx-swap="innerHTML">Watch again</button>
+  {% else %}<button class="btn btn--sm btn--brand" type="button" style="margin-left:8px" hx-get="{% url 'coach:video_review' athlete.pk video.pk %}" hx-target="#modal" hx-swap="innerHTML">Review</button>{% endif %}
+</div>

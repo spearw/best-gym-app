@@ -91,6 +91,27 @@ def issue_resolved(issue):
     handled(issue.athlete, NotificationKind.ISSUE, f"issue:{issue.pk}")
 
 
+def video_uploaded(video, reopen=True):
+    athlete = video.session_log.athlete
+    text = f"Uploaded a form video: {video.exercise_name}" + (
+        f" — “{video.note[:100]}”" if video.note else ""
+    )
+    notify(
+        athlete, NotificationKind.VIDEO, f"video:{video.pk}", text, _tab(athlete, "sessions"), reopen=reopen
+    )
+
+
+def video_reviewed(video):
+    handled(video.session_log.athlete, NotificationKind.VIDEO, f"video:{video.pk}")
+
+
+def video_removed(video):
+    athlete = video.session_log.athlete
+    Notification.objects.filter(
+        recipient=athlete.coach.user, kind=NotificationKind.VIDEO, dedupe_key=f"video:{video.pk}"
+    ).delete()
+
+
 def sync_prs(athlete):
     """One row per exercise with a session PR waiting for the coach; decided ones leave."""
     from apps.accounts import units
@@ -291,6 +312,14 @@ def link_for(row):
             return _tab(athlete, "sessions")
         older = issue.session_log and (athlete.today() - issue.session_log.date).days > 56
         return _tab(athlete, "sessions") + ("?range=all" if older else "") + f"#issue-{issue.pk}"
+    if kind == NotificationKind.VIDEO and key.startswith("video:"):
+        from apps.workouts.models import FormVideo
+
+        video = FormVideo.objects.filter(pk=key.removeprefix("video:"), session_log__athlete=athlete).first()
+        if video is None:
+            return _tab(athlete, "sessions")
+        older = (athlete.today() - video.session_log.date).days > 56
+        return _tab(athlete, "sessions") + ("?range=all" if older else "") + f"#video-{video.pk}"
     if kind == NotificationKind.PR:
         return _tab(athlete, "metrics") + "#sessionPrs"
     if kind == NotificationKind.METRICS_MISSING:

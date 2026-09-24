@@ -2,7 +2,7 @@
   <p class="tiny muted" style="margin:-6px 0 10px">{{ exercises|length }} exercise{{ exercises|length|pluralize }}{% if show_archived %} archived{% endif %}{% if q or tags %} matching{% endif %}</p>
   <div class="card" style="overflow:hidden"><div style="overflow-x:auto">
     <table class="exlib-table">
-      <thead><tr><th>Exercise</th><th>Category</th><th>Tags</th><th>% from</th><th>Demo video</th><th style="width:90px"></th></tr></thead>
+      <thead><tr><th>Exercise</th><th>Category</th><th>Tags</th><th>% from</th><th>Demo video</th><th style="width:90px"><span class="visually-hidden">Actions</span></th></tr></thead>
       <tbody>
         {% for ex in exercises %}
           <tr>

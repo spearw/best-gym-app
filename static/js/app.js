@@ -125,6 +125,43 @@
       };
     });
 
+    // A form-video upload in the player: sign, PUT straight to the bucket (with progress),
+    // then confirm, which redraws the card. The file never passes through Django.
+    window.Alpine.data("formVideo", function () {
+      return {
+        busy: false, pct: 0,
+        upload: function (e) {
+          var file = e.target.files && e.target.files[0];
+          e.target.value = "";
+          if (!file) return;
+          var d = this.$root.dataset, self = this;  // $el would be the file input
+          if (file.size > Number(d.max) * 1024 * 1024) { toast("That video is over " + d.max + " MB — trim it to a minute or two.", "err"); return; }
+          var type = file.type && file.type.indexOf("video/") === 0 ? file.type : "video/mp4";
+          var body = new FormData();
+          body.append("se", d.se); body.append("size", file.size); body.append("content_type", type);
+          this.busy = true; this.pct = 0;
+          fetch(d.startUrl, { method: "POST", body: body, credentials: "same-origin", headers: { "X-CSRFToken": csrfToken() } })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+            .then(function (res) {
+              if (!res.ok) throw new Error(res.body.error || "Couldn't start the upload");
+              return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open("PUT", res.body.url);
+                xhr.setRequestHeader("Content-Type", type);
+                xhr.upload.onprogress = function (ev) { if (ev.lengthComputable) self.pct = Math.round(ev.loaded / ev.total * 100); };
+                xhr.onload = function () { xhr.status < 300 ? resolve(res.body) : reject(new Error("The upload failed — try again")); };
+                xhr.onerror = function () { reject(new Error("The upload failed — check your connection")); };
+                xhr.send(file);
+              });
+            })
+            .then(function (started) {
+              return window.htmx.ajax("POST", started.done_url, { target: "#videos-" + d.se, swap: "outerHTML" });
+            })
+            .catch(function (err) { self.busy = false; toast(err.message, "err"); });
+        },
+      };
+    });
+
     // One set row in the session player. Each tick or change saves that set; saves for
     // one row run one at a time, so the last change always wins.
     window.Alpine.data("setRow", function () {
@@ -281,6 +318,14 @@
     button.click();  // with nothing to undo, the server answers with a toast saying why
   });
 
+  // Keyboard users open the history line with Enter or Space, like a button.
+  document.addEventListener("keydown", function (e) {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("[data-hist]")) {
+      e.preventDefault();
+      e.target.click();
+    }
+  });
+
   // Library rail: tapping an athlete's history line opens their full log for that exercise.
   document.addEventListener("click", function (e) {
     var pop = document.getElementById("histPop");
@@ -330,7 +375,50 @@
     }
   });
 
+  // ---------------------------------------------------------------- installing the app (PWA)
+
+  if ("serviceWorker" in navigator && window.isSecureContext) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("/sw.js").catch(function () { /* the site works without it */ });
+    });
+  }
+
+  // The "Install the app" card on the athlete's Home: Chrome/Android offers a real install
+  // button (beforeinstallprompt); iPhone Safari gets the Share → Add to Home Screen steps.
+  // Hidden once installed (standalone) or dismissed.
+  var installEvent = null;
+  function installState() {
+    var standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    var dismissed = storage("installDismissed", "") === "1";
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    return { show: !standalone && !dismissed && (installEvent || ios), ios: ios && !installEvent };
+  }
+  function renderInstall(root) {
+    var card = (root || document).querySelector ? (root || document).querySelector("#installCard") : null;
+    if (!card) return;
+    var st = installState();
+    card.hidden = !st.show;
+    card.querySelector("[data-ios]").hidden = !st.ios;
+    card.querySelector("[data-install]").hidden = st.ios;
+  }
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    installEvent = e;
+    renderInstall(document);
+  });
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("[data-install]") && installEvent) {
+      installEvent.prompt();
+      installEvent.userChoice.finally(function () { installEvent = null; renderInstall(document); });
+    }
+    if (e.target.closest("[data-install-dismiss]")) {
+      store("installDismissed", "1");
+      renderInstall(document);
+    }
+  });
+
   document.addEventListener("DOMContentLoaded", function () {
+    renderInstall(document);
     if (window.htmx) window.htmx.config.scrollIntoViewOnBoost = false;
     goToTarget(window.location.hash);
     showInitialToasts(document);
@@ -338,6 +426,7 @@
     initSortables(document);
   });
   document.addEventListener("htmx:load", function (e) {
+    renderInstall(e.target);
     showInitialToasts(e.target);
     onReady(e.target);
     initSortables(e.target);

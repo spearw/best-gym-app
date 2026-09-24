@@ -11,6 +11,7 @@ from apps.programs import habit_views as hv
 from apps.programs import program_views as pv
 from apps.programs import views as week_type_views
 from apps.workouts import question_views as qv
+from apps.workouts import video_views as wvv
 
 from . import views
 
@@ -40,6 +41,7 @@ urlpatterns = [
     path("feed/clear/", views.clear_read, name="feed_clear"),
     path("athletes/<int:pk>/issues/<int:issue_id>/resolve/", views.resolve_issue, name="issue_resolve"),
     path("athletes/<int:pk>/messages/thread/", mv.coach_thread, name="message_thread"),
+    path("athletes/<int:pk>/videos/<int:video_id>/", wvv.review, name="video_review"),
     path("athletes/<int:pk>/messages/send/", mv.coach_send, name="message_send"),
     # Athletes: roster, detail tabs, metrics, per-athlete check-in questions.
     path("athletes/", coach_views.roster, name="athletes"),

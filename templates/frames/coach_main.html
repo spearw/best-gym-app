@@ -3,7 +3,7 @@
 {% include "partials/coach_nav.html" with oob=True %}
 <main class="coach-main" id="coach-main">
     <div class="coach-topbar">
-      <h2>{% block page_title %}{{ title }}{% endblock %}</h2>
+      <h1>{% block page_title %}{{ title }}{% endblock %}</h1>
       {% block topbar_actions %}{% endblock %}
     </div>
     {% block content %}{% endblock %}

@@ -520,12 +520,19 @@ The review settled most of the original list. What remains is below; decide the 
 - Athletes can tick habits for today and yesterday.
 - Undo covers edits within a week (exercises, sessions, names, clear week, week type, focus note), the last 50 per week, with Ctrl+Z. Adding, duplicating or deleting weeks and applying templates aren't undoable. Undo never removes a session an athlete has logged.
 
+### Decided (24 September, before phase 8)
+
+- Exercise demo videos stay YouTube links that open in YouTube (the athlete app never embeds them). Athletes' own form videos are uploaded to Cloudflare R2 for the coach to check; the coach may watch them in the page on desktop.
+- Form videos: at most 200 MB each, 3 per exercise, deleted 90 days after upload (the session keeps a note and the feedback).
+- Reviewing: the coach watches, writes feedback (sent into the athlete's messages, quoting the video) and marks it reviewed.
+- A daily digest email at 7am gym time, only when something new needs attention; each coach can turn it off in Settings. The cron job runs hourly.
+- Accessibility: the mockup's text colours are darkened just enough to meet WCAG AA contrast (backgrounds and borders unchanged).
+
 ### Still open
 
 - [ ] Product name and domain (the mockup says "Platform"; the repo is GymTrainer).
 - [ ] Offline set logging. v1 saves each set as it is ticked and retries a failed save; if gym signal turns out to be a real problem, v2 adds a service-worker queue that replays saves when back online. Decide after the first athletes use phase 4.
 - [ ] Do athletes pay, does the gym pay, or is billing out of scope for now? Affects whether Stripe goes in the plan.
-- [ ] Video: YouTube links only for demos (as in the mockup), and athlete uploads in phase 8, or defer uploads entirely?
 - [ ] Can an athlete have two coaches at the same gym? The plan assumes one.
 
 ### Risks

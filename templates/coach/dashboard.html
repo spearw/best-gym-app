@@ -15,14 +15,14 @@
 <div class="dash-grid">
   <div class="card" style="overflow:hidden">
     <div class="spread" style="padding:16px 18px 0">
-      <h3 style="font-size:1.02rem">Your athletes</h3>
+      <h2 class="h3" style="font-size:1.02rem">Your athletes</h2>
       <select class="input" name="sort" style="width:auto;padding:6px 30px 6px 10px;font-size:.8rem" aria-label="Sort athletes"
               hx-get="{% url 'coach:dashboard' %}" hx-target="#rosterBody" hx-swap="outerHTML" hx-trigger="change">
         {% for value, label in sorts %}<option value="{{ value }}"{% if value == sort %} selected{% endif %}>{{ label }}</option>{% endfor %}
       </select>
     </div>
     <div style="overflow-x:auto"><table class="client-table">
-      <thead><tr><th>Athlete</th><th>Current week</th><th>Compliance</th><th>Last session</th><th>Attention</th><th></th></tr></thead>
+      <thead><tr><th>Athlete</th><th>Current week</th><th>Compliance</th><th>Last session</th><th>Attention</th><th><span class="visually-hidden">Open</span></th></tr></thead>
       {% include "coach/_roster_rows.html" %}
     </table></div>
   </div>
@@ -32,7 +32,7 @@
       {% include "coach/_feed.html" %}
     </div>
     <div class="card" style="padding:16px 18px">
-      <h3 style="font-size:1rem;margin-bottom:10px">Sessions today</h3>
+      <h2 class="h3" style="font-size:1rem;margin-bottom:10px">Sessions today</h2>
       <div class="stack" style="gap:8px">
         {% for item in today_list %}
           <a class="spread tiny" style="color:inherit" href="{% url 'coach:athlete_tab' item.athlete.pk 'program' %}">
@@ -45,7 +45,7 @@
       </div>
     </div>
     <div class="card" style="padding:16px 18px">
-      <div class="spread" style="margin-bottom:6px"><h3 style="font-size:1rem">Recent sessions</h3><span class="tiny muted">last 7 days · all athletes</span></div>
+      <div class="spread" style="margin-bottom:6px"><h2 class="h3" style="font-size:1rem">Recent sessions</h2><span class="tiny muted">last 7 days · all athletes</span></div>
       {% for log in recent %}
         <a class="sess-feed-row" style="color:inherit" href="{% url 'coach:athlete_tab' log.athlete.pk 'sessions' %}">
           <span class="avatar avatar--sm">{{ log.athlete.user.initials }}</span>

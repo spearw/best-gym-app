@@ -4,7 +4,7 @@
 <div class="ob-wrap">
   <div class="done-hero">
     <span class="done-ic" style="background:var(--warn-lt);color:var(--warn)"><span class="svgi svgi--alert"></span></span>
-    <h3 style="margin-top:12px">This invite can't be used</h3>
+    <h2 class="h3" style="margin-top:12px">This invite can't be used</h2>
     <p class="tiny muted">{% if invite.status == "accepted" %}It has already been used to create an account.{% elif invite.status == "revoked" %}Your coach cancelled it.{% elif invite %}It has expired.{% else %}The link isn't valid.{% endif %} Ask your coach for a new link.</p>
   </div>
   <a class="btn btn--soft btn--block" href="{% url 'accounts:login' %}">Go to log in</a>

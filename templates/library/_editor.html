@@ -47,9 +47,9 @@
               </div>
               <div class="sbody" data-rx-list data-session="{{ session.pk }}" data-target="#tplEditor">
                 {% for item in s.items %}{% with slot=item.slot %}
-                  <div class="rx-item{% if slot.is_tag %} tagslot{% endif %}" tabindex="0" role="button" data-move-url="{% url 'coach:template_slot_move' template.pk slot.pk %}"
-                       aria-label="Edit {% if slot.is_tag %}tag slot, default {% endif %}{{ slot.exercise.name }}, {{ item.summary }}"
-                       hx-get="{% url 'coach:template_slot_edit' template.pk slot.pk %}" hx-trigger="click, keyup[key=='Enter']" hx-target="#modal" hx-swap="innerHTML" @click.stop>
+                  <div class="rx-item{% if slot.is_tag %} tagslot{% endif %}" data-move-url="{% url 'coach:template_slot_move' template.pk slot.pk %}"
+                       hx-get="{% url 'coach:template_slot_edit' template.pk slot.pk %}" hx-trigger="click" hx-target="#modal" hx-swap="innerHTML" @click.stop>
+                    <button class="rx-edit visually-hidden" type="button" hx-get="{% url 'coach:template_slot_edit' template.pk slot.pk %}" hx-target="#modal" hx-swap="innerHTML" @click.stop>Edit {% if slot.is_tag %}tag slot, default {% endif %}{{ slot.exercise.name }}, {{ item.summary }}</button>
                     {% if slot.is_tag %}<b>Tag slot <span class="muted" style="font-weight:500">· default {{ slot.exercise.name }}</span></b>{% else %}<b>{{ slot.exercise.name }}</b>{% endif %}
                     <span class="rx">{{ item.summary }}</span>
                     {% if slot.is_tag %}<span class="tagline">{% for t in slot.tags.all %}<span class="tagchip">{{ t.name }}</span>{% endfor %}</span>{% endif %}
@@ -81,7 +81,7 @@
     </div>
 
     <div class="card" style="padding:16px 18px;margin-top:18px">
-      <div class="spread"><h4 style="font-size:.95rem">Habits prescribed with this program</h4><span class="tiny muted">added to the athlete's habit list when the template is applied</span></div>
+      <div class="spread"><h2 class="h4" style="font-size:.95rem">Habits prescribed with this program</h2><span class="tiny muted">added to the athlete's habit list when the template is applied</span></div>
       <div class="stack" style="margin-top:10px">
         {% for h in template.habits.all %}
           <div class="spread" style="border-bottom:1px solid var(--line-2);padding-bottom:8px">

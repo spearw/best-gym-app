@@ -1,0 +1,28 @@
+{# Form videos for one exercise in the player (apps/workouts/video_views.py). Demo videos stay YouTube links. #}
+{% load ago %}
+<div id="videos-{{ se.pk }}" x-data="formVideo" data-start-url="{% url 'app:video_start' log.pk %}" data-se="{{ se.pk }}" data-max="{{ max_mb }}">
+  {% for v in form_videos %}
+    <div class="yt-btn" style="cursor:default;margin-bottom:10px" id="video-{{ v.pk }}">
+      <span class="play" style="background:var(--grape)"><span class="svgi svgi--video" style="width:13px;height:13px"></span></span>
+      <span style="flex:1;min-width:0"><b>Form video{% if v.reviewed_at %} · reviewed by {{ coach_name }}{% endif %}</b>
+        <small>{% if v.deleted_at %}Removed after 90 days{% elif v.reviewed_at %}{{ coach_name }}'s feedback is in your messages{% else %}Sent {{ v.uploaded_at|ago }} — {{ coach_name }} will review it{% endif %}</small>
+        {% if not v.reviewed_at and log.editable %}
+          <form hx-post="{% url 'app:video_note' log.pk v.pk %}" hx-trigger="change" hx-swap="none" onsubmit="return false" style="margin-top:6px">
+            <input class="input" name="note" value="{{ v.note }}" maxlength="300" placeholder="What should {{ coach_name }} look at?" aria-label="Note for {{ coach_name }}" style="padding:5px 8px;font-size:.78rem">
+          </form>
+        {% elif v.note %}<small>“{{ v.note }}”</small>{% endif %}
+      </span>
+      {% if not v.reviewed_at and log.editable %}<button class="ext" type="button" aria-label="Remove this video" hx-post="{% url 'app:video_remove' log.pk v.pk %}" hx-target="#videos-{{ se.pk }}" hx-swap="outerHTML" hx-confirm="Remove this video?">✕</button>{% endif %}
+    </div>
+  {% endfor %}
+  {% if can_upload %}
+    <label class="yt-btn" style="margin-bottom:10px;cursor:pointer" :class="{ 'is-busy': busy }">
+      <input type="file" accept="video/*" class="visually-hidden" @change="upload($event)" :disabled="busy" aria-label="Add a form video for {{ coach_name }}">
+      <span class="play" style="background:var(--grape)"><span class="svgi svgi--video" style="width:13px;height:13px"></span></span>
+      <span style="flex:1;min-width:0"><b x-text="busy ? 'Uploading… ' + pct + '%' : 'Add a form video for {{ coach_name|escapejs }}'">Add a form video for {{ coach_name }}</b>
+        <small x-show="!busy">Record or upload — up to {{ max_mb }} MB, reviewed between sessions</small>
+        <span class="bar" x-show="busy" x-cloak style="display:block;margin-top:6px"><i :style="'width:' + pct + '%'"></i></span></span>
+      <span class="ext">+</span>
+    </label>
+  {% endif %}
+</div>

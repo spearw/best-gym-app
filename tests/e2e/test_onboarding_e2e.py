@@ -22,7 +22,7 @@ def test_coach_invites_and_athlete_onboards(page: Page, browser: Browser, base, 
 
     # Invite from the Athletes page, link only.
     page.locator(".snav a.navitem", has_text="Athletes").click()
-    expect(page.locator(".coach-topbar h2")).to_have_text("Athletes")
+    expect(page.locator(".coach-topbar h1")).to_have_text("Athletes")
     page.get_by_role("button", name="+ Invite athlete").click()
     expect(page.locator(".modal.open")).to_be_visible()
     page.get_by_role("button", name="Create invite").click()

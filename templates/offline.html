@@ -1,0 +1,17 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1F4FD8">
+  <title>Offline · Platform</title>
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}"><link rel="stylesheet" href="{% static 'css/icons.css' %}"><link rel="stylesheet" href="{% static 'css/app.css' %}"><link rel="stylesheet" href="{% static 'css/shell.css' %}">
+</head>
+<body class="athlete">
+  <main class="error-page">
+    <div class="done-ic" style="background:var(--warn-lt);color:#A45A04" aria-hidden="true"><span class="svgi svgi--alert"></span></div>
+    <h1>You're offline</h1>
+    <p>This screen needs a connection. Sets you already ticked are saved; anything that was still saving will retry when you're back online.</p>
+    <button class="btn btn--brand" type="button" onclick="location.reload()">Try again</button>
+  </main>
+</body>
+</html>

@@ -6,7 +6,7 @@
   <div class="bar"><i style="width:100%"></i></div>
   <span class="step-lbl">{{ n }} of {{ total }}</span>
 </div>
-<h3 style="font-size:1.2rem">Check-in complete</h3>
+<h1 style="font-size:1.2rem">Check-in complete</h1>
 <div class="mcard" style="margin-top:12px">
   {% for a in answers %}
     <div class="spread tiny" style="margin-bottom:6px"><span class="muted" style="max-width:55%">{{ a.question_text }}</span><b style="text-align:right">{% if a.type == "choice" and a.other_text %}{{ a.other_text }}{% else %}{{ a.display }}{% endif %}</b></div>

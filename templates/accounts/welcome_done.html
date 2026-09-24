@@ -4,9 +4,9 @@
 <div class="ob-wrap">
   {% include "accounts/_onboard_head.html" with coach_name=request.athlete.coach.user.name gym_name=request.athlete.gym.name %}
   <div class="ob-step active">
-    <div class="done-hero"><span class="done-ic"><span class="svgi svgi--checkcircle"></span></span><h3 style="margin-top:12px">You're all set</h3>
+    <div class="done-hero"><span class="done-ic"><span class="svgi svgi--checkcircle"></span></span><h2 class="h3" style="margin-top:12px">You're all set</h2>
       <p class="tiny muted">{{ request.athlete.coach.user.get_short_name }} has your details{% if all_skipped %} (all metrics skipped — your coach will fill them in at your first session){% elif skipped %} ({{ skipped }} field{{ skipped|pluralize }} left blank — your coach can fill {{ skipped|pluralize:"it,them" }} in){% endif %}.</p></div>
-    <div class="mcard"><h4>What happens next</h4>
+    <div class="mcard"><h2 class="h4">What happens next</h2>
       <div class="stack tiny" style="gap:8px;color:var(--ink-2)">
         <span class="row" style="gap:8px;flex-wrap:nowrap"><span class="svgi svgi--cal muted"></span> Your first programmed week appears on the home screen</span>
         <span class="row" style="gap:8px;flex-wrap:nowrap"><span class="svgi svgi--check muted"></span> Before each session you'll answer a short check-in from {{ request.athlete.coach.user.get_short_name }}</span>

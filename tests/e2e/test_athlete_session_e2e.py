@@ -88,7 +88,7 @@ def test_athlete_logs_a_session(page: Page, base, athlete, coach, todays_session
     page.get_by_role("button", name="Start session →").click()
 
     # Player: snatch, loads suggested from the 100 kg max.
-    expect(page.locator(".player-head h3")).to_have_text("Snatch")
+    expect(page.locator(".player-head h1")).to_have_text("Snatch")
     expect(page.locator(".rx-banner")).to_contain_text("≈ 80 kg from your Snatch max")
     expect(rows(page)).to_have_count(3)
     expect(rows(page).nth(0).get_by_label("Set 1 load in kg")).to_have_value("80")
@@ -111,7 +111,7 @@ def test_athlete_logs_a_session(page: Page, base, athlete, coach, todays_session
     assert SetLog.objects.get(set_number=3).load_kg == Decimal("82.50")
 
     page.get_by_role("link", name="Next exercise →").click()
-    expect(page.locator(".player-head h3")).to_have_text("Back Squat")
+    expect(page.locator(".player-head h1")).to_have_text("Back Squat")
     rows(page).nth(0).get_by_role("button", name="Mark set 1 done").click()
     wait_saved(page)
     page.get_by_role("link", name="Finish session →").click()

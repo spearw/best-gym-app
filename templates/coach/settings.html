@@ -4,10 +4,11 @@
 <form method="post" novalidate class="stack" style="gap:18px;max-width:640px">
   {% csrf_token %}
   <div class="card" style="padding:20px">
-    <h4 style="font-size:.95rem;margin-bottom:12px">Gym</h4>
+    <h2 class="h4" style="font-size:.95rem;margin-bottom:12px">Gym</h2>
     <div class="stack">
       {% include "partials/field.html" with field=form.gym_name %}
       {% include "partials/field.html" with field=form.coach_title %}
+      <div class="field"><label class="row" style="gap:8px;justify-content:flex-start;cursor:pointer" for="{{ form.digest.id_for_label }}">{{ form.digest }} {{ form.digest.label }}</label><span class="help">{{ form.digest.help_text }}</span></div>
       {% include "partials/field.html" with field=form.timezone %}
       <div class="field"><label>Units</label><div class="radio-row">{{ form.units }}</div><span class="help">New athletes start with this unit. Weights are stored exactly, so switching never loses precision.</span></div>
       <div class="field"><label>{{ form.week_start.label }}</label><div class="radio-row">{{ form.week_start }}</div><span class="help">{{ form.week_start.help_text }}</span>{{ form.week_start.errors }}</div>

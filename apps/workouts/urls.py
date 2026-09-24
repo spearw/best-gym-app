@@ -4,6 +4,7 @@ from apps.accounts import views as account_views
 from apps.messaging import views as mv
 from apps.programs import habit_views as hv
 
+from . import video_views as vv
 from . import views
 
 app_name = "app"
@@ -17,6 +18,10 @@ urlpatterns = [
     path("log/<int:log_id>/exercise/<int:n>/", views.player, name="player"),
     path("log/<int:log_id>/sets/<int:se_id>/<int:number>/", views.save_set, name="save_set"),
     path("log/<int:log_id>/pause/", views.pause, name="pause"),
+    path("log/<int:log_id>/videos/start/", vv.start, name="video_start"),
+    path("log/<int:log_id>/videos/<int:video_id>/done/", vv.done, name="video_done"),
+    path("log/<int:log_id>/videos/<int:video_id>/note/", vv.note, name="video_note"),
+    path("log/<int:log_id>/videos/<int:video_id>/remove/", vv.remove, name="video_remove"),
     path("log/<int:log_id>/finish/", views.finish, name="finish"),
     path("log/<int:log_id>/issue/", views.issue, name="issue"),
     path("log/<int:log_id>/done/", views.done, name="done"),
@@ -27,6 +32,7 @@ urlpatterns = [
     path("coach/thread/", mv.athlete_thread, name="message_thread"),
     path("coach/send/", mv.athlete_send, name="message_send"),
     path("profile/", views.profile, name="profile"),
+    path("profile/units/", views.units_setting, name="units"),
     path("welcome/", account_views.welcome_metrics, name="welcome_metrics"),
     path("profile/numbers/", account_views.update_numbers, name="numbers"),
     path("welcome/done/", account_views.welcome_done, name="welcome_done"),

@@ -26,6 +26,7 @@ from apps.programs.prescriptions import load_text, summary
 from . import charts, history, sessions
 from .forms import RIR_CHOICES, FinishForm, IssueForm, SetForm
 from .models import EDIT_WINDOW, OTHER_OPTION, CheckinAnswer, CheckinQuestion, QuestionType, SessionLog
+from .video_views import video_context
 
 
 def _log(request, log_id):
@@ -421,6 +422,7 @@ def player(request, log_id, n):
             if n < len(exercises)
             else (reverse("app:finish", args=[log.pk]) if editable else None),
             "exit_url": reverse("app:pause", args=[log.pk]),
+            **video_context(se, editable),
         }
     )
     return TemplateResponse(request, "app/player.html", context)
@@ -611,3 +613,15 @@ def profile(request):
         "coach_name": _coach_first_name(athlete),
     }
     return TemplateResponse(request, "app/profile.html", context)
+
+
+@athlete_required
+@require_POST
+def units_setting(request):
+    """Kilograms or pounds for this athlete's app (loads are stored in kg either way)."""
+    athlete = request.athlete
+    if request.POST.get("units") in ("kg", "lb"):
+        athlete.units = request.POST["units"]
+        athlete.save(update_fields=["units"])
+        messages.success(request, f"Weights now show in {athlete.get_units_display().lower()}")
+    return redirect("app:profile")

@@ -44,6 +44,7 @@ FEED_CLASS = {
     NotificationKind.PR: "pr",
     NotificationKind.METRICS_MISSING: "metrics",
     NotificationKind.MISSED: "missed",
+    NotificationKind.VIDEO: "video",
 }
 
 

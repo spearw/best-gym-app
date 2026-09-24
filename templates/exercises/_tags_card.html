@@ -1,5 +1,5 @@
 <div class="card" style="padding:18px" id="tagsCard" hx-sync="#tagsCard:queue all" hx-include="#tagsCard [name^=name_]">
-  <div class="spread"><h4 style="font-size:.95rem">Tags</h4><span class="tiny muted">up to {{ tag_max }} characters each</span></div>
+  <div class="spread"><h2 class="h4" style="font-size:.95rem">Tags</h2><span class="tiny muted">up to {{ tag_max }} characters each</span></div>
   <div class="stack" style="gap:6px;margin-top:10px">
     {% for t in tags %}
       <div class="row" style="gap:6px;flex-wrap:nowrap">

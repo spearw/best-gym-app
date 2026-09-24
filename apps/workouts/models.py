@@ -300,3 +300,45 @@ class IssueReport(models.Model):
 
     def __str__(self):
         return f"{self.athlete}: {self.get_kind_display()}"
+
+
+class FormVideoQuerySet(models.QuerySet):
+    def uploaded(self):
+        return self.filter(uploaded_at__isnull=False)
+
+    def available(self):
+        return self.uploaded().filter(deleted_at__isnull=True)
+
+
+class FormVideo(models.Model):
+    """An athlete's clip of one exercise in a session, for the coach to check. The file is
+    in the form-video bucket under `key` (apps/workouts/videos.py). `uploaded_at` is set
+    once the upload is confirmed; the file is deleted FORM_VIDEOS["keep_days"] later
+    (`deleted_at`), but the row stays so the session still shows there was a video and
+    what the coach said."""
+
+    session_log = models.ForeignKey(SessionLog, on_delete=models.CASCADE, related_name="videos")
+    session_exercise = models.ForeignKey(
+        SessionExercise, null=True, blank=True, on_delete=models.SET_NULL, related_name="videos"
+    )
+    exercise_name = models.CharField(max_length=120)
+    key = models.CharField(max_length=300, unique=True)
+    content_type = models.CharField(max_length=60)
+    size = models.PositiveBigIntegerField()
+    note = models.CharField(max_length=300, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    uploaded_at = models.DateTimeField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    feedback = models.TextField(blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    objects = FormVideoQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["created_at", "id"]
+
+    def __str__(self):
+        return f"{self.exercise_name} video in {self.session_log}"

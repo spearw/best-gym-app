@@ -8,10 +8,18 @@ a.role-btn{color:inherit}
 .app-tabbar a .ico{font-size:1.15rem}
 .app-tabbar a.active{color:var(--brand)}
 
-/* On a real phone the athlete app fills the screen instead of sitting in a desktop phone frame. */
+/* The tab bar takes its own row under the scrolling page instead of floating over it,
+   so the page always ends where the bar starts: the bar grows with the phone's text size
+   and with the home-indicator / gesture-bar inset, and a fixed bottom padding can't know by
+   how much. */
+.app-tabbar{position:static;flex:none}
+.app-body{padding-bottom:24px}
+
+/* On a real phone the athlete app fills the screen instead of sitting in a desktop phone frame.
+   100vh first for browsers without dvh (there it includes the space behind the address bar). */
 @media (max-width:500px){
-  .athlete .phone-stage{padding:0;display:block;min-height:100dvh}
-  .athlete .phone{width:100%;height:100dvh;border-radius:0;border:0;box-shadow:none}
+  .athlete .phone-stage{padding:0;display:block;min-height:100vh;min-height:100dvh}
+  .athlete .phone{width:100%;height:100vh;height:100dvh;border-radius:0;border:0;box-shadow:none}
   .athlete .phone-exit{display:none}
 }
 

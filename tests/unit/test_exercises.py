@@ -16,9 +16,12 @@ def results(client, **params):
     return client.get("/coach/programming/exercises/", params, HTTP_HX_TARGET="exlibResults", **HX)
 
 
-def test_programming_opens_on_the_library(coach_client):
+def test_programming_opens_on_templates_as_in_the_mockup(coach_client):
     response = coach_client.get("/coach/programming/")
-    assert response["Location"] == "/coach/programming/exercises/"
+    assert response["Location"] == "/coach/programming/templates/"
+
+
+def test_exercise_library_page(coach_client):
     html = coach_client.get("/coach/programming/exercises/").content.decode()
     assert "24 exercises" in html and "Snatch Balance" in html and 'class="tabs"' in html
 

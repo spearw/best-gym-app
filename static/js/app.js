@@ -286,7 +286,22 @@
     pop.classList.add("open");
   });
 
+  // Boosted navigation in the coach shell swaps only #coach-main, so the browser never
+  // resets the scroll position: a new page would open as far down as the old one was.
+  // Start each new page at the top. (Actions within a page aren't boosted, so they keep
+  // their place; the back button restores its own scroll position.) This listens before
+  // the swap: afterwards the clicked link and the old main area are detached, so their
+  // events never reach the document.
+  // HTMX's own scrollIntoViewOnBoost would then line up #coach-main's edge (74px down)
+  // after settling, so it's turned off in favour of this.
+  document.addEventListener("htmx:beforeSwap", function (e) {
+    if (e.detail.boosted && e.detail.target && e.detail.target.id === "coach-main") {
+      setTimeout(function () { window.scrollTo(0, 0); }, 0);
+    }
+  });
+
   document.addEventListener("DOMContentLoaded", function () {
+    if (window.htmx) window.htmx.config.scrollIntoViewOnBoost = false;
     showInitialToasts(document);
     onReady(document);
     initSortables(document);

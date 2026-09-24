@@ -87,7 +87,11 @@ urlpatterns = [
     path("athletes/<int:athlete_pk>/questions/reset/", qv.reset_to_defaults, name="athlete_questions_reset"),
     *question_patterns("athletes/<int:athlete_pk>/questions/", "athlete_q"),
     # Programming: templates/weeks/sessions (phase 5), exercises, default questions.
-    path("programming/", RedirectView.as_view(pattern_name="coach:exercises"), name="programming"),
+    path(
+        "programming/",
+        RedirectView.as_view(pattern_name="coach:programming_templates"),
+        name="programming",
+    ),
     path("programming/templates/", lv.library_page, {"ptab": "templates"}, name="programming_templates"),
     path("programming/weeks/", lv.library_page, {"ptab": "weeks"}, name="programming_weeks"),
     path("programming/sessions/", lv.library_page, {"ptab": "sessions"}, name="programming_sessions"),

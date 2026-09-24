@@ -16,6 +16,8 @@ def test_exercise_library_search_filter_create_archive(page: Page, base, coach, 
     sign_in(page, coach.user)
     page.goto(base + "/coach/")
     page.locator(".snav a.navitem", has_text="Programming").click()
+    expect(page).to_have_url(base + "/coach/programming/templates/")  # the mockup opens on Templates
+    page.locator(".tabs a", has_text="Exercises").click()
     expect(page).to_have_url(base + "/coach/programming/exercises/")
     expect(page.locator("#exlibResults")).to_contain_text("24 exercises")
 

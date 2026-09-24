@@ -51,3 +51,24 @@ def test_athlete_shell_fills_a_phone_screen_and_tabs_work(page: Page, base, athl
     expect(page).to_have_url(base + "/app/progress/")
     expect(page.locator("#mTabbar a.active")).to_have_text("Progress")
     expect(page.locator("#app-body h3")).to_have_text("Your progress")
+
+
+def test_coach_pages_open_at_the_top(page: Page, base, coach, sign_in):
+    """Boosted navigation swaps only the main area; each new page still starts at the top."""
+    from apps.library.models import TemplateKind
+    from apps.library.services import add_week, new_template
+
+    template = new_template(coach.gym, TemplateKind.PROGRAM, coach.user)
+    for _ in range(6):
+        add_week(template)  # a long editor page to scroll down
+    sign_in(page, coach.user)
+    for link, url in [("Programming", "/coach/programming/templates/"), ("Settings", "/coach/settings/")]:
+        page.goto(base + f"/coach/library/{template.pk}/")
+        page.mouse.wheel(0, 3000)
+        page.wait_for_function("() => window.scrollY > 500")
+        page.locator("a.navitem", has_text=link).click()
+        expect(page).to_have_url(base + url)
+        page.wait_for_function("() => window.scrollY === 0")
+        page.wait_for_timeout(300)  # and it stays there once HTMX has settled
+        assert page.evaluate("window.scrollY") == 0
+    expect(page.locator("h2").first).to_be_in_viewport()

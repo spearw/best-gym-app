@@ -26,6 +26,8 @@ def test_signup_with_general_strength(page: Page, base):
     page.get_by_role("button", name="Create gym").click()
     expect(page).to_have_url(base + "/coach/")
     page.locator(".snav a.navitem", has_text="Programming").click()
+    expect(page).to_have_url(base + "/coach/programming/templates/")
+    page.locator(".tabs a", has_text="Exercises").click()
     expect(page.locator("#exlibResults")).to_contain_text("Bench Press")
     expect(page.locator("#exlibFilters")).to_contain_text("upper-body")
     assert Gym.objects.get(name="Sam's Strength").week_types.count() == 5

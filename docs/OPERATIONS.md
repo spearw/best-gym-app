@@ -5,7 +5,52 @@ on Cloudflare R2, the hourly cron job, backups, and the rate limits. The build p
 (`docs/BUILD_PLAN.md`, "Render deployment") explains why it's set up this way; this file
 is the checklist.
 
-## Services (`render.yaml`)
+## Free-tier trial (now)
+
+While the client tries the UI, `render.yaml` runs everything on Render's free plans. The
+full setup below (paid plans, the cron job, email, form videos) is kept in
+`deploy/render.paid.yaml`, ready for real use.
+
+What's different on the free trial:
+
+| | Free trial | Real use (paid) |
+| --- | --- | --- |
+| Web service | `free`: sleeps after 15 idle minutes, about a minute to wake | `starter`, always on |
+| Database | `free`: 1 GB, **deleted 30 days after it's created**, no backups | paid plan with daily backups |
+| Migrations | at start-up (free has no pre-deploy step) | pre-deploy step |
+| Cron job | none: no morning digest, no video clean-up; the dashboard still updates alerts when opened | hourly `manage.py cron` |
+| Email | off: invites are shared with "Copy link"; password resets can't be sent | Resend or Postmark |
+| Form videos | off: no "Add a form video" button | Cloudflare R2 |
+| Demo data | loaded once at first start (`seed_demo --if-empty`) | not loaded |
+
+Setting it up:
+
+1. Render dashboard → **New → Blueprint** → pick the GitHub repo. It creates the
+   `gymtrainer` web service and the `gymtrainer-db` database, both free.
+2. When it asks for `DEMO_PASSWORD`, choose a password for the demo accounts (not the
+   published local one; the site refuses to seed without it). Give it to the client.
+3. The first start migrates and loads the demo gym: coach `dana@ironridge.example` and
+   athletes such as `riley@ironridge.example`, all with that password. The client can
+   also sign up as a coach of their own gym and invite athletes with "Copy link".
+4. Note the database's creation date: Render deletes a free database after 30 days
+   (with a 14-day grace period). Move to paid before then if the trial data matters.
+
+The demo's dates are relative to the day it was seeded, so the demo week drifts into the
+past as the trial goes on.
+
+## Moving to paid
+
+1. Copy `deploy/render.paid.yaml` over `render.yaml`, commit and push; sync the Blueprint
+   in the Render dashboard. It moves the web service to `starter`, adds the hourly
+   `gymtrainer-cron` job and the email and storage settings.
+2. Upgrade the existing database to a paid plan in the dashboard, rather than creating a
+   new one (a new database would start empty).
+3. Set the settings in "Settings to set in the Render dashboard" below, and set up R2
+   ("Form videos on Cloudflare R2").
+4. Remove `DEMO_PASSWORD`, and delete the demo gym's coach and athletes if the client's
+   real gym is going in alongside it.
+
+## Services (`deploy/render.paid.yaml`)
 
 | Service | What it runs |
 | --- | --- |

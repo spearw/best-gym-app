@@ -53,3 +53,21 @@ def test_timezone_is_validated_not_enumerated():
     user.full_clean(exclude=["password"])  # no error
     field = User._meta.get_field("timezone")
     assert not field.choices, "choices would bake the machine's tzdata into the migration"
+
+
+def test_seed_demo_on_a_public_site(settings):
+    """The free-tier trial seeds once at start-up, with its own password and no admin."""
+    from django.core.management.base import CommandError
+
+    settings.DEMO_PASSWORD = ""
+    with pytest.raises(CommandError):
+        call_command("seed_demo")
+    settings.DEMO_PASSWORD, settings.DEMO_STAFF = "trial-password-456", False
+    call_command("seed_demo", "--if-empty")
+    dana = User.objects.get(email="dana@ironridge.example")
+    assert dana.check_password("trial-password-456") and not dana.is_staff and not dana.is_superuser
+    dana.name = "Changed by the client"
+    dana.save()
+    call_command("seed_demo", "--if-empty")  # a restart leaves the trial's data alone
+    dana.refresh_from_db()
+    assert dana.name == "Changed by the client"

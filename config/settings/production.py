@@ -22,5 +22,10 @@ if _render_host:
     ALLOWED_HOSTS.append(_render_host)  # noqa: F405
     CSRF_TRUSTED_ORIGINS.append(f"https://{_render_host}")  # noqa: F405
 
+# A demo site on a public URL (the free-tier trial) must not use the published demo
+# password, and its demo coach is not an admin. seed_demo refuses to run without one.
+DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "")  # noqa: F405
+DEMO_STAFF = False
+
 # HSTS preload is hard to undo and needs a real domain first; revisit when one is bought.
 SILENCED_SYSTEM_CHECKS = ["security.W021"]

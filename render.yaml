@@ -1,8 +1,10 @@
-# Render blueprint. See docs/BUILD_PLAN.md, "Render deployment".
-# The web service and the cron job share one env var group plus DATABASE_URL,
-# so the nightly job has the same settings and database as the site.
-# ALLOWED_HOSTS is optional: production settings always allow RENDER_EXTERNAL_HOSTNAME.
-# Add ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS in the dashboard when a custom domain is added.
+# Render blueprint: the FREE-TIER TRIAL, so the client can try the UI (docs/OPERATIONS.md,
+# "Free-tier trial"). Paid plans, the hourly cron job, email and form videos are in
+# deploy/render.paid.yaml; copy that over this file when moving to real use.
+#
+# Free-tier limits: the site sleeps after 15 idle minutes (the next visit takes about a
+# minute), the free database is deleted 30 days after it's created and has no backups,
+# there's no pre-deploy step (migrations run at start-up) and no shell.
 
 envVarGroups:
   - name: gymtrainer-shared
@@ -18,11 +20,15 @@ services:
   - type: web
     name: gymtrainer
     runtime: python
-    plan: starter
+    plan: free
     branch: main
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    preDeployCommand: python manage.py migrate --noinput
-    startCommand: gunicorn config.wsgi:application --workers 3 --access-logfile -
+    # No pre-deploy on free: migrate at start-up, and load the demo gym once (seed_demo
+    # --if-empty leaves it alone after that, so the client's changes survive restarts).
+    startCommand: >-
+      python manage.py migrate --noinput &&
+      python manage.py seed_demo --if-empty &&
+      gunicorn config.wsgi:application --workers 2 --access-logfile -
     healthCheckPath: /healthz
     envVars:
       - fromGroup: gymtrainer-shared
@@ -30,58 +36,15 @@ services:
         fromDatabase:
           name: gymtrainer-db
           property: connectionString
-      # Email for invites and password resets. Set these in the Render dashboard.
-      - key: EMAIL_PROVIDER
+      # The demo users' password. Required: set it in the dashboard, share it with the client.
+      - key: DEMO_PASSWORD
         sync: false
-      - key: EMAIL_API_KEY
-        sync: false
-      - key: DEFAULT_FROM_EMAIL
-        sync: false
-      # Form videos: a Cloudflare R2 bucket (docs/OPERATIONS.md). Without them uploads are off.
-      - key: STORAGE_ENDPOINT
-        sync: false
-      - key: STORAGE_BUCKET
-        sync: false
-      - key: STORAGE_ACCESS_KEY
-        sync: false
-      - key: STORAGE_SECRET
-        sync: false
-
-  # Hourly: alerts, form-video clean-up, and each gym's 7am digest (manage.py cron).
-  - type: cron
-    name: gymtrainer-cron
-    runtime: python
-    plan: starter
-    branch: main
-    schedule: "0 * * * *"
-    buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py cron
-    envVars:
-      - fromGroup: gymtrainer-shared
-      - key: DATABASE_URL
-        fromDatabase:
-          name: gymtrainer-db
-          property: connectionString
-      # The digest's links and sending, and video clean-up, need these too.
-      - key: SITE_URL
-        sync: false
-      - key: EMAIL_PROVIDER
-        sync: false
-      - key: EMAIL_API_KEY
-        sync: false
-      - key: DEFAULT_FROM_EMAIL
-        sync: false
-      - key: STORAGE_ENDPOINT
-        sync: false
-      - key: STORAGE_BUCKET
-        sync: false
-      - key: STORAGE_ACCESS_KEY
-        sync: false
-      - key: STORAGE_SECRET
-        sync: false
+      # Email and form videos stay off for the trial: invites are shared with "Copy link",
+      # and the "Add a form video" button doesn't appear without STORAGE_* settings.
 
 databases:
   - name: gymtrainer-db
+    plan: free
     databaseName: gymtrainer
     user: gymtrainer
     postgresMajorVersion: "16"

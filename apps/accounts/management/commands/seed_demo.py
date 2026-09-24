@@ -14,7 +14,8 @@ history is rebuilt relative to today so the numbers always look recent.
 import datetime
 from decimal import Decimal
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.accounts.models import (
@@ -34,7 +35,6 @@ from ._seed_meso import seed_meso
 from ._seed_programs import seed_programs
 from ._seed_sessions import seed_habits, seed_sessions
 
-DEMO_PASSWORD = "demo-password-123"
 TZ = "America/New_York"
 GYM_NAME = "Iron Ridge Weightlifting"
 COACH = ("dana@ironridge.example", "Dana Whitfield", "Head coach")
@@ -123,8 +123,20 @@ def _next_date(today, month, day):
 class Command(BaseCommand):
     help = "Create or refresh the mockup's demo data (Iron Ridge, Dana the coach, six athletes)."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--if-empty",
+            action="store_true",
+            help="Do nothing if the demo gym already exists (the free-tier trial seeds on start-up).",
+        )
+
     @transaction.atomic
     def handle(self, *args, **options):
+        if not settings.DEMO_PASSWORD:
+            raise CommandError("Set DEMO_PASSWORD: demo users on a public site need their own password.")
+        if options["if_empty"] and Gym.objects.filter(name=GYM_NAME).exists():
+            self.stdout.write("Demo gym already there; not reseeding.")
+            return
         gym, _ = Gym.objects.update_or_create(name=GYM_NAME, defaults={"timezone": TZ, "units": "kg"})
         exercises = install_pack(gym, "weightlifting")
         install_default_questions(gym)
@@ -194,16 +206,21 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Demo data ready: {GYM_NAME}, coach {COACH[0]}, {len(ATHLETES) + 1} athletes, "
-                f"{len(exercises)} exercises. Password for new demo users: {DEMO_PASSWORD}"
+                f"{len(exercises)} exercises. New demo users' password is DEMO_PASSWORD."
             )
         )
 
     def _user(self, email, name, is_staff=False):
         user, created = User.objects.update_or_create(
             email=email,
-            defaults={"name": name, "timezone": TZ, "is_staff": is_staff, "is_superuser": is_staff},
+            defaults={
+                "name": name,
+                "timezone": TZ,
+                "is_staff": is_staff and settings.DEMO_STAFF,
+                "is_superuser": is_staff and settings.DEMO_STAFF,
+            },
         )
         if created:
-            user.set_password(DEMO_PASSWORD)
+            user.set_password(settings.DEMO_PASSWORD)
             user.save(update_fields=["password"])
         return user

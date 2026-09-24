@@ -127,6 +127,10 @@ SITE_URL = os.environ.get("SITE_URL", os.environ.get("RENDER_EXTERNAL_URL", "htt
     "/"
 )
 
+# seed_demo: the password its new demo users get, and whether the demo coach is an admin.
+DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "demo-password-123")
+DEMO_STAFF = True
+
 # Email: invites and password resets. Set EMAIL_PROVIDER to "resend" or "postmark"
 # and EMAIL_API_KEY to send for real; otherwise email is printed to the console.
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Platform <no-reply@localhost>")

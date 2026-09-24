@@ -308,9 +308,9 @@ def _athlete(coach, gym, today):
         email=EMAIL, defaults={"name": NAME, "timezone": gym.timezone}
     )
     if created:
-        from .seed_demo import DEMO_PASSWORD
+        from django.conf import settings
 
-        user.set_password(DEMO_PASSWORD)
+        user.set_password(settings.DEMO_PASSWORD)
         user.save(update_fields=["password"])
     athlete, _ = Athlete.objects.update_or_create(
         user=user,

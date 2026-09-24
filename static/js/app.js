@@ -371,7 +371,9 @@
       var hash = elt && elt.href ? new URL(elt.href, window.location.href).hash : "";
       var anchor = e.detail.pathInfo && e.detail.pathInfo.anchor;
       if (!hash && anchor) hash = "#" + anchor;
-      setTimeout(function () { if (!goToTarget(hash)) window.scrollTo(0, 0); }, 0);
+      // After HTMX has swapped and settled (it scrolls to an anchor itself, to the top edge),
+      // so the target ends up centred rather than under the sticky header.
+      setTimeout(function () { if (!goToTarget(hash)) window.scrollTo(0, 0); }, 60);
     }
   });
 

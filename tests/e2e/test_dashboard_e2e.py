@@ -90,6 +90,10 @@ def test_alerts_go_straight_to_the_thing(page: Page, base, coach, athlete, sign_
     expect(target).to_be_visible()
     expect(target).to_be_in_viewport()
     expect(target).to_have_class(re.compile("is-target"))
+    page.wait_for_timeout(200)  # let the scroll finish
+    header_bottom = page.locator(".coach-topbar").bounding_box()
+    box = target.bounding_box()
+    assert box["y"] >= header_bottom["y"] + header_bottom["height"]  # not hidden under the sticky header
 
     # The feed's "no metrics" item lands on the metrics cards.
     page.locator("a.navitem", has_text="Dashboard").click()

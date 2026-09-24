@@ -186,3 +186,6 @@ h2.h4{font-size:1em}
 
 /* The mockup's display rules (.btn, .mcard…) would otherwise override the hidden attribute. */
 [hidden]{display:none!important}
+
+/* Anything an alert link points at clears the sticky coach header when scrolled to. */
+.coach-main [id]{scroll-margin-top:96px}

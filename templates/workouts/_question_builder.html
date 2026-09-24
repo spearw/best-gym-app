@@ -4,7 +4,7 @@
     <div class="q-row">
       <form class="stack" style="gap:8px" hx-post="{{ builder_prefix }}{{ q.pk }}/update/" hx-trigger="change" hx-swap="none" onsubmit="return false">
         <div class="qhead">
-          <span class="chip {% if q.type == 'scale' %}chip--brand{% else %}chip--good{% endif %}">{% if q.type == 'scale' %}1–10 scale{% else %}multiple choice{% endif %}</span>
+          <span class="chip {% if q.type == 'scale' %}chip--brand{% elif q.type == 'choice' %}chip--good{% endif %}">{% if q.type == 'scale' %}1–10 scale{% elif q.type == 'choice' %}multiple choice{% else %}short answer{% endif %}</span>
           <input class="input" name="text_{{ q.pk }}" value="{{ q.text }}" maxlength="200" aria-label="Question {{ forloop.counter }} wording">
         </div>
         {% if q.type == 'scale' %}
@@ -13,6 +13,12 @@
             <span>·</span>
             <span>10 =</span><input class="input" name="high_label_{{ q.pk }}" value="{{ q.high_label }}" maxlength="60" style="width:150px;padding:5px 9px" aria-label="Label for 10">
           </div>
+          <div class="row tiny muted" style="gap:8px">
+            <span>Also ask</span><input class="input" name="detail_label_{{ q.pk }}" value="{{ q.detail_label }}" maxlength="60" placeholder="e.g. Where? (leave empty for none)" style="width:230px;padding:5px 9px" aria-label="Follow-up box for question {{ forloop.counter }}">
+            <span>— a few words typed under the number</span>
+          </div>
+        {% elif q.type == 'text' %}
+          <p class="tiny muted" style="margin:0">Athletes type a few words; they can leave it empty.</p>
         {% endif %}
       </form>
       {% if q.type == 'choice' %}
@@ -35,5 +41,6 @@
   <div class="row" style="margin-top:4px">
     <button class="btn btn--soft btn--sm" type="button" hx-post="{{ builder_prefix }}add/scale/" hx-target="#{{ builder_id }}" hx-swap="outerHTML">+ 1–10 scale question</button>
     <button class="btn btn--soft btn--sm" type="button" hx-post="{{ builder_prefix }}add/choice/" hx-target="#{{ builder_id }}" hx-swap="outerHTML">+ multiple-choice question</button>
+    <button class="btn btn--soft btn--sm" type="button" hx-post="{{ builder_prefix }}add/text/" hx-target="#{{ builder_id }}" hx-swap="outerHTML">+ short-answer question</button>
   </div>
 </div>

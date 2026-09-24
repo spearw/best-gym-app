@@ -9,6 +9,7 @@ from django.utils import timezone
 class QuestionType(models.TextChoices):
     SCALE = "scale", "1–10 scale"
     CHOICE = "choice", "Multiple choice"
+    TEXT = "text", "Short answer"
 
 
 class CheckinQuestionQuerySet(models.QuerySet):
@@ -39,6 +40,8 @@ class CheckinQuestion(models.Model):
     low_label = models.CharField(max_length=60, blank=True)
     high_label = models.CharField(max_length=60, blank=True)
     options = models.JSONField(default=list, blank=True)
+    # A scale question can ask for a few words too, e.g. "Where?" after soreness 1-10.
+    detail_label = models.CharField(max_length=60, blank=True)
     archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -77,6 +80,7 @@ class CheckinQuestion(models.Model):
             low_label=self.low_label,
             high_label=self.high_label,
             options=list(self.options),
+            detail_label=self.detail_label,
         )
 
 
@@ -210,6 +214,9 @@ class SessionExercise(models.Model):
     exercise_name = models.CharField(max_length=120)
     order = models.PositiveSmallIntegerField(default=0)
     prescribed = models.JSONField(default=dict, blank=True)
+    # A warm-up drill is ticked off once (`checked_at`) and has no sets.
+    warmup = models.BooleanField(default=False)
+    checked_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["order", "id"]
@@ -256,7 +263,9 @@ class CheckinAnswer(models.Model):
     order = models.PositiveSmallIntegerField(default=0)
     question_text = models.CharField(max_length=200)
     type = models.CharField(max_length=10, choices=QuestionType.choices)
-    value = models.CharField(max_length=200)  # "1".."10" for a scale, else the chosen option
+    # "1".."10" for a scale, the chosen option, or a short answer (may be blank).
+    value = models.CharField(max_length=200, blank=True)
+    # "Other" details for a choice; a scale question's detail ("thighs").
     other_text = models.TextField(blank=True)
 
     class Meta:
@@ -272,7 +281,7 @@ class CheckinAnswer(models.Model):
     def display(self):
         if self.type == QuestionType.SCALE:
             return f"{self.value} / 10"
-        return self.value
+        return self.value or "—"
 
 
 OTHER_OPTION = "Other"

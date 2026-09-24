@@ -15,6 +15,10 @@
     </div>
     {% include "partials/field.html" with field=form.youtube_url %}
     {% include "partials/field.html" with field=form.cue %}
+    <div class="field">
+      <label class="row" style="gap:8px;justify-content:flex-start;cursor:pointer"><input type="checkbox" name="warmup" id="id_warmup" value="on"{% if form.warmup.value %} checked{% endif %}> Warm-up drill</label>
+      <span class="help">Added to sessions as part of the warm-up checklist: the athlete taps its name for the demo and ticks it off — no sets to log.</span>
+    </div>
   </div>
   <div class="modal-foot">
     <button class="btn btn--ghost" type="button" onclick="closeModal()">Cancel</button>

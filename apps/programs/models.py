@@ -64,19 +64,30 @@ class PrescriptionBase(models.Model):
     """One exercise's dose in one session. Shared by program prescriptions and (in
     phase 5) template slots, so applying a template copies every field.
 
-    `rep_scheme` is what the athlete reads ("5", "1+1", "8/leg", "10 min"); `reps` and
-    `duration_seconds` are parsed from it for maths (see prescriptions.parse_rep_scheme).
-    `load_value` is just the number: 75 (percent), 8 (RPE) or a weight in kg."""
+    `rep_scheme` is what the athlete reads ("5", "1+1", "8/leg", "10-12", "10 min");
+    `reps` and `duration_seconds` are parsed from it for maths (a range counts its low
+    end; see prescriptions.parse_rep_scheme). `load_value` is just the number: 75
+    (percent), 8 (RPE) or a weight in kg. The RIR target is `rir`, or `rir`–`rir_max`
+    for a range ("1-2").
+
+    Layout within the session: `warmup` items are the warm-up checklist, always first;
+    `section` starts a heading ("Hypertrophy", with `section_note`) above this item;
+    `superset` pairs this item with the one above it (A1/A2)."""
 
     sets = models.PositiveSmallIntegerField(default=3)
-    rep_scheme = models.CharField(max_length=30, blank=True)
+    rep_scheme = models.CharField(max_length=60, blank=True)
     reps = models.PositiveSmallIntegerField(null=True, blank=True)
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
     load_value = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     load_basis = models.CharField(max_length=12, choices=LoadBasis.choices, default=LoadBasis.NONE)
     rir = models.PositiveSmallIntegerField(null=True, blank=True)
+    rir_max = models.PositiveSmallIntegerField(null=True, blank=True)
     note = models.TextField(blank=True)
     custom_fields = models.JSONField(default=list, blank=True)  # [{"key": "Tempo", "value": "3-1-0"}]
+    warmup = models.BooleanField(default=False)
+    section = models.CharField(max_length=40, blank=True)
+    section_note = models.CharField(max_length=200, blank=True)
+    superset = models.BooleanField(default=False)
 
     class Meta:
         abstract = True
@@ -110,6 +121,7 @@ class Program(models.Model):
     athlete = models.ForeignKey("accounts.Athlete", on_delete=models.CASCADE, related_name="programs")
     name = models.CharField(max_length=80)
     start_date = models.DateField()
+    note = models.TextField(blank=True, help_text="Goal, rest, nutrition: shown to the athlete.")
     active = models.BooleanField(default=True)
     source_template = models.ForeignKey(
         "library.Template", null=True, blank=True, on_delete=models.SET_NULL, related_name="programs"

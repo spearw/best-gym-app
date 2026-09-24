@@ -1,0 +1,6 @@
+{% if program.note %}
+  <details class="mcard">
+    <summary class="spread" style="cursor:pointer;list-style:none"><h2 class="h4" style="margin:0">About {{ program.name }}</h2><span class="tiny muted">from {{ coach_name }} ▾</span></summary>
+    <p class="prog-note" style="font-size:.83rem;margin:8px 0 0">{{ program.note }}</p>
+  </details>
+{% endif %}

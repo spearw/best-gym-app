@@ -26,6 +26,12 @@
       </form>
     {% endif %}
   </div>
+  {% if is_program %}
+    <form class="field" style="margin:-4px 0 14px" hx-post="{% url 'coach:template_meta' template.pk %}" hx-trigger="change" hx-swap="none" onsubmit="return false">
+      <label for="tplNote">Program note <span class="tiny muted" style="font-weight:400">— goal, rest, nutrition; becomes the athlete's program note when applied as a new program</span></label>
+      <textarea class="input" id="tplNote" name="program_note" rows="2" maxlength="2000" placeholder="e.g. Goal: get strong and healthy. Rest as needed on all lifts.">{{ template.program_note }}</textarea>
+    </form>
+  {% endif %}
   <div class="tpl-layout">
     <div>{% include "library/_editor.html" %}</div>
     {% include "programs/_rail.html" %}

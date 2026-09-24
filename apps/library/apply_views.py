@@ -20,7 +20,7 @@ from apps import hx
 from apps.accounts.access import coach_required
 from apps.accounts.coach_views import coach_athlete
 from apps.accounts.models import Athlete
-from apps.programs.prescriptions import summary
+from apps.programs.prescriptions import board_items, summary
 from apps.programs.program_views import _program, _week, render_editor
 
 from . import apply, services
@@ -97,14 +97,15 @@ def apply_context(request, athlete):
             session = shown["planned"].days.get(offset)
             items = []
             if session:
-                for slot, exercise in session.exercises:
-                    items.append(
-                        {
-                            "name": exercise.name,
-                            "summary": summary(slot, unit, list(slot.set_overrides.all())),
-                            "tags": list(slot.tags.all()) if slot.is_tag else [],
-                        }
-                    )
+                items = board_items(
+                    session.exercises,
+                    lambda pair: {
+                        "name": pair[1].name,
+                        "summary": summary(pair[0], unit, list(pair[0].set_overrides.all())),
+                        "tags": list(pair[0].tags.all()) if pair[0].is_tag else [],
+                    },
+                    get=lambda pair: pair[0],
+                )
             board.append(
                 {"date": shown["start"] + datetime.timedelta(days=offset), "session": session, "items": items}
             )

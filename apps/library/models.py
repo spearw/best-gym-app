@@ -26,6 +26,10 @@ class Template(models.Model):
     kind = models.CharField(max_length=10, choices=TemplateKind.choices, default=TemplateKind.PROGRAM)
     name = models.CharField(max_length=80, blank=True)
     description = models.CharField(max_length=200, blank=True)
+    program_note = models.TextField(
+        blank=True,
+        help_text="Becomes the program note (goal, rest, nutrition) when applied as a new program.",
+    )
     sessions_per_week = models.PositiveSmallIntegerField(
         default=3,
         validators=[MinValueValidator(1), MaxValueValidator(6)],

@@ -8,7 +8,7 @@ Every lookup goes through request.athlete. A session log is found with _log(), w
 import datetime
 
 from django.contrib import messages
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -21,7 +21,7 @@ from apps.accounts.access import athlete_required
 from apps.accounts.metrics import current_metrics, metric_specs, missing_metrics
 from apps.exercises.models import Measure
 from apps.programs.models import LoadBasis, ProgramSession
-from apps.programs.prescriptions import load_text, summary
+from apps.programs.prescriptions import layout, load_text, rir_text, summary
 
 from . import charts, history, sessions
 from .forms import RIR_CHOICES, FinishForm, IssueForm, SetForm
@@ -70,15 +70,20 @@ def _parse_date(value):
 
 
 def _session_card(athlete, session, log, day_date, today, unit):
-    rxs = list(session.prescriptions.all())
+    warmups, entries = layout(session.prescriptions.all())
+    items = []
+    if warmups:
+        n = len(warmups)
+        items.append({"name": "Warm-up", "dose": f"{n} drill{'s' if n != 1 else ''}"})
+    for e in entries:
+        rx = e["item"]
+        dose = summary(rx, unit, list(rx.set_overrides.all()), custom=False)
+        items.append({"name": f"{e['label']} {rx.exercise.name}".strip(), "dose": dose})
     card = {
         "session": session,
         "log": log,
-        "items": [
-            {"name": rx.exercise.name, "dose": summary(rx, unit, list(rx.set_overrides.all()), custom=False)}
-            for rx in rxs
-        ],
-        "count": len(rxs),
+        "items": items,
+        "count": len(entries),
     }
     if log and log.finished:
         card["state"] = "done"
@@ -134,7 +139,7 @@ def home(request):
         entry = {
             "day": day,
             "status": status,
-            "count": sum(len(s.prescriptions.all()) for s in sessions_),
+            "count": sum(1 for s in sessions_ for rx in s.prescriptions.all() if not rx.warmup),
             "is_today": day.date == today,
             "selected": day.date == selected_date,
         }
@@ -198,12 +203,15 @@ def _resume_url(log):
                 if q.pk not in answered:
                     return reverse("app:checkin", args=[log.pk, n])
             return reverse("app:checkin_summary", args=[log.pk])
-    exercises = list(log.exercises.prefetch_related("sets"))
-    for n, se in enumerate(exercises, start=1):
-        done = sum(1 for s in se.sets.all() if s.done)
-        if done < max(sessions.planned_sets(se), 1):
+    steps = sessions.steps(log.exercises.prefetch_related("sets"))
+    # Once any set is logged the warm-up is behind them, ticked or not.
+    lifting = any(s.done for step in steps for se in step["items"] for s in se.sets.all())
+    for n, step in enumerate(steps, start=1):
+        if step["warmup"] and lifting:
+            continue
+        if not sessions.step_done(step):
             return reverse("app:player", args=[log.pk, n])
-    if log.finished and exercises:
+    if log.finished and steps:
         return reverse("app:player", args=[log.pk, 1])
     return reverse("app:finish", args=[log.pk])
 
@@ -229,11 +237,14 @@ def checkin(request, log_id, n):
     if request.method == "POST":
         value = request.POST.get("value", "").strip()
         other = request.POST.get("other_text", "").strip()
-        valid = (
-            value in {str(i) for i in range(1, 11)}
-            if question.type == QuestionType.SCALE
-            else value in [*question.options, OTHER_OPTION]
-        )
+        if question.type == QuestionType.SCALE:
+            valid = value in {str(i) for i in range(1, 11)}
+            other = other[:300] if question.detail_label else ""
+        elif question.type == QuestionType.TEXT:
+            valid, value, other = True, " ".join(value.split())[:200], ""
+        else:
+            valid = value in [*question.options, OTHER_OPTION]
+            other = other if value == OTHER_OPTION else ""
         if valid:
             CheckinAnswer.objects.update_or_create(
                 session_log=log,
@@ -243,7 +254,7 @@ def checkin(request, log_id, n):
                     "question_text": question.text,
                     "type": question.type,
                     "value": value,
-                    "other_text": other if value == OTHER_OPTION else "",
+                    "other_text": other,
                 },
             )
             if n < len(questions):
@@ -292,7 +303,7 @@ def checkin_summary(request, log_id):
             "back_url": reverse("app:checkin", args=[log.pk, len(questions)])
             if questions
             else reverse("app:home"),
-            "exercise_count": log.exercises.count(),
+            "exercise_count": log.exercises.filter(warmup=False).count(),
         }
     )
     return TemplateResponse(request, "app/checkin_summary.html", context)
@@ -367,20 +378,13 @@ def _banner(p, unit):
                 hint = f"loads vary by set · {p.max_exercise} max {units.display(p.max_kg, unit)}"
         else:
             hint = "no max on file — go by feel"
-    return {"sets": len(p.overrides) or p.sets, "reps": reps, "load": load, "rir": p.rir, "hint": hint}
+    rir = rir_text(p.rir, p.rir_max)
+    return {"sets": len(p.overrides) or p.sets, "reps": reps, "load": load, "rir": rir, "hint": hint}
 
 
-@athlete_required
-def player(request, log_id, n):
-    athlete = request.athlete
-    log = _log(request, log_id)
-    exercises = list(log.exercises.select_related("exercise__category").prefetch_related("sets"))
-    if not exercises:
-        return redirect("app:finish", log.pk)
-    if not 1 <= n <= len(exercises):
-        return redirect("app:player", log.pk, 1)
-    unit = athlete.units
-    se = exercises[n - 1]
+def _block(se, athlete, log, unit, editable, label=""):
+    """Everything the player shows for one exercise: the rx banner, set rows, demo link,
+    history line and form videos."""
     p = sessions.prescribed(se)
     exercise = se.exercise
     measure = exercise.measure if exercise else (Measure.TIME if p and p.duration_seconds else Measure.REPS)
@@ -390,28 +394,63 @@ def player(request, log_id, n):
         entries = history.exercise_history(athlete, [exercise.pk], exclude_log=log, limit=1).get(exercise.pk)
         if entries:
             last = history.last_line(entries[0], unit, athlete.today())
-    dots = []
-    for i, other in enumerate(exercises, start=1):
-        sets = list(other.sets.all())
-        planned = max(sessions.planned_sets(other), 1)
-        dots.append("on" if i == n else "done" if sum(1 for s in sets if s.done) >= planned else "")
+    return {
+        "se": se,
+        "p": p,
+        "label": label,
+        "exercise": exercise,
+        "measure": measure,
+        "rows": rows,
+        "time_unit": time_unit,
+        "banner": _banner(p, unit),
+        "custom_fields": p.custom_fields if p else [],
+        "last": last,
+        **video_context(se, editable),
+    }
+
+
+@athlete_required
+def player(request, log_id, n):
+    """Screen n of a session: the warm-up checklist, or one exercise (a superset's
+    exercises share a screen)."""
+    athlete = request.athlete
+    log = _log(request, log_id)
+    steps = sessions.steps(
+        log.exercises.select_related("exercise__category").prefetch_related("sets", "videos")
+    )
+    if not steps:
+        return redirect("app:finish", log.pk)
+    if not 1 <= n <= len(steps):
+        return redirect("app:player", log.pk, 1)
+    unit = athlete.units
+    step = steps[n - 1]
     editable = log.editable()
+    dots = ["on" if i == n else "done" if sessions.step_done(s) else "" for i, s in enumerate(steps, start=1)]
+    blocks = []
+    if not step["warmup"]:
+        labels = step["labels"] or [""]
+        blocks = [
+            _block(se, athlete, log, unit, editable, labels[i] if i < len(labels) else "")
+            for i, se in enumerate(step["items"])
+        ]
+    last_step = n == len(steps)
+    title = "Warm-up" if step["warmup"] else " + ".join(se.exercise_name for se in step["items"])
     context = _flow(
         {
             "log": log,
-            "se": se,
-            "p": p,
-            "exercise": exercise,
-            "measure": measure,
-            "rows": rows,
-            "time_unit": time_unit,
+            "step": step,
+            "title": title,
+            "warmups": [
+                {"se": se, "p": sessions.prescribed(se), "exercise": se.exercise} for se in step["items"]
+            ]
+            if step["warmup"]
+            else [],
+            "blocks": blocks,
+            "superset": len(blocks) > 1,
             "rir_choices": RIR_CHOICES,
-            "banner": _banner(p, unit),
-            "custom_fields": p.custom_fields if p else [],
-            "last": last,
             "n": n,
-            "total": len(exercises),
-            "progress": round((n - 1) / len(exercises) * 100 + 5),
+            "total": len(steps),
+            "progress": round((n - 1) / len(steps) * 100 + 5),
             "dots": dots,
             "unit": unit,
             "editable": editable,
@@ -419,13 +458,36 @@ def player(request, log_id, n):
             "coach_name": _coach_first_name(athlete),
             "prev_url": reverse("app:player", args=[log.pk, n - 1]) if n > 1 else None,
             "next_url": reverse("app:player", args=[log.pk, n + 1])
-            if n < len(exercises)
+            if not last_step
             else (reverse("app:finish", args=[log.pk]) if editable else None),
+            "next_label": ("Start lifting →" if step["warmup"] else "Next exercise →")
+            if not last_step
+            else ("Next →" if log.finished else "Finish session →"),
             "exit_url": reverse("app:pause", args=[log.pk]),
-            **video_context(se, editable),
+            "max_mb": blocks[0]["max_mb"] if blocks else None,
         }
     )
     return TemplateResponse(request, "app/player.html", context)
+
+
+@athlete_required
+@require_POST
+def warmup_check(request, log_id, se_id):
+    """Tick (or untick) one warm-up drill."""
+    log = _log(request, log_id)
+    se = get_object_or_404(log.exercises, pk=se_id, warmup=True)
+    if not log.editable():
+        return hx.toast(HttpResponse(status=409), "This session can no longer be changed.", "bad")
+    sessions.check_warmup(se, request.POST.get("checked") == "1")
+    return TemplateResponse(
+        request,
+        "app/_warmup_item.html",
+        {
+            "w": {"se": se, "p": sessions.prescribed(se), "exercise": se.exercise},
+            "log": log,
+            "editable": True,
+        },
+    )
 
 
 @athlete_required
@@ -468,7 +530,7 @@ def pause(request, log_id):
 
 
 def _set_counts(log):
-    exercises = list(log.exercises.prefetch_related("sets"))
+    exercises = list(log.exercises.filter(warmup=False).prefetch_related("sets"))
     done = sum(1 for se in exercises for s in se.sets.all() if s.done)
     planned = sum(max(sessions.planned_sets(se), sum(1 for s in se.sets.all() if s.done)) for se in exercises)
     return len(exercises), done, planned
@@ -487,7 +549,7 @@ def finish(request, log_id):
             return redirect("app:done", log.pk)
         messages.success(request, "Changes saved")
         return redirect("app:progress")
-    count = log.exercises.count()
+    count = len(sessions.steps(log.exercises.prefetch_related("sets")))
     context = _flow(
         {
             "log": log,
@@ -583,6 +645,8 @@ def progress(request):
         "change": change,
         "unit": unit,
         "tab": "progress",
+        "program": athlete.programs.active().first(),
+        "coach_name": _coach_first_name(athlete),
         "prs": prs,
         "recent": [{"log": log, "editable": log.editable(now)} for log in recent],
     }

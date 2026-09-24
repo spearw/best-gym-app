@@ -1,5 +1,5 @@
 {% extends "base_app.html" %}
-{% block title %}{{ se.exercise_name }}{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 {% block content %}
 <div class="flow-head">
   <a class="iconbtn" style="margin:0" href="{{ exit_url }}" aria-label="{% if log.finished %}Close{% else %}Pause session{% endif %}">✕</a>
@@ -9,44 +9,60 @@
 {% if log.finished %}
   <p class="note" style="margin:0 0 12px">{% if editable %}Logged on {{ log.date|date:"D j M" }}. You can change it until {{ edit_until|date:"D g:i A" }}.{% else %}Logged on {{ log.date|date:"D j M" }} — read only now.{% endif %}</p>
 {% endif %}
-<div class="player-head">
-  <span class="count">{% if exercise %}{{ exercise.category.name|upper }} · {% endif %}{% if last %}last: {{ last }}{% else %}first time{% endif %}</span>
-  <h1>{{ se.exercise_name }}</h1>
-</div>
-{% if banner %}
-  <div class="rx-banner">
-    <span class="big">{{ banner.sets }} × {{ banner.reps }}</span>
-    <span style="margin-left:auto;text-align:right"><span class="big">{{ banner.load|default:"—" }}{% if banner.rir is not None %} <small style="font-size:.6em;opacity:.85;display:inline">RIR {{ banner.rir }}</small>{% endif %}</span>{% if banner.hint %}<small>{{ banner.hint }}</small>{% endif %}</span>
+{% if step.warmup %}
+  <div class="player-head">
+    <span class="count">{{ warmups|length }} drill{{ warmups|length|pluralize }} · tap a name for {{ coach_name }}'s demo</span>
+    <h1>Warm-up</h1>
   </div>
-{% endif %}
-{% if custom_fields %}<div class="row" style="gap:6px;margin:-4px 0 12px">{% for f in custom_fields %}<span class="tagchip">{{ f.key }}: {{ f.value }}</span>{% endfor %}</div>{% endif %}
-{% if p.note %}<div class="coach-note"><b>Note from {{ coach_name }}:</b> {{ p.note }}</div>{% endif %}
-{% if exercise.youtube_url %}
-  <a class="yt-btn" href="{{ exercise.youtube_url }}" target="_blank" rel="noopener" hx-boost="false"><span class="play"><span class="svgi svgi--play" style="width:11px;height:11px"></span></span><span><b>Watch {{ coach_name }}'s demo</b><small>Opens in YouTube</small></span><span class="ext">↗</span></a>
-{% endif %}
-<div class="set-list">
-  {% for row in rows %}
-    <div class="set-row{% if row.done %} done{% endif %}" x-data="setRow" :class="{ done: done, unsaved: state === 'error' || state === 'invalid' }" :title="note" :data-state="state"
-         data-url="{% url 'app:save_set' log.pk se.pk row.number %}" data-load="{{ row.load }}" data-reps="{{ row.reps }}" data-time="{{ row.time }}" data-time-unit="{{ time_unit }}" data-rir="{{ row.rir }}" data-done="{{ row.done|yesno:'true,false' }}" data-number="{{ row.number }}">
-      <span class="n">{{ row.number }}</span>
-      <span><span class="lbl">{{ unit }}</span><input class="in" inputmode="decimal" x-model="load" @change="save()" placeholder="{{ unit }}" aria-label="Set {{ row.number }} load in {{ unit }}"{% if not editable %} disabled{% endif %}></span>
-      {% if measure == "time" %}
-        <span><span class="lbl">{{ time_unit }}</span><input class="in" inputmode="decimal" x-model="time" @change="save()" placeholder="{{ row.placeholder }}" aria-label="Set {{ row.number }} time in {{ time_unit }}"{% if not editable %} disabled{% endif %}></span>
-      {% elif measure == "reps" %}
-        <span><span class="lbl">reps</span><input class="in" inputmode="numeric" x-model="reps" @change="save()" placeholder="{{ row.placeholder }}" aria-label="Set {{ row.number }} reps"{% if not editable %} disabled{% endif %}></span>
-        <span><span class="lbl">RIR</span><select class="in" x-model="rir" @change="save()" aria-label="Set {{ row.number }} reps in reserve"{% if not editable %} disabled{% endif %}>{% for value, label in rir_choices %}<option value="{{ value }}"{% if value == row.rir %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></span>
-      {% endif %}
-      <button class="tick" type="button" @click="tick()" aria-label="Mark set {{ row.number }} done" :aria-pressed="done ? 'true' : 'false'"{% if not editable %} disabled{% endif %}>✓</button>
+  <div class="wu-list">
+    {% for w in warmups %}{% include "app/_warmup_item.html" %}{% endfor %}
+  </div>
+{% else %}
+  {% if step.section %}<p class="player-section">{{ step.section }}{% if step.section_note %}<small>{{ step.section_note }}</small>{% endif %}</p>{% endif %}
+  {% if superset %}<h1 class="visually-hidden">Superset: {{ title }}</h1><p class="tiny muted" style="margin:0 0 12px">Superset — alternate between these: a set of {{ blocks.0.label }}, then a set of {{ blocks.1.label }}{% if blocks|length > 2 %}, and so on{% endif %}.</p>{% endif %}
+  {% for b in blocks %}
+    <div{% if superset %} class="ss-block"{% endif %}>
+    <div class="player-head">
+      <span class="count">{% if b.exercise %}{{ b.exercise.category.name|upper }} · {% endif %}{% if b.last %}last: {{ b.last }}{% else %}first time{% endif %}</span>
+      {% if superset %}<h2 style="margin:0">{% if b.label %}<span class="ss-tag">{{ b.label }}</span> {% endif %}{{ b.se.exercise_name }}</h2>{% else %}<h1>{% if b.label %}{{ b.label }} · {% endif %}{{ b.se.exercise_name }}</h1>{% endif %}
+    </div>
+    {% if b.banner %}
+      <div class="rx-banner">
+        <span class="big">{{ b.banner.sets }} × {{ b.banner.reps }}</span>
+        <span style="margin-left:auto;text-align:right"><span class="big">{{ b.banner.load|default:"—" }}{% if b.banner.rir %} <small style="font-size:.6em;opacity:.85;display:inline">RIR {{ b.banner.rir }}</small>{% endif %}</span>{% if b.banner.hint %}<small>{{ b.banner.hint }}</small>{% endif %}</span>
+      </div>
+    {% endif %}
+    {% if b.custom_fields %}<div class="row" style="gap:6px;margin:-4px 0 12px">{% for f in b.custom_fields %}<span class="tagchip">{{ f.key }}: {{ f.value }}</span>{% endfor %}</div>{% endif %}
+    {% if b.p.note %}<div class="coach-note"><b>Note from {{ coach_name }}:</b> {{ b.p.note }}</div>{% endif %}
+    {% if b.exercise.youtube_url %}
+      <a class="yt-btn" href="{{ b.exercise.youtube_url }}" target="_blank" rel="noopener" hx-boost="false"><span class="play"><span class="svgi svgi--play" style="width:11px;height:11px"></span></span><span><b>Watch {{ coach_name }}'s demo{% if superset %} · {{ b.se.exercise_name }}{% endif %}</b><small>Opens in YouTube</small></span><span class="ext">↗</span></a>
+    {% endif %}
+    <div class="set-list">
+      {% for row in b.rows %}
+        <div class="set-row{% if row.done %} done{% endif %}" x-data="setRow" :class="{ done: done, unsaved: state === 'error' || state === 'invalid' }" :title="note" :data-state="state"
+             data-url="{% url 'app:save_set' log.pk b.se.pk row.number %}" data-load="{{ row.load }}" data-reps="{{ row.reps }}" data-time="{{ row.time }}" data-time-unit="{{ b.time_unit }}" data-rir="{{ row.rir }}" data-done="{{ row.done|yesno:'true,false' }}" data-number="{{ row.number }}">
+          <span class="n">{{ row.number }}</span>
+          <span><span class="lbl">{{ unit }}</span><input class="in" inputmode="decimal" x-model="load" @change="save()" placeholder="{{ unit }}" aria-label="{% if superset %}{{ b.label }} {% endif %}Set {{ row.number }} load in {{ unit }}"{% if not editable %} disabled{% endif %}></span>
+          {% if b.measure == "time" %}
+            <span><span class="lbl">{{ b.time_unit }}</span><input class="in" inputmode="decimal" x-model="time" @change="save()" placeholder="{{ row.placeholder }}" aria-label="{% if superset %}{{ b.label }} {% endif %}Set {{ row.number }} time in {{ b.time_unit }}"{% if not editable %} disabled{% endif %}></span>
+          {% elif b.measure == "reps" %}
+            <span><span class="lbl">reps</span><input class="in" inputmode="numeric" x-model="reps" @change="save()" placeholder="{{ row.placeholder }}" aria-label="{% if superset %}{{ b.label }} {% endif %}Set {{ row.number }} reps"{% if not editable %} disabled{% endif %}></span>
+            <span><span class="lbl">RIR</span><select class="in" x-model="rir" @change="save()" aria-label="{% if superset %}{{ b.label }} {% endif %}Set {{ row.number }} reps in reserve"{% if not editable %} disabled{% endif %}>{% for value, label in rir_choices %}<option value="{{ value }}"{% if value == row.rir %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></span>
+          {% endif %}
+          <button class="tick" type="button" @click="tick()" aria-label="Mark {% if superset %}{{ b.label }} {% endif %}set {{ row.number }} done" :aria-pressed="done ? 'true' : 'false'"{% if not editable %} disabled{% endif %}>✓</button>
+        </div>
+      {% endfor %}
+    </div>
+    {% include "app/_videos.html" with se=b.se form_videos=b.form_videos can_upload=b.can_upload %}
+    {% if b.exercise.cue %}<p class="tiny muted" style="text-align:center">Cue — {{ b.exercise.cue }}</p>{% endif %}
     </div>
   {% endfor %}
-</div>
-{% include "app/_videos.html" %}
-{% if exercise.cue %}<p class="tiny muted" style="text-align:center">Cue — {{ exercise.cue }}</p>{% endif %}
+{% endif %}
 <div class="ex-dots">{% for d in dots %}<i class="{{ d }}"></i>{% endfor %}</div>
 <div class="player-nav">
   {% if prev_url %}<a class="btn btn--soft" style="flex:1" href="{{ prev_url }}">← Prev</a>{% else %}<button class="btn btn--soft" style="flex:1" type="button" disabled>← Prev</button>{% endif %}
   {% if next_url %}
-    <a class="btn btn--brand" style="flex:2" href="{{ next_url }}">{% if n < total %}Next exercise →{% elif log.finished %}Next →{% else %}Finish session →{% endif %}</a>
+    <a class="btn btn--brand" style="flex:2" href="{{ next_url }}">{{ next_label }}</a>
   {% else %}
     <a class="btn btn--brand" style="flex:2" href="{% url 'app:progress' %}">Done</a>
   {% endif %}

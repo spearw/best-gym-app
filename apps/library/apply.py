@@ -209,7 +209,8 @@ def confirm(athlete, template, days, mode, placement_value, publish, by):
         )
         if template.kind == TemplateKind.PROGRAM:
             program.source_template = template
-            program.save(update_fields=["source_template"])
+            program.note = template.program_note
+            program.save(update_fields=["source_template", "note"])
         start_order = 0
     else:
         program = placement.program

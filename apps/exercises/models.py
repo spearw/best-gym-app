@@ -74,6 +74,9 @@ class Exercise(models.Model):
     )
     youtube_url = models.URLField(blank=True)
     cue = models.TextField(blank=True)
+    warmup = models.BooleanField(
+        default=False, help_text="A warm-up drill: added to sessions as part of the warm-up checklist."
+    )
     archived = models.BooleanField(default=False)
 
     class Meta:

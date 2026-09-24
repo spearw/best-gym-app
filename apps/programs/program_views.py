@@ -18,7 +18,7 @@ from apps.exercises.models import Exercise, Tag
 from . import services, undo
 from .forms import MAX_CUSTOM_FIELDS, MAX_SETS, PrescriptionForm, StartProgramForm, set_rows_initial
 from .models import Prescription, ProgramDay, ProgramSession, ProgramWeek, WeekType
-from .prescriptions import load_text, suggested_weight, summary
+from .prescriptions import board_items, load_text, suggested_weight, summary
 
 # ------------------------------------------------------ lookups (always scoped to the coach's athlete)
 
@@ -107,10 +107,10 @@ def editor_context(request, athlete, week_id=None):
     ):
         sessions = []
         for session in day.sessions.all():
-            items = [
-                {"rx": rx, "summary": summary(rx, unit, list(rx.set_overrides.all()))}
-                for rx in session.prescriptions.all()
-            ]
+            items = board_items(
+                session.prescriptions.all(),
+                lambda rx: {"rx": rx, "summary": summary(rx, unit, list(rx.set_overrides.all()))},
+            )
             sessions.append({"session": session, "items": items})
         days.append(
             {
@@ -280,6 +280,19 @@ def start(request, pk):
         response["HX-Redirect"] = url  # a fresh page: new program, new weeks, new rail state
         return response
     return redirect(url)
+
+
+@coach_required
+@require_POST
+def program_note(request, pk):
+    """The program's note (goal, rest, nutrition), saved as the coach types."""
+    athlete = coach_athlete(request, pk)
+    program = _program(athlete)
+    if program is None:
+        raise Http404
+    program.note = request.POST.get("note", "").strip()[:2000]
+    program.save(update_fields=["note"])
+    return hx.toast(HttpResponse(""), "Program note saved")
 
 
 @coach_required

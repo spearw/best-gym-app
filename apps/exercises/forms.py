@@ -16,11 +16,12 @@ class ExerciseForm(InputClassMixin, forms.ModelForm):
 
     class Meta:
         model = Exercise
-        fields = ["name", "category", "measure", "percent_of", "tags", "youtube_url", "cue"]
+        fields = ["name", "category", "measure", "percent_of", "tags", "youtube_url", "cue", "warmup"]
         labels = {
             "percent_of": "Percentages worked from",
             "cue": "Coaching cue shown to athlete",
             "measure": "Measured in",
+            "warmup": "Warm-up drill",
         }
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "e.g. Snatch Pull + Snatch complex"}),

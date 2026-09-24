@@ -528,6 +528,17 @@ The review settled most of the original list. What remains is below; decide the 
 - A daily digest email at 7am gym time, only when something new needs attention; each coach can turn it off in Settings. The cron job runs hourly.
 - Accessibility: the mockup's text colours are darkened just enough to meet WCAG AA contrast (backgrounds and borders unchanged).
 
+### Decided (24 September, phase 9: the client's spreadsheet)
+
+The client sent a real program (`mockup/Export For Sir Steven.xlsx`, a real athlete's data, so it is only used anonymised). It showed how he programs; phase 9 fills the gaps it exposed.
+
+- He programs everything by RIR, often as a range ("@1-2RIR"), with rep ranges ("10-12", "15-20") and per-set RPE on the main lift (8/9/7). The RIR target takes a number or a range (`rir`, `rir_max`); a rep range counts its low end for the maths and is suggested at that in the player.
+- Warm-ups are drills whose name is a link to a YouTube demo, with free-text doses ("x 5 breaths + 5 shifts"). They are library exercises (an exercise can be marked "Warm-up drill"), prescribed as warm-up items that always sit first in a session. The athlete gets a checklist screen before the first lift: tap the name for the demo, tick it off. No sets are logged and they don't count towards sets or volume.
+- Sections and supersets: an item can start a section heading with a note ("Hypertrophy — superset non-competing exercises") and can be paired with the item above it as a superset (A1/A2). The player shows a superset's exercises on one screen.
+- Check-ins get a short-answer question type (may be left empty), and a 1-10 question can ask for a few words too ("Soreness 1-10" then "Where?").
+- A program has a note (goal, rest, nutrition), edited on the board and shown on the athlete's week and Progress pages. Templates carry one, which becomes the program note when applied as a new program.
+- seed_demo adds Riley (made up, in pounds) on "Meso 1 — Powerbuilding", built from the sheet with its YouTube links and paraphrased notes.
+
 ### Still open
 
 - [ ] Product name and domain (the mockup says "Platform"; the repo is GymTrainer).

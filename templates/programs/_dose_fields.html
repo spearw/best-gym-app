@@ -1,11 +1,19 @@
-{% comment %}Sets, reps, load, RIR, note, vary-by-set rows and custom fields: the prescription modal and the
-template slot modal share these. Needs PrescriptionForm as `form` and the rxForm Alpine component.{% endcomment %}
-    <div class="row" style="gap:12px;align-items:flex-start">
-      <div class="field" style="flex:1"><label for="id_sets">Sets</label><input class="input" type="number" name="sets" id="id_sets" min="1" max="{{ max_sets }}" x-model.number="sets" @input="syncRows()" required>{{ form.sets.errors }}</div>
-      <div class="field" style="flex:1.4"><label for="id_rep_scheme">Reps</label><input class="input" name="rep_scheme" id="id_rep_scheme" maxlength="30" x-model="repScheme" @input="syncRows()" placeholder="5, 1+1, 8/leg, 10 min">{{ form.rep_scheme.errors }}</div>
-      <div class="field" style="flex:1"><label for="id_rir">RIR target</label><input class="input" type="number" name="rir" id="id_rir" min="0" max="10" value="{{ form.rir.value|default_if_none:'' }}">{{ form.rir.errors }}</div>
+{% comment %}Sets, reps, load, RIR, note, vary-by-set rows and custom fields, and where the item sits in its
+session (warm-up, section heading, superset): the prescription modal and the template slot modal share
+these. Needs PrescriptionForm as `form` and the rxForm Alpine component.{% endcomment %}
+  <div class="stack" x-data="{ warm: {{ form.warmup.value|yesno:'true,false' }} }">
+    <div class="field" style="margin:0">
+      <label class="row" style="gap:8px;justify-content:flex-start;cursor:pointer"><input type="checkbox" name="warmup" value="on" x-model="warm"> Warm-up drill <span class="tiny muted" style="font-weight:400">ticked off in the warm-up checklist at the start of the session, nothing to log</span></label>
     </div>
-    <div class="row" style="gap:12px;align-items:flex-start">
+    <div class="row" style="gap:12px;align-items:flex-start" x-show="warm" x-cloak>
+      <div class="field" style="flex:1"><label for="id_rep_scheme_wu">Dose</label><input class="input" id="id_rep_scheme_wu" maxlength="60" x-model="repScheme" placeholder="e.g. x 5 breaths + 5 shifts, 5 min" :disabled="!warm" name="rep_scheme"></div>
+    </div>
+    <div class="row" style="gap:12px;align-items:flex-start" x-show="!warm">
+      <div class="field" style="flex:1"><label for="id_sets">Sets</label><input class="input" type="number" name="sets" id="id_sets" min="1" max="{{ max_sets }}" x-model.number="sets" @input="syncRows()" required>{{ form.sets.errors }}</div>
+      <div class="field" style="flex:1.4"><label for="id_rep_scheme">Reps</label><input class="input" name="rep_scheme" id="id_rep_scheme" maxlength="60" x-model="repScheme" @input="syncRows()" placeholder="5, 10-12, 8/leg, 10 min" :disabled="warm">{{ form.rep_scheme.errors }}</div>
+      <div class="field" style="flex:1"><label for="id_rir">RIR target</label><input class="input" name="rir" id="id_rir" maxlength="10" inputmode="numeric" placeholder="2 or 1-2" value="{{ form.rir.value|default_if_none:'' }}">{{ form.rir.errors }}</div>
+    </div>
+    <div class="row" style="gap:12px;align-items:flex-start" x-show="!warm">
       <div class="field" style="flex:1"><label for="id_load_basis">Load basis</label>
         <select class="input" name="load_basis" id="id_load_basis" x-model="basis">
           {% for value, label in form.load_basis.field.choices %}<option value="{{ value }}"{% if value == form.load_basis.value %} selected{% endif %}>{{ label }}</option>{% endfor %}
@@ -17,7 +25,7 @@ template slot modal share these. Needs PrescriptionForm as `form` and the rxForm
     </div>
     {% include "partials/field.html" with field=form.note %}
 
-    <div class="field">
+    <div class="field" x-show="!warm">
       <label class="row" style="gap:8px;justify-content:flex-start;cursor:pointer"><input type="checkbox" name="vary" value="on" x-model="vary" @change="syncRows()"> Vary by set <span class="tiny muted" style="font-weight:400">e.g. 70 / 75 / 80%, or 5-3-1 reps</span></label>
       <div class="stack" style="gap:6px" x-show="vary" x-cloak>
         <template x-for="(row, i) in rows" :key="i">
@@ -28,6 +36,14 @@ template slot modal share these. Needs PrescriptionForm as `form` and the rxForm
           </div>
         </template>
       </div>
+    </div>
+
+    <div class="stack" style="gap:8px;border-top:1px solid var(--line-2);padding-top:12px" x-show="!warm">
+      <div class="row" style="gap:12px;align-items:flex-start">
+        <div class="field" style="flex:1"><label for="id_section">Section heading above this <span class="tiny muted" style="font-weight:400">optional</span></label><input class="input" name="section" id="id_section" maxlength="40" placeholder="e.g. Strength, Hypertrophy" value="{{ form.section.value|default_if_none:'' }}">{{ form.section.errors }}</div>
+        <div class="field" style="flex:1.4"><label for="id_section_note">Section note</label><input class="input" name="section_note" id="id_section_note" maxlength="200" placeholder="e.g. Superset non-competing exercises when available" value="{{ form.section_note.value|default_if_none:'' }}">{{ form.section_note.errors }}</div>
+      </div>
+      <label class="row" style="gap:8px;justify-content:flex-start;cursor:pointer"><input type="checkbox" name="superset" value="on"{% if form.superset.value %} checked{% endif %}> Superset with the exercise above <span class="tiny muted" style="font-weight:400">shown as A1 / A2; the athlete logs them on one screen</span></label>
     </div>
 
     <div class="field">
@@ -43,3 +59,4 @@ template slot modal share these. Needs PrescriptionForm as `form` and the rxForm
       </div>
       <button class="btn btn--soft btn--sm" type="button" style="align-self:flex-start" @click="addField()" x-show="fields.length < {{ max_custom }}">+ add field</button>
     </div>
+  </div>

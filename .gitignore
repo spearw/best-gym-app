@@ -24,3 +24,6 @@ CLAUDE.md
 .vscode/
 .idea/
 .DS_Store
+
+# Client files with real athletes' data: never commit.
+mockup/*.xlsx

@@ -18,6 +18,7 @@
           {% endfor %}
         </div>
         <div class="sess-sec"><span class="sess-lbl">Asked for → done</span>
+          {% if item.warmup %}<div class="exline"><span>Warm-up</span><span class="rx mono" style="text-align:right">{{ item.warmup.done }}/{{ item.warmup.total }} drills ticked</span></div>{% endif %}
           {% for e in item.exercises %}
             <div class="exline"><span>{{ e.name }}{% if e.deleted %} <span class="tiny muted">(deleted from library)</span>{% endif %}{% if e.pr %} <span class="chip chip--good">PR</span>{% endif %}<br><span class="tiny muted">asked {{ e.asked }}</span></span>
               <span class="rx mono" style="text-align:right">{% if e.did %}did {{ e.did }}{% if e.e1rm %} · e1RM {{ e.e1rm }}{% endif %}{% else %}no sets logged{% endif %}{% if e.planned %}<br><span class="tiny muted">{{ e.done_count }}/{{ e.planned }} sets</span>{% endif %}</span></div>

@@ -1,0 +1,3 @@
+{% comment %}Drawn above a board card: "Warm-up" before the first drill, or the coach's section heading.
+Needs `item` from prescriptions.board_items.{% endcomment %}
+{% if item.heading %}<div class="rx-head{% if item.warmup %} is-warm{% endif %}"><b>{{ item.heading }}</b>{% if item.heading_note %}<span>{{ item.heading_note }}</span>{% endif %}</div>{% endif %}

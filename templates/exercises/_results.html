@@ -7,7 +7,7 @@
         {% for ex in exercises %}
           <tr>
             <td><b>{{ ex.name }}</b><br><span class="tiny muted">{{ ex.cue }}</span></td>
-            <td>{{ ex.category.name }}{% if ex.measure != "reps" %}<br><span class="tiny muted">by {{ ex.get_measure_display|lower }}</span>{% endif %}</td>
+            <td>{{ ex.category.name }}{% if ex.warmup %}<br><span class="tiny muted">warm-up drill</span>{% endif %}{% if ex.measure != "reps" %}<br><span class="tiny muted">by {{ ex.get_measure_display|lower }}</span>{% endif %}</td>
             <td><span class="row" style="gap:4px">{% for t in ex.tags.all %}<span class="tagchip">{{ t.name }}</span>{% endfor %}</span></td>
             <td class="tiny">{% if ex.percent_of %}{{ ex.percent_of.name }}{% else %}<span class="muted">own max</span>{% endif %}</td>
             <td>{% if ex.youtube_url %}<a class="yt" href="{{ ex.youtube_url }}" target="_blank" rel="noopener" hx-boost="false">YouTube ↗</a>{% else %}<span class="tiny muted">none</span>{% endif %}</td>

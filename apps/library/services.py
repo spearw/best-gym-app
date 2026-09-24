@@ -12,7 +12,7 @@ from django.db import transaction
 from django.db.models import F, Max
 
 from apps.programs.models import LoadBasis, WeekType
-from apps.programs.prescriptions import COPIED_FIELDS, DEFAULTS, parse_rep_scheme
+from apps.programs.prescriptions import COPIED_FIELDS, keep_warmups_first, new_dose
 
 from .models import (
     SlotKind,
@@ -189,12 +189,6 @@ def remove_session(session):
     _renumber(week.sessions.all())
 
 
-def new_slot_dose(exercise):
-    dose = dict(DEFAULTS[exercise.measure])
-    dose["reps"], dose["duration_seconds"] = parse_rep_scheme(dose["rep_scheme"])
-    return dose
-
-
 @transaction.atomic
 def add_slot(session, exercise, index=None, tags=None):
     """A fixed slot (or a tag slot when `tags` is given) at the end, or at `index`."""
@@ -203,12 +197,14 @@ def add_slot(session, exercise, index=None, tags=None):
         order=session.slots.count(),
         kind=SlotKind.TAG if tags else SlotKind.EXERCISE,
         exercise=exercise,
-        **new_slot_dose(exercise),
+        **new_dose(exercise),
     )
     if tags:
         slot.tags.set(tags)
     if index is not None:
         move_slot(slot, session, index)
+    else:
+        keep_warmups_first(session)
     return slot
 
 
@@ -223,6 +219,7 @@ def move_slot(slot, target, index):
     for order, item in enumerate(siblings):
         if item.order != order:
             TemplateSlot.objects.filter(pk=item.pk).update(order=order)
+    keep_warmups_first(target)
     if old.pk != target.pk:
         _renumber(old.slots.all())
 
@@ -308,7 +305,12 @@ def save_template_week(gym, by, template_week, name, description=""):
 def save_program(gym, by, program, name, description=""):
     """An athlete's program as a template: every week with work, its sessions in day order."""
     template = Template.objects.create(
-        gym=gym, kind=TemplateKind.PROGRAM, name=name, description=description, created_by=by
+        gym=gym,
+        kind=TemplateKind.PROGRAM,
+        name=name,
+        description=description,
+        program_note=program.note,
+        created_by=by,
     )
     most = 1
     order = 0

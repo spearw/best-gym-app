@@ -19,7 +19,7 @@ from apps.accounts.forms import InputClassMixin
 from apps.exercises.models import Exercise, Tag
 from apps.programs.forms import MAX_CUSTOM_FIELDS, MAX_SETS, PrescriptionForm, set_rows_initial
 from apps.programs.models import WeekType
-from apps.programs.prescriptions import summary
+from apps.programs.prescriptions import board_items, summary
 from apps.programs.program_views import rail_context
 
 from . import services
@@ -136,10 +136,10 @@ def editor_context(request, template):
         sessions = [
             {
                 "session": s,
-                "items": [
-                    {"slot": sl, "summary": summary(sl, unit, list(sl.set_overrides.all()))}
-                    for sl in s.slots.all()
-                ],
+                "items": board_items(
+                    s.slots.all(),
+                    lambda sl: {"slot": sl, "summary": summary(sl, unit, list(sl.set_overrides.all()))},
+                ),
             }
             for s in w.sessions.all()
         ]
@@ -190,6 +190,7 @@ def library(request, pk):
 class MetaForm(forms.Form):
     name = forms.CharField(max_length=80, required=False)
     description = forms.CharField(max_length=200, required=False)
+    program_note = forms.CharField(max_length=2000, required=False, strip=True)
     sessions_per_week = forms.IntegerField(min_value=1, max_value=6, required=False)
 
 
@@ -207,6 +208,9 @@ def meta(request, pk):
         if field in request.POST:
             setattr(template, field, " ".join(data[field].split()))
             fields.append(field)
+    if "program_note" in request.POST:
+        template.program_note = data["program_note"]
+        fields.append("program_note")
     if data.get("sessions_per_week"):
         template.sessions_per_week = data["sessions_per_week"]
         fields.append("sessions_per_week")

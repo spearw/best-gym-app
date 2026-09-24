@@ -7,7 +7,7 @@ from apps.accounts import units
 from apps.accounts.forms import InputClassMixin
 
 from .models import LoadBasis, WeekType
-from .prescriptions import parse_rep_scheme
+from .prescriptions import parse_rep_scheme, parse_rir, rir_text
 
 MAX_SETS = 20
 MAX_CUSTOM_FIELDS = 8
@@ -48,16 +48,21 @@ def _decimal(raw):
 
 
 class PrescriptionForm(InputClassMixin, forms.Form):
-    """Sets, rep scheme, load, RIR, note, custom fields and optional per-set overrides.
+    """Sets, rep scheme, load, RIR, note, custom fields and optional per-set overrides,
+    plus where the item sits in its session (warm-up, section heading, superset).
     Weights are entered in `unit` and stored in kg."""
 
     sets = forms.IntegerField(min_value=1, max_value=MAX_SETS)
     rep_scheme = forms.CharField(
-        max_length=30, required=False, label="Reps", help_text="e.g. 5, 1+1, 8/leg, 10 min, AMRAP"
+        max_length=60, required=False, label="Reps", help_text="e.g. 5, 10-12, 1+1, 8/leg, 10 min, AMRAP"
     )
     load_basis = forms.ChoiceField(choices=LoadBasis.choices, label="Load basis")
     load_value = forms.CharField(required=False, label="Load")
-    rir = forms.IntegerField(min_value=0, max_value=10, required=False, label="RIR target")
+    rir = forms.CharField(required=False, max_length=10, label="RIR target")
+    warmup = forms.BooleanField(required=False, label="Warm-up drill")
+    section = forms.CharField(required=False, max_length=40, label="Section heading above this")
+    section_note = forms.CharField(required=False, max_length=200, label="Section note")
+    superset = forms.BooleanField(required=False, label="Superset with the exercise above")
     note = forms.CharField(
         required=False,
         max_length=500,
@@ -80,9 +85,13 @@ class PrescriptionForm(InputClassMixin, forms.Form):
             "rep_scheme": rx.rep_scheme,
             "load_basis": rx.load_basis,
             "load_value": format(Decimal(value).normalize(), "f") if value is not None else "",
-            "rir": rx.rir,
+            "rir": rir_text(rx.rir, rx.rir_max),
             "note": rx.note,
             "vary": rx.set_overrides.exists(),
+            "warmup": rx.warmup,
+            "section": rx.section,
+            "section_note": rx.section_note,
+            "superset": rx.superset,
         }
 
     def _checked_load(self, basis, raw, where="Load"):
@@ -96,10 +105,23 @@ class PrescriptionForm(InputClassMixin, forms.Form):
             raise forms.ValidationError(f"{where}: enter {what}.")
         return units.to_kg(value, self.unit) if basis == LoadBasis.WEIGHT else value
 
+    def clean_rir(self):
+        try:
+            return parse_rir(self.cleaned_data.get("rir"))
+        except ValueError as err:
+            raise forms.ValidationError("Enter a number (2) or a range (1-2), up to 10.") from err
+
     def clean(self):
         data = super().clean()
         if self.errors:
             return data
+        data["rir"], data["rir_max"] = data["rir"]
+        for name in ("section", "section_note"):
+            data[name] = " ".join(data.get(name, "").split())
+        if data["warmup"]:
+            # A warm-up drill is ticked off once: no sets, load or RIR, and it isn't in a section.
+            data.update(sets=1, load_basis=LoadBasis.NONE, rir=None, rir_max=None, vary=False)
+            data.update(section="", section_note="", superset=False)
         basis = data["load_basis"]
         try:
             data["load_value"] = self._checked_load(basis, data.get("load_value"))
@@ -153,11 +175,19 @@ class PrescriptionForm(InputClassMixin, forms.Form):
             "load_basis",
             "load_value",
             "rir",
+            "rir_max",
             "note",
             "custom_fields",
+            "warmup",
+            "section",
+            "section_note",
+            "superset",
         ]:
             setattr(rx, field, data[field])
         rx.save()
+        from .prescriptions import keep_warmups_first
+
+        keep_warmups_first(rx.session)
         # Works for a program prescription (PrescribedSet) and a template slot (TemplateSlotSet).
         rx.set_overrides.all().delete()
         model, parent = rx.set_overrides.model, rx.set_overrides.field.name

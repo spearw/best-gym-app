@@ -10,7 +10,7 @@ from django.db.models import F, Max
 from django.utils import timezone
 
 from .models import PrescribedSet, Prescription, Program, ProgramDay, ProgramSession, ProgramWeek
-from .prescriptions import default_dose
+from .prescriptions import default_dose, keep_warmups_first
 
 WEEK = datetime.timedelta(days=7)
 
@@ -184,6 +184,8 @@ def add_prescription(day, exercise, athlete, session_id=None, index=None):
     )
     if index is not None:
         move_prescription(rx, session, index)
+    else:
+        keep_warmups_first(session)
     return rx
 
 
@@ -207,6 +209,7 @@ def move_prescription(rx, target_session, index):
     for order, item in enumerate(siblings):
         if item.order != order:
             Prescription.objects.filter(pk=item.pk).update(order=order)
+    keep_warmups_first(target_session)
     if old_session.pk != target_session.pk:
         if _empty_and_unused(old_session):
             old_session.delete()

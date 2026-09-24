@@ -1,5 +1,7 @@
 """Load the mockup's demo data. Grows with every phase (docs/BUILD_PLAN.md, "Seed data").
 
+Phase 9 adds a real client's program style, anonymised (_seed_meso.py): Riley, in pounds,
+on a 4-day RIR block with warm-up drills, sections, supersets and a program note.
 Phase 7 adds the mockup's habits (seed_habits in _seed_sessions.py).
 Phase 5 adds the mockup's templates, saved weeks and saved sessions (_seed_library.py).
 Phase 4 adds the mockup's logged sessions and check-ins (_seed_sessions.py).
@@ -28,6 +30,7 @@ from apps.exercises.starter import install_pack
 from apps.workouts.models import CheckinQuestion, copy_defaults_to, install_default_questions
 
 from ._seed_library import seed_library
+from ._seed_meso import seed_meso
 from ._seed_programs import seed_programs
 from ._seed_sessions import seed_habits, seed_sessions
 
@@ -187,9 +190,10 @@ class Command(BaseCommand):
         seed_sessions(athletes_by_email, exercises, today)
         seed_library(gym, exercises, coach_user)
         seed_habits(athletes_by_email, today)
+        seed_meso(gym, coach, coach_user, today)
         self.stdout.write(
             self.style.SUCCESS(
-                f"Demo data ready: {GYM_NAME}, coach {COACH[0]}, {len(ATHLETES)} athletes, "
+                f"Demo data ready: {GYM_NAME}, coach {COACH[0]}, {len(ATHLETES) + 1} athletes, "
                 f"{len(exercises)} exercises. Password for new demo users: {DEMO_PASSWORD}"
             )
         )

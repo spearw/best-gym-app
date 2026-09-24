@@ -37,7 +37,7 @@ def test_initials(name, email, expected):
 def test_seed_demo_is_idempotent():
     call_command("seed_demo")
     call_command("seed_demo")
-    assert User.objects.count() == 7
+    assert User.objects.count() == 8  # Dana, the six mockup athletes and Riley (phase 9)
     dana = User.objects.get(email="dana@ironridge.example")
     assert dana.name == "Dana Whitfield" and dana.is_staff
     assert dana.check_password("demo-password-123")

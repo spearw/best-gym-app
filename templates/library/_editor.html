@@ -47,10 +47,11 @@
               </div>
               <div class="sbody" data-rx-list data-session="{{ session.pk }}" data-target="#tplEditor">
                 {% for item in s.items %}{% with slot=item.slot %}
-                  <div class="rx-item{% if slot.is_tag %} tagslot{% endif %}" data-move-url="{% url 'coach:template_slot_move' template.pk slot.pk %}"
+                  {% include "programs/_rx_heading.html" %}
+                  <div class="rx-item{% if slot.is_tag %} tagslot{% endif %}{% if item.warmup %} warm{% endif %}" data-move-url="{% url 'coach:template_slot_move' template.pk slot.pk %}"
                        hx-get="{% url 'coach:template_slot_edit' template.pk slot.pk %}" hx-trigger="click" hx-target="#modal" hx-swap="innerHTML" @click.stop>
                     <button class="rx-edit visually-hidden" type="button" hx-get="{% url 'coach:template_slot_edit' template.pk slot.pk %}" hx-target="#modal" hx-swap="innerHTML" @click.stop>Edit {% if slot.is_tag %}tag slot, default {% endif %}{{ slot.exercise.name }}, {{ item.summary }}</button>
-                    {% if slot.is_tag %}<b>Tag slot <span class="muted" style="font-weight:500">· default {{ slot.exercise.name }}</span></b>{% else %}<b>{{ slot.exercise.name }}</b>{% endif %}
+                    {% if slot.is_tag %}<b>{% if item.label %}<span class="ss">{{ item.label }}</span>{% endif %}Tag slot <span class="muted" style="font-weight:500">· default {{ slot.exercise.name }}</span></b>{% else %}<b>{% if item.label %}<span class="ss">{{ item.label }}</span>{% endif %}{{ slot.exercise.name }}</b>{% endif %}
                     <span class="rx">{{ item.summary }}</span>
                     {% if slot.is_tag %}<span class="tagline">{% for t in slot.tags.all %}<span class="tagchip">{{ t.name }}</span>{% endfor %}</span>{% endif %}
                     <button class="x" type="button" aria-label="Remove {{ slot.exercise.name }}" hx-post="{% url 'coach:template_slot_remove' template.pk slot.pk %}" hx-trigger="click consume" hx-target="#tplEditor" hx-swap="outerHTML">✕</button>

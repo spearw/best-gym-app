@@ -45,7 +45,9 @@ def _exercise_line(se, unit, pr_ids):
 
 
 def _session_item(log, unit, pr_ids):
-    exercises = [_exercise_line(se, unit, pr_ids) for se in log.exercises.all()]
+    logged = list(log.exercises.all())
+    exercises = [_exercise_line(se, unit, pr_ids) for se in logged if not se.warmup]
+    drills = [se for se in logged if se.warmup]
     answers = list(log.answers.all())
     scale = next((a for a in answers if a.type == QuestionType.SCALE), None)
     issues = list(log.issues.all())
@@ -54,6 +56,9 @@ def _session_item(log, unit, pr_ids):
     return {
         "log": log,
         "exercises": exercises,
+        "warmup": {"done": sum(1 for se in drills if se.checked_at), "total": len(drills)}
+        if drills
+        else None,
         "answers": answers,
         "readiness": scale.value if scale else None,
         "issues": issues,
@@ -122,7 +127,7 @@ def overview_tab(request, athlete, header_context):
     for log in recent:
         answers = list(log.answers.all())
         scale = next((a for a in answers if a.type == QuestionType.SCALE), None)
-        choice = next((a for a in answers if a.type != QuestionType.SCALE), None)
+        choice = next((a for a in answers if a.type == QuestionType.CHOICE), None)
         checkins.append({"log": log, "scale": scale, "choice": choice})
     week_start = athlete.gym.week_start_for(today)
     done_ids = history.finished_session_ids(athlete)

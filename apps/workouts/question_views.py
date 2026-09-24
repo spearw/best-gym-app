@@ -19,6 +19,7 @@ from .models import CheckinQuestion, QuestionType, copy_defaults_to
 NEW_QUESTION = {
     QuestionType.SCALE: {"text": "New 1–10 question", "low_label": "low", "high_label": "high"},
     QuestionType.CHOICE: {"text": "New multiple-choice question", "options": ["Option A", "Option B"]},
+    QuestionType.TEXT: {"text": "New short-answer question"},
 }
 MAX_OPTIONS = 12
 
@@ -61,7 +62,7 @@ class Scope:
                     q.text = text
                     changed.append("text")
             if q.type == QuestionType.SCALE:
-                for name in ("low_label", "high_label"):
+                for name in ("low_label", "high_label", "detail_label"):
                     key = f"{name}_{q.pk}"
                     if key in post:
                         value = post[key].strip()[:60]
@@ -126,6 +127,7 @@ def update(request, scope, qid):
     if q.type == QuestionType.SCALE:
         q.low_label = request.POST.get(f"low_label_{q.pk}", q.low_label).strip()[:60]
         q.high_label = request.POST.get(f"high_label_{q.pk}", q.high_label).strip()[:60]
+        q.detail_label = request.POST.get(f"detail_label_{q.pk}", q.detail_label).strip()[:60]
     q.save()
     # The edited text is already on screen, so nothing is redrawn. Redrawing here would
     # drop any click (move, delete) queued behind this save.

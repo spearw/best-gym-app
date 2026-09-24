@@ -10,7 +10,8 @@
       <div class="day-body">
         {% if d.session.source.name %}<span class="sname">{{ d.session.source.name }}</span>{% endif %}
         {% for item in d.items %}
-          <div class="rx-item{% if item.tags %} tagslot{% endif %}"><b>{{ item.name }}</b><span class="rx">{{ item.summary }}</span>{% if item.tags %}<span class="tagline" title="Tag slot — resolved for {{ athlete.user.get_short_name }}; swap it after applying">{% for t in item.tags %}<span class="tagchip">{{ t.name }}</span>{% endfor %}</span>{% endif %}</div>
+          {% include "programs/_rx_heading.html" %}
+          <div class="rx-item{% if item.tags %} tagslot{% endif %}{% if item.warmup %} warm{% endif %}"><b>{% if item.label %}<span class="ss">{{ item.label }}</span>{% endif %}{{ item.name }}</b><span class="rx">{{ item.summary }}</span>{% if item.tags %}<span class="tagline" title="Tag slot — resolved for {{ athlete.user.get_short_name }}; swap it after applying">{% for t in item.tags %}<span class="tagchip">{{ t.name }}</span>{% endfor %}</span>{% endif %}</div>
         {% endfor %}
       </div>
     </div>

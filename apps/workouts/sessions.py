@@ -13,6 +13,7 @@ from django.utils import timezone
 
 from apps.accounts import units
 from apps.programs.models import LoadBasis
+from apps.programs.prescriptions import layout
 
 from . import prs
 from .models import SessionExercise, SessionLog, SetLog
@@ -37,8 +38,13 @@ def snapshot(rx, athlete):
         "load_value": _dec(rx.load_value),
         "load_basis": rx.load_basis,
         "rir": rx.rir,
+        "rir_max": rx.rir_max,
         "note": rx.note,
         "custom_fields": list(rx.custom_fields or []),
+        "warmup": rx.warmup,
+        "section": rx.section,
+        "section_note": rx.section_note,
+        "superset": rx.superset,
         "set_overrides": [
             {
                 "set_number": s.set_number,
@@ -67,8 +73,13 @@ def prescribed(se):
         load_value=dec(data.get("load_value")),
         load_basis=data.get("load_basis", LoadBasis.NONE),
         rir=data.get("rir"),
+        rir_max=data.get("rir_max"),
         note=data.get("note", ""),
         custom_fields=data.get("custom_fields") or [],
+        warmup=bool(data.get("warmup")),
+        section=data.get("section", ""),
+        section_note=data.get("section_note", ""),
+        superset=bool(data.get("superset")),
         overrides=[
             SimpleNamespace(
                 set_number=o["set_number"],
@@ -111,10 +122,61 @@ def session_name(exercise_names):
 
 
 def planned_sets(se):
+    """Sets the coach asked for (0 for a warm-up drill, which is ticked off, not logged)."""
     p = prescribed(se)
-    if p is None:
+    if p is None or se.warmup:
         return 0
     return len(p.overrides) or p.sets
+
+
+def _placement(se):
+    p = prescribed(se)
+    return SimpleNamespace(
+        warmup=se.warmup,
+        superset=bool(p and p.superset),
+        section=p.section if p else "",
+        section_note=p.section_note if p else "",
+    )
+
+
+def steps(exercises):
+    """The player's screens for a session, in order: the warm-up checklist (if the coach
+    set one), then one screen per exercise, with a superset's exercises together.
+    Each step is {"warmup": bool, "items": [SessionExercise], "labels": ["A1", ...],
+    "section": str, "section_note": str}."""
+    warmups, entries = layout(exercises, _placement)
+    result = []
+    if warmups:
+        result.append({"warmup": True, "items": warmups, "labels": [], "section": "", "section_note": ""})
+    for e in entries:
+        if not e["first"]:
+            result[-1]["items"].append(e["item"])
+            result[-1]["labels"].append(e["label"])
+            continue
+        result.append(
+            {
+                "warmup": False,
+                "items": [e["item"]],
+                "labels": [e["label"]] if e["label"] else [],
+                "section": e["section"],
+                "section_note": e["section_note"],
+            }
+        )
+    return result
+
+
+def step_done(step):
+    """A warm-up is done once every drill is ticked; an exercise screen once every
+    planned set is (a set at least, for an exercise added without a plan)."""
+    if step["warmup"]:
+        return all(se.checked_at for se in step["items"])
+    return all(sum(1 for s in se.sets.all() if s.done) >= max(planned_sets(se), 1) for se in step["items"])
+
+
+def check_warmup(se, checked):
+    se.checked_at = timezone.now() if checked else None
+    se.save(update_fields=["checked_at"])
+    return se
 
 
 @transaction.atomic
@@ -134,7 +196,8 @@ def start(athlete, program_session):
                 athlete=athlete,
                 program_session=program_session,
                 date=day.date,
-                name=program_session.name or session_name(rx.exercise.name for rx in prescriptions),
+                name=program_session.name
+                or session_name(rx.exercise.name for rx in prescriptions if not rx.warmup),
                 week_type=day.week.week_type,
                 # Filling in a missed day afterwards skips the "how do you feel today" check-in.
                 checkin_skipped=day.date < athlete.today(),
@@ -150,6 +213,7 @@ def start(athlete, program_session):
                 exercise_name=rx.exercise.name,
                 order=i,
                 prescribed=snapshot(rx, athlete),
+                warmup=rx.warmup,
             )
             for i, rx in enumerate(prescriptions)
         ]

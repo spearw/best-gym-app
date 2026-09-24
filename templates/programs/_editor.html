@@ -22,6 +22,15 @@
     </div>
   </div>
 
+  {% if program and not applying %}
+    <details class="card" style="padding:10px 14px;margin-bottom:12px"{% if program.note %} open{% endif %}>
+      <summary class="tiny" style="cursor:pointer;font-weight:700">Program note{% if not program.note %} <span class="muted" style="font-weight:400">— goal, rest, nutrition; shown to {{ athlete.user.get_short_name }} with the program</span>{% endif %}</summary>
+      <form style="margin-top:8px" hx-post="{% url 'coach:program_note' athlete.pk %}" hx-trigger="change" hx-swap="none" onsubmit="return false">
+        <label class="visually-hidden" for="programNote">Program note</label>
+        <textarea class="input" id="programNote" name="note" rows="3" maxlength="2000" placeholder="e.g. Goal: get strong and healthy. Rest as needed on all lifts.">{{ program.note }}</textarea>
+      </form>
+    </details>
+  {% endif %}
   {% if applying %}{% include "library/_apply_bar.html" %}{% endif %}
 
   <nav class="month-strip" aria-label="Weeks">
@@ -114,11 +123,12 @@
               {% endif %}
               <div class="stack" style="gap:6px;min-height:8px" data-rx-list data-session="{{ s.session.pk }}" data-day="{{ d.day.pk }}">
                 {% for item in s.items %}
+                  {% include "programs/_rx_heading.html" %}
                   {% comment %}Mouse: click the card. Keyboard: its hidden Edit button (a card that is itself a button couldn't hold the ✕ button).{% endcomment %}
-                  <div class="rx-item" data-move-url="{% url 'coach:rx_move' athlete.pk item.rx.pk %}"
+                  <div class="rx-item{% if item.warmup %} warm{% endif %}" data-move-url="{% url 'coach:rx_move' athlete.pk item.rx.pk %}"
                        hx-get="{% url 'coach:rx_edit' athlete.pk item.rx.pk %}" hx-trigger="click" hx-target="#modal" hx-swap="innerHTML" @click.stop>
                     <button class="rx-edit visually-hidden" type="button" hx-get="{% url 'coach:rx_edit' athlete.pk item.rx.pk %}" hx-target="#modal" hx-swap="innerHTML" @click.stop>Edit {{ item.rx.exercise.name }}, {{ item.summary }}</button>
-                    <b>{{ item.rx.exercise.name }}</b><span class="rx">{{ item.summary }}</span>
+                    <b>{% if item.label %}<span class="ss">{{ item.label }}</span>{% endif %}{{ item.rx.exercise.name }}</b><span class="rx">{{ item.summary }}</span>
                     <button class="x" type="button" aria-label="Remove {{ item.rx.exercise.name }}" hx-post="{% url 'coach:rx_remove' athlete.pk item.rx.pk %}" hx-trigger="click consume" hx-target="#programEditor" hx-swap="outerHTML">✕</button>
                   </div>
                 {% endfor %}

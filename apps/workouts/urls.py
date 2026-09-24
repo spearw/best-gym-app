@@ -17,6 +17,7 @@ urlpatterns = [
     path("log/<int:log_id>/checkin/done/", views.checkin_summary, name="checkin_summary"),
     path("log/<int:log_id>/exercise/<int:n>/", views.player, name="player"),
     path("log/<int:log_id>/sets/<int:se_id>/<int:number>/", views.save_set, name="save_set"),
+    path("log/<int:log_id>/warmup/<int:se_id>/", views.warmup_check, name="warmup_check"),
     path("log/<int:log_id>/pause/", views.pause, name="pause"),
     path("log/<int:log_id>/videos/start/", vv.start, name="video_start"),
     path("log/<int:log_id>/videos/<int:video_id>/done/", vv.done, name="video_done"),

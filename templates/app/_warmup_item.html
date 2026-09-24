@@ -1,0 +1,11 @@
+{% comment %}One warm-up drill in the player's checklist; ticking redraws just this item. The name links to the
+coach's YouTube demo (demo videos are always YouTube links, never embedded).{% endcomment %}
+<div class="wu-item{% if w.se.checked_at %} done{% endif %}" id="wu-{{ w.se.pk }}">
+  <div class="wu-body">
+    {% if w.exercise.youtube_url %}<a class="wu-name" href="{{ w.exercise.youtube_url }}" target="_blank" rel="noopener" hx-boost="false">{{ w.se.exercise_name }} <span aria-hidden="true">↗</span><span class="visually-hidden"> (demo opens in YouTube)</span></a>{% else %}<span class="wu-name">{{ w.se.exercise_name }}</span>{% endif %}
+    {% if w.p.rep_scheme %}<span class="wu-dose">{{ w.p.rep_scheme }}</span>{% endif %}
+    {% if w.p.note %}<span class="wu-dose muted">{{ w.p.note }}</span>{% endif %}
+  </div>
+  <button class="tick" type="button" aria-label="Done: {{ w.se.exercise_name }}" aria-pressed="{% if w.se.checked_at %}true{% else %}false{% endif %}"{% if not editable %} disabled{% endif %}
+          hx-post="{% url 'app:warmup_check' log.pk w.se.pk %}" hx-vals='{"checked": "{% if w.se.checked_at %}0{% else %}1{% endif %}"}' hx-target="#wu-{{ w.se.pk }}" hx-swap="outerHTML">✓</button>
+</div>

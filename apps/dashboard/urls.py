@@ -49,6 +49,7 @@ urlpatterns = [
     # Program editor (phase 3). Listed before the generic tab route so /program/ lands here.
     path("athletes/<int:pk>/program/", pv.program_tab, name="program"),
     path("athletes/<int:pk>/program/start/", pv.start, name="program_start"),
+    path("athletes/<int:pk>/program/note/", pv.program_note, name="program_note"),
     path("athletes/<int:pk>/program/library/", pv.library, name="program_library"),
     path("athletes/<int:pk>/program/weeks/add/", pv.week_add, name="week_add"),
     path(

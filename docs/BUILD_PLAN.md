@@ -500,6 +500,14 @@ The review settled most of the original list. What remains is below; decide the 
 - Deleting an exercise that has been logged keeps the history by name (SessionExercise.exercise_name) with every set; the link is cleared, so it drops out of trends, PRs and "last done".
 - Logged sessions are history: a coach can't insert or delete a week that would move or delete a logged day, can't delete a logged session, and removing its last exercise keeps the session.
 
+### Decided (23 September, before phase 5)
+
+- Template habits are edited in the template now and copied to the athlete when athlete habits exist (phase 7).
+- Progressive weeks: "+ Add week" copies the previous week and can add N percentage points to every % load; other loads are unchanged.
+- Applying: after the last week, from a future week (empty weeks are replaced, weeks with work move after), or as a new program this week or next (the current one ends and is kept). New weeks arrive unpublished unless "publish now" is ticked. Appending isn't offered once a program has ended.
+- An invite can carry a starting template; on joining it becomes an unpublished draft program from the next week, on the template's default days.
+- Deleting an exercise removes its fixed template slots; a tag slot that defaults to it switches to another exercise with the same tags (removed if there is none).
+
 ### Still open
 
 - [ ] Product name and domain (the mockup says "Platform"; the repo is GymTrainer).

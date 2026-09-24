@@ -1,0 +1,19 @@
+{# One planned ("ghost") week of the apply preview: read-only, dashed, nothing written yet. #}
+<div class="card" style="padding:12px 14px;margin-bottom:12px">
+  <b style="font-size:.9rem">{{ ghost_shown.label }} · {{ ghost_shown.start|date:"D j M" }} — preview of “{{ apply_template.display_name }}”</b>
+  {% if ghost_shown.planned.focus_note %}<p class="tiny muted" style="margin:6px 0 0">Focus: {{ ghost_shown.planned.focus_note }}</p>{% endif %}
+</div>
+<div class="week-board ghost" :class="{ 'as-list': view === 'list' }" style="{{ ghost_shown.planned.week_type.css_vars }}">
+  {% for d in ghost_board %}
+    <div class="day-col{% if not d.session %} rest{% endif %}">
+      <div class="day-head"><b style="white-space:nowrap">{{ d.date|date:"D" }} <span class="muted" style="font-weight:500">{{ d.date|date:"j" }}</span></b>{% if not d.session %}<small>rest</small>{% endif %}</div>
+      <div class="day-body">
+        {% if d.session.source.name %}<span class="sname">{{ d.session.source.name }}</span>{% endif %}
+        {% for item in d.items %}
+          <div class="rx-item{% if item.tags %} tagslot{% endif %}"><b>{{ item.name }}</b><span class="rx">{{ item.summary }}</span>{% if item.tags %}<span class="tagline" title="Tag slot — resolved for {{ athlete.user.get_short_name }}; swap it after applying">{% for t in item.tags %}<span class="tagchip">{{ t.name }}</span>{% endfor %}</span>{% endif %}</div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+<p class="tiny muted" style="margin-top:10px">Nothing is written until you confirm. After applying, every exercise here is editable like any other.</p>

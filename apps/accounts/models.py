@@ -265,10 +265,14 @@ class InviteStatus(models.TextChoices):
 
 
 class Invite(models.Model):
-    """One invite = one athlete. `starting_template` is added in phase 5 with templates."""
+    """One invite = one athlete. A starting template is applied as an unpublished draft
+    program when the athlete joins, for the coach to review and publish."""
 
     coach = models.ForeignKey(Coach, on_delete=models.CASCADE, related_name="invites")
     email = models.EmailField(blank=True)
+    starting_template = models.ForeignKey(
+        "library.Template", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
     token = models.CharField(max_length=40, unique=True, default=new_invite_token, editable=False)
     status = models.CharField(max_length=10, choices=InviteStatus.choices, default=InviteStatus.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)

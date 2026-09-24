@@ -21,6 +21,8 @@
         {% if impact.dependents %}
           <li>{{ impact.dependents|join:", " }} take{{ impact.dependents|length|pluralize:"s," }} percentages from it and will use {{ impact.dependents|length|pluralize:"its,their" }} own max instead.</li>
         {% endif %}
+        {% if impact.slots_removed %}<li>{{ impact.slots_removed }} template slot{{ impact.slots_removed|pluralize }} in {{ impact.templates|join:", " }}.</li>{% endif %}
+        {% if impact.slots_redefaulted %}<li>{{ impact.slots_redefaulted }} tag slot{{ impact.slots_redefaulted|pluralize }} that default{{ impact.slots_redefaulted|pluralize:"s," }} to it switch{{ impact.slots_redefaulted|pluralize:"es," }} to another exercise with the same tags.</li>{% endif %}
         <li>The exercise itself, with its tags, demo link and cue.</li>
       </ul>
     </div>

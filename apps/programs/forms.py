@@ -6,7 +6,7 @@ from django import forms
 from apps.accounts import units
 from apps.accounts.forms import InputClassMixin
 
-from .models import LoadBasis, PrescribedSet, WeekType
+from .models import LoadBasis, WeekType
 from .prescriptions import parse_rep_scheme
 
 MAX_SETS = 20
@@ -158,8 +158,10 @@ class PrescriptionForm(InputClassMixin, forms.Form):
         ]:
             setattr(rx, field, data[field])
         rx.save()
+        # Works for a program prescription (PrescribedSet) and a template slot (TemplateSlotSet).
         rx.set_overrides.all().delete()
-        PrescribedSet.objects.bulk_create([PrescribedSet(prescription=rx, **row) for row in data["set_rows"]])
+        model, parent = rx.set_overrides.model, rx.set_overrides.field.name
+        model.objects.bulk_create([model(**{parent: rx}, **row) for row in data["set_rows"]])
         return rx
 
 

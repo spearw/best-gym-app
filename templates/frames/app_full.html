@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{# Athlete phone shell, from the mockup's .phone. On a real phone it fills the screen (see shell.css).
-   Links inside are boosted: HTMX swaps #app-body and the tab bar comes back out of band. #}
+{% comment %}Athlete phone shell, from the mockup's .phone. On a real phone it fills the screen (see shell.css).
+   Links inside are boosted: HTMX swaps #app-body and the tab bar comes back out of band.{% endcomment %}
 {% block body_class %}athlete{% endblock %}
 {% block body %}
 {% if user.coach_profile %}<a class="phone-exit" href="{% url 'coach:dashboard' %}">← Coach app</a>{% endif %}

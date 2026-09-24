@@ -1,20 +1,20 @@
-<div class="lib-list" id="libList" data-lib-list data-add-url="{% url 'coach:day_add_exercise' athlete.pk %}">
+<div class="lib-list" id="libList" data-lib-list data-add-url="{{ rail_add_url }}" data-target="{{ rail_target }}">
   {% for ex in rail_exercises %}
-    <div class="lib-item" data-exercise="{{ ex.pk }}" title="Drag onto a day, or select a day and press +">
+    <div class="lib-item" data-exercise="{{ ex.pk }}" title="Drag onto a {{ rail_where }}, or select a {{ rail_where }} and press +">
       <div class="top">
         <span style="min-width:0"><span class="cat">{{ ex.category.name }}</span><br><b>{{ ex.name }}</b></span>
-        <button class="addbtn tip" type="button" data-tip="Add to the selected day" aria-label="Add {{ ex.name }} to the selected day"
-                hx-post="{% url 'coach:day_add_exercise' athlete.pk %}" hx-vals='{"exercise": "{{ ex.pk }}"}' hx-include="#selectedDay"
-                hx-target="#programEditor" hx-swap="outerHTML">+</button>
+        <button class="addbtn tip" type="button" data-tip="Add to the selected {{ rail_where }}" aria-label="Add {{ ex.name }} to the selected {{ rail_where }}"
+                hx-post="{{ rail_add_url }}" hx-vals='{"exercise": "{{ ex.pk }}"}' hx-include="{{ rail_selected }}"
+                hx-target="{{ rail_target }}" hx-swap="outerHTML">+</button>
       </div>
       {% with tags=ex.tags.all %}{% if tags %}<div class="tags">{% for t in tags|slice:":3" %}<span class="tagchip">{{ t.name }}</span>{% endfor %}{% if tags|length > 3 %}<span class="tagchip">+{{ tags|length|add:"-3" }}</span>{% endif %}</div>{% endif %}{% endwith %}
-      {% if ex.hist %}
-        <div class="lib-hist" data-hist role="button" tabindex="0" title="{{ athlete.user.get_short_name }}'s log" style="cursor:help">
+      {% if not rail_athlete %}{% elif ex.hist %}
+        <div class="lib-hist" data-hist role="button" tabindex="0" title="{{ rail_athlete.user.get_short_name }}'s log" style="cursor:help">
           <span>{{ ex.hist.line }}</span>{% if ex.hist.trend %}<span class="trend {{ ex.hist.trend }}">{% if ex.hist.trend == "up" %}▲{% elif ex.hist.trend == "down" %}▼{% else %}—{% endif %}</span>{% endif %}
-          <template><h5>{{ ex.name }} — {{ athlete.user.get_short_name }}'s log</h5>{% for date, top in ex.hist.log %}<div class="hrow"><span>{{ date|date:"M j" }}</span><b class="mono">{{ top }}</b></div>{% endfor %}</template>
+          <template><h5>{{ ex.name }} — {{ rail_athlete.user.get_short_name }}'s log</h5>{% for date, top in ex.hist.log %}<div class="hrow"><span>{{ date|date:"M j" }}</span><b class="mono">{{ top }}</b></div>{% endfor %}</template>
         </div>
       {% else %}
-        <div class="lib-hist"><span class="never">Not logged by {{ athlete.user.get_short_name }} yet</span></div>
+        <div class="lib-hist"><span class="never">Not logged by {{ rail_athlete.user.get_short_name }} yet</span></div>
       {% endif %}
     </div>
   {% empty %}
@@ -22,7 +22,11 @@
   {% endfor %}
   <div class="spread" style="margin:4px 2px 0">
     <span class="tiny muted">{{ rail_exercises|length }} of {{ rail_total }} exercises</span>
-    <button class="btn btn--sm btn--ghost" type="button" hx-get="{% url 'coach:program_library' athlete.pk %}" hx-include="#railFilters" hx-vals='{"sort": "{% if rail_sort == "recent" %}az{% else %}recent{% endif %}"}' hx-target="#libList" hx-swap="outerHTML">Sort: {% if rail_sort == "recent" %}last done{% else %}A–Z{% endif %}</button>
+    {% if rail_athlete %}
+      <button class="btn btn--sm btn--ghost" type="button" hx-get="{{ rail_search_url }}" hx-include="#railFilters" hx-vals='{"sort": "{% if rail_sort == "recent" %}az{% else %}recent{% endif %}"}' hx-target="#libList" hx-swap="outerHTML">Sort: {% if rail_sort == "recent" %}last done{% else %}A–Z{% endif %}</button>
+    {% elif rail_tag_slot_url %}
+      <button class="btn btn--sm btn--ghost tip" type="button" data-tip="Adds a slot defined by the ticked tags" hx-post="{{ rail_tag_slot_url }}" hx-include="#railFilters, {{ rail_selected }}" hx-target="{{ rail_target }}" hx-swap="outerHTML"{% if not rail_tag_ids %} disabled{% endif %}>+ Tag slot{% if rail_tag_ids %} ({{ rail_exercises|length }} qualify){% endif %}</button>
+    {% endif %}
   </div>
   <input type="hidden" name="sort" value="{{ rail_sort }}" form="railFilters">
 </div>

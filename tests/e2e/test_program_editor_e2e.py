@@ -23,7 +23,9 @@ def test_build_a_week_in_the_editor(page: Page, base, coach, athlete, sign_in):
     page.get_by_label("Block name").fill("Comp Prep Block")
     page.get_by_label("Weeks").fill("3")
     page.get_by_role("button", name="Start program").click()
-    expect(page.locator(".month-strip .wk-tab")).to_have_count(4)  # 3 weeks + "Add a week"
+    expect(page.locator(".month-strip a.wk-tab")).to_have_count(
+        3
+    )  # the weeks (the add buttons are <button>s)
     expect(page.locator("#toastStack")).to_contain_text("Started “Comp Prep Block” with 3 weeks")
 
     # Tag chips in the rail filter the list.
@@ -77,7 +79,7 @@ def test_build_a_week_in_the_editor(page: Page, base, coach, athlete, sign_in):
     expect(page.locator(".month-strip .wk-tab").first).to_contain_text("live")
     htmx_idle(page)
     page.get_by_role("button", name="Duplicate week").click()
-    expect(page.locator(".month-strip .wk-tab")).to_have_count(5)
+    expect(page.locator(".month-strip a.wk-tab")).to_have_count(4)
     expect(page.locator("#programEditor")).to_contain_text("Draft — not visible to Maya")
     htmx_idle(page)
 

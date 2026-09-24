@@ -1,0 +1,18 @@
+{% extends "partials/modal.html" %}
+{% block modal_attrs %}style="width:min(94vw,480px)"{% endblock %}
+{% block modal_title %}Add a saved {{ kind }}{% endblock %}
+{% block modal_content %}
+<div class="modal-body">
+  <div class="swap-list" style="max-height:380px">
+    {% for item in items %}{% with t=item.template st=item.stats %}
+      <button class="swap-item" type="button" hx-post="{% url 'coach:template_pick_use' template.pk kind t.pk %}"{% if week_id %} hx-vals='{"week": "{{ week_id }}"}'{% endif %} hx-target="#tplEditor" hx-swap="outerHTML">
+        {% if kind == "week" and item.first %}<span class="wk-pill" style="flex-shrink:0;{{ item.first.week_type.css_vars }}">{{ item.first.week_type.name }}</span>{% endif %}
+        <span style="min-width:0"><b>{{ t.display_name }}</b><small>{% if kind == "week" %}{{ st.sessions }} session{{ st.sessions|pluralize }} · {% endif %}{{ st.slots }} slot{{ st.slots|pluralize }}{% if st.tag_slots %} · {{ st.tag_slots }} tag-based{% endif %}{% if t.description %} — {{ t.description }}{% endif %}</small></span>
+        <span class="go">Use</span>
+      </button>
+    {% endwith %}{% empty %}
+      <p class="empty-note">Nothing saved yet — save a {{ kind }} from a template or an athlete's board first.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

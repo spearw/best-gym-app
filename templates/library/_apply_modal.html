@@ -1,0 +1,20 @@
+{% extends "partials/modal.html" %}
+{% block modal_attrs %}style="width:min(94vw,460px)"{% endblock %}
+{% block modal_title %}Apply to an athlete{% endblock %}
+{% block modal_content %}
+<form hx-post="{% url 'coach:apply_modal' %}" hx-target="#modal" hx-swap="innerHTML">
+  <div class="modal-body">
+    <div class="field"><label for="applyTemplate">Template or saved week</label>
+      <select class="input" id="applyTemplate" name="template">
+        <optgroup label="Program templates">{% for t in sources %}{% if t.kind == "program" %}<option value="{{ t.pk }}"{% if t.pk|stringformat:"s" == chosen %} selected{% endif %}>{{ t.display_name }}</option>{% endif %}{% endfor %}</optgroup>
+        <optgroup label="Saved weeks">{% for t in sources %}{% if t.kind == "week" %}<option value="{{ t.pk }}"{% if t.pk|stringformat:"s" == chosen %} selected{% endif %}>{{ t.display_name }}</option>{% endif %}{% endfor %}</optgroup>
+      </select>{{ form.template.errors }}</div>
+    <div class="field"><label for="applyAthlete">Athlete</label>
+      <select class="input" id="applyAthlete" name="athlete">
+        {% for a in athletes %}<option value="{{ a.athlete.pk }}">{{ a.athlete.user.name|default:a.athlete.user.email }} — {% if a.program %}currently {{ a.program.name }}{% else %}no program yet{% endif %}</option>{% empty %}<option value="">No athletes yet</option>{% endfor %}
+      </select>{{ form.athlete.errors }}</div>
+    <p class="tiny muted" style="margin:0">Next you'll see it laid onto their board — pick training days and where it starts, review every week, then confirm. Nothing is applied until then.</p>
+  </div>
+  <div class="modal-foot"><button class="btn btn--ghost" type="button" onclick="closeModal()">Cancel</button><button class="btn btn--brand" type="submit"{% if not athletes %} disabled{% endif %}>Preview on their board →</button></div>
+</form>
+{% endblock %}

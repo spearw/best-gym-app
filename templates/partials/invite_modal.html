@@ -18,6 +18,7 @@
       <p class="tiny muted" style="margin:0">They'll get a link to create an account, enter their metrics (skippable), and land on the week you assign.</p>
       {% include "partials/field.html" with field=form.email %}
       <p class="tiny muted" style="margin:0">Leave the email blank to just get a link you can text them.</p>
+      {% include "partials/field.html" with field=form.starting_template %}
     </div>
     <div class="modal-foot">
       <button class="btn btn--ghost" type="button" onclick="closeModal()">Cancel</button>

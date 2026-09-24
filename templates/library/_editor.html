@@ -1,0 +1,105 @@
+{# The template editor's weeks, sessions and slots (and habits). Every change redraws this block. #}
+<div id="tplEditor">
+  <div class="spread" style="margin-bottom:14px;gap:10px;flex-wrap:wrap">
+    <div class="tpl-summary" style="margin:0">
+      {% if is_session %}
+        <span><b>{{ stats.slots }}</b> exercise slot{{ stats.slots|pluralize }}</span><span><b>{{ stats.tag_slots }}</b> tag-based</span><span>Saved sessions are dropped into weeks and templates with “+ From saved session”.</span>
+      {% elif is_week %}
+        <span><b>{{ stats.sessions }}</b> session{{ stats.sessions|pluralize }}</span><span><b>{{ stats.slots }}</b> exercise slot{{ stats.slots|pluralize }}</span><span><b>{{ stats.tag_slots }}</b> tag-based</span><span>A saved week can be dropped into any template, or straight onto an athlete's program.</span>
+      {% else %}
+        <span><b>{{ stats.weeks }}</b> week{{ stats.weeks|pluralize }}</span><span><b>{{ stats.sessions }}</b> session{{ stats.sessions|pluralize }}</span><span><b>{{ stats.slots }}</b> exercise slot{{ stats.slots|pluralize }}</span><span><b>{{ stats.tag_slots }}</b> tag-based</span>
+        {% if stats.sessions %}<span>At {{ template.sessions_per_week }}×/week this runs <b>{{ stats.calendar_weeks }} calendar week{{ stats.calendar_weeks|pluralize }}</b></span>{% endif %}
+      {% endif %}
+    </div>
+    <button class="btn btn--ghost btn--sm lib-toggle" type="button" @click="library = !library" :aria-expanded="library.toString()" aria-controls="libList">Exercise library</button>
+  </div>
+
+  <div id="tplWeekList"{% if is_session %} class="mode-session"{% endif %}>
+    {% for w in weeks %}{% with week=w.week %}
+      <div class="tpl-week" style="{{ week.week_type.css_vars }}">
+        <div class="wkhead">
+          <b>{% if is_program %}Week {{ forloop.counter }}{% else %}Week{% endif %}</b>
+          <select class="input" name="week_type" aria-label="Week {{ forloop.counter }} type" hx-post="{% url 'coach:template_week_type' template.pk week.pk %}" hx-trigger="change" hx-target="#tplEditor" hx-swap="outerHTML">
+            {% for wt in week_types %}<option value="{{ wt.pk }}"{% if wt.pk == week.week_type_id %} selected{% endif %}>{{ wt.name }}{% if wt.archived %} (archived){% endif %}</option>{% endfor %}
+          </select>
+          <span class="tiny muted">{{ w.sessions|length }} session{{ w.sessions|length|pluralize }}</span>
+          <span class="acts">
+            <button class="btn btn--sm btn--ghost" type="button" hx-get="{% url 'coach:template_pick' template.pk 'session' %}?week={{ week.pk }}" hx-target="#modal" hx-swap="innerHTML">+ From saved session</button>
+            <button class="btn btn--sm btn--soft" type="button" hx-post="{% url 'coach:template_session_add' template.pk week.pk %}" hx-target="#tplEditor" hx-swap="outerHTML">+ Session</button>
+            {% if is_program %}
+              <button class="btn btn--sm btn--ghost tip" type="button" data-tip="Save a copy of this week to the library" hx-get="{% url 'coach:template_save_part' template.pk 'week' week.pk %}" hx-target="#modal" hx-swap="innerHTML">Save week</button>
+              <button class="iconbtn tip" type="button" data-tip="Duplicate week" aria-label="Duplicate week {{ forloop.counter }}" hx-post="{% url 'coach:template_week_duplicate' template.pk week.pk %}" hx-target="#tplEditor" hx-swap="outerHTML"><span class="svgi svgi--layers"></span></button>
+              <button class="iconbtn tip" type="button" data-tip="Remove week" aria-label="Remove week {{ forloop.counter }}" hx-post="{% url 'coach:template_week_remove' template.pk week.pk %}" hx-target="#tplEditor" hx-swap="outerHTML" hx-confirm="Remove week {{ forloop.counter }} and its sessions?"><span class="svgi svgi--trash"></span></button>
+            {% endif %}
+          </span>
+        </div>
+        <div class="tpl-sessions">
+          {% for s in w.sessions %}{% with session=s.session %}
+            <div class="tpl-sess" :class="{ selected: session === {{ session.pk }} }" @click="pick({{ session.pk }})" data-session-id="{{ session.pk }}">
+              <div class="shead" @click.stop>
+                <form style="flex:1;min-width:0;display:flex" hx-post="{% url 'coach:template_session_rename' template.pk session.pk %}" hx-trigger="change" hx-swap="none" onsubmit="return false">
+                  <input name="name_{{ session.pk }}" value="{{ session.name }}" placeholder="{% if is_session %}Exercises{% else %}Session name{% endif %}" aria-label="Session name" maxlength="80"{% if is_session %} disabled{% endif %}>
+                </form>
+                {% if not is_session %}
+                  <button class="iconbtn tip" type="button" data-tip="Save to session library" aria-label="Save {{ session.name|default:'this session' }} to the session library" hx-get="{% url 'coach:template_save_part' template.pk 'session' session.pk %}" hx-target="#modal" hx-swap="innerHTML"><span class="svgi svgi--book"></span></button>
+                  <button class="iconbtn tip" type="button" data-tip="Remove session" aria-label="Remove {{ session.name|default:'this session' }}" hx-post="{% url 'coach:template_session_remove' template.pk session.pk %}" hx-target="#tplEditor" hx-swap="outerHTML"{% if s.items %} hx-confirm="Remove {{ session.name|default:'this session' }} and its {{ s.items|length }} exercise{{ s.items|length|pluralize }}?"{% endif %}><span class="svgi svgi--trash"></span></button>
+                {% endif %}
+              </div>
+              <div class="sbody" data-rx-list data-session="{{ session.pk }}" data-target="#tplEditor">
+                {% for item in s.items %}{% with slot=item.slot %}
+                  <div class="rx-item{% if slot.is_tag %} tagslot{% endif %}" tabindex="0" role="button" data-move-url="{% url 'coach:template_slot_move' template.pk slot.pk %}"
+                       aria-label="Edit {% if slot.is_tag %}tag slot, default {% endif %}{{ slot.exercise.name }}, {{ item.summary }}"
+                       hx-get="{% url 'coach:template_slot_edit' template.pk slot.pk %}" hx-trigger="click, keyup[key=='Enter']" hx-target="#modal" hx-swap="innerHTML" @click.stop>
+                    {% if slot.is_tag %}<b>Tag slot <span class="muted" style="font-weight:500">· default {{ slot.exercise.name }}</span></b>{% else %}<b>{{ slot.exercise.name }}</b>{% endif %}
+                    <span class="rx">{{ item.summary }}</span>
+                    {% if slot.is_tag %}<span class="tagline">{% for t in slot.tags.all %}<span class="tagchip">{{ t.name }}</span>{% endfor %}</span>{% endif %}
+                    <button class="x" type="button" aria-label="Remove {{ slot.exercise.name }}" hx-post="{% url 'coach:template_slot_remove' template.pk slot.pk %}" hx-trigger="click consume" hx-target="#tplEditor" hx-swap="outerHTML">✕</button>
+                  </div>
+                {% endwith %}{% endfor %}
+              </div>
+              {% if not s.items %}<span class="tiny muted" style="text-align:center;padding:0 0 6px">No exercises yet</span>{% endif %}
+              <div class="sfoot"><button class="day-add" type="button" @click.stop="pick({{ session.pk }})">+ add exercise</button></div>
+            </div>
+          {% endwith %}{% empty %}
+            <p class="empty-note" style="grid-column:1/-1;padding:10px">No sessions in this week yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+    {% endwith %}{% empty %}
+      <p class="empty-note">No weeks yet — add the first week below.</p>
+    {% endfor %}
+  </div>
+
+  {% if is_program %}
+    <div class="row" style="gap:8px;flex-wrap:nowrap;align-items:stretch">
+      <form class="tpl-addweek" style="display:flex;gap:10px;align-items:center;justify-content:center;padding:8px" hx-post="{% url 'coach:template_week_add' template.pk %}" hx-target="#tplEditor" hx-swap="outerHTML" onsubmit="return false">
+        <button class="btn btn--ghost btn--sm" type="submit" style="border:0;background:none;font-weight:600;color:inherit">+ Add week</button>
+        <label class="tiny muted" style="display:flex;align-items:center;gap:6px">copy of the last week,
+          <input class="input" name="points" inputmode="decimal" placeholder="0" style="width:64px;padding:4px 8px" aria-label="Percentage points to add to every % load"> % points heavier</label>
+      </form>
+      <button class="tpl-addweek" type="button" hx-get="{% url 'coach:template_pick' template.pk 'week' %}" hx-target="#modal" hx-swap="innerHTML">+ From saved week</button>
+    </div>
+
+    <div class="card" style="padding:16px 18px;margin-top:18px">
+      <div class="spread"><h4 style="font-size:.95rem">Habits prescribed with this program</h4><span class="tiny muted">added to the athlete's habit list when the template is applied (athlete habits arrive in a later phase)</span></div>
+      <div class="stack" style="margin-top:10px">
+        {% for h in template.habits.all %}
+          <div class="spread" style="border-bottom:1px solid var(--line-2);padding-bottom:8px">
+            <span class="row" style="gap:10px;flex-wrap:nowrap"><span style="font-size:1.2rem">{{ h.emoji }}</span><span><b style="font-size:.88rem">{{ h.name }}</b><br><span class="tiny muted">{{ h.get_cadence_display }}{% if h.note %} · {{ h.note }}{% endif %}</span></span></span>
+            <button class="iconbtn tip" type="button" data-tip="Remove from template" aria-label="Remove {{ h.name }}" hx-post="{% url 'coach:template_habit_remove' template.pk h.pk %}" hx-target="#tplEditor" hx-swap="outerHTML"><span class="svgi svgi--trash"></span></button>
+          </div>
+        {% empty %}
+          <p class="empty-note">No habits yet — anything added here is prescribed to the athlete when this template is applied.</p>
+        {% endfor %}
+      </div>
+      <form class="row" style="margin-top:12px" hx-post="{% url 'coach:template_habit_add' template.pk %}" hx-target="#tplEditor" hx-swap="outerHTML">
+        <input class="input" name="name" placeholder="e.g. Sleep 8 hours" style="max-width:220px" maxlength="80" aria-label="Habit name" required>
+        <select class="input" name="emoji" style="width:auto" aria-label="Icon">{% for e in emoji %}<option>{{ e }}</option>{% endfor %}</select>
+        <select class="input" name="cadence" style="width:auto" aria-label="Cadence">{% for value, label in cadences %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+        <input class="input" name="note" placeholder="Why or when (optional)" style="max-width:200px" maxlength="120" aria-label="Habit note">
+        <button class="btn btn--brand btn--sm" type="submit">+ Prescribe habit</button>
+      </form>
+    </div>
+  {% endif %}
+  <p class="tiny muted" style="margin-top:10px">Select a session, then add exercises from the library (or drag them onto a session). Use a <b>tag slot</b> when the exact exercise should be chosen per athlete — it fills with the athlete's most recent matching lift (or the default) and can be swapped on their board. Changes save as you make them.</p>
+</div>

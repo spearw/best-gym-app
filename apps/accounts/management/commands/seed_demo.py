@@ -1,5 +1,6 @@
 """Load the mockup's demo data. Grows with every phase (docs/BUILD_PLAN.md, "Seed data").
 
+Phase 5 adds the mockup's templates, saved weeks and saved sessions (_seed_library.py).
 Phase 4 adds the mockup's logged sessions and check-ins (_seed_sessions.py).
 Phase 1: Iron Ridge Weightlifting, coach Dana, six athletes with their profiles,
 bodyweight history and maxes, and the starter exercise library.
@@ -25,6 +26,7 @@ from apps.accounts.models import (
 from apps.exercises.starter import install_pack
 from apps.workouts.models import CheckinQuestion, copy_defaults_to, install_default_questions
 
+from ._seed_library import seed_library
 from ._seed_programs import seed_programs
 from ._seed_sessions import seed_sessions
 
@@ -182,6 +184,7 @@ class Command(BaseCommand):
 
         seed_programs(athletes_by_email, exercises, coach_user, today)
         seed_sessions(athletes_by_email, exercises, today)
+        seed_library(gym, exercises, coach_user)
         self.stdout.write(
             self.style.SUCCESS(
                 f"Demo data ready: {GYM_NAME}, coach {COACH[0]}, {len(ATHLETES)} athletes, "

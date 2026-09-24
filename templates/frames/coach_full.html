@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{# Coach desktop shell, from the mockup's .coach-shell. Links inside it are boosted: HTMX swaps #coach-main and the server sends the nav out of band, so the sidebar stays put.
-   Because hx-target is inherited from here, any non-navigation HTMX element in a coach page must set its own hx-target. #}
+{% comment %}Coach desktop shell, from the mockup's .coach-shell. Links inside it are boosted: HTMX swaps #coach-main and the server sends the nav out of band, so the sidebar stays put.
+   Because hx-target is inherited from here, any non-navigation HTMX element in a coach page must set its own hx-target.{% endcomment %}
 {% block body %}
 <div class="coach-shell" hx-boost="true" hx-target="#coach-main" hx-swap="outerHTML">
   <aside class="snav">

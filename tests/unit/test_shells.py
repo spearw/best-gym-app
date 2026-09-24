@@ -103,3 +103,16 @@ def test_hx_trigger_header_is_ascii_json_even_with_unicode():
     header = response["HX-Trigger"]
     assert header.isascii()
     assert json.loads(header)["toast"]["message"] == "Link created — share it"
+
+
+def test_no_template_uses_a_multiline_short_comment():
+    """Django's {# #} comments are single-line: a multi-line one renders as text on the page."""
+    import re
+    from pathlib import Path
+
+    bad = [
+        str(path)
+        for path in Path("templates").rglob("*.html")
+        if any("\n" in m for m in re.findall(r"\{#(.*?)#\}", path.read_text(), re.S))
+    ]
+    assert not bad, f"Use {{% comment %}} for multi-line comments in: {bad}"

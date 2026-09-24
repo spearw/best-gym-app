@@ -1,10 +1,13 @@
 {% extends "coach/athlete/_base.html" %}
 {% block tab_content %}
-{% if not program %}
+{% if not program and not applying %}
   <div class="card" style="padding:20px 22px;max-width:560px">
     <h3 style="font-size:1.02rem;margin-bottom:4px">Start a program for {{ athlete.user.get_short_name }}</h3>
     <p class="tiny muted" style="margin:0 0 12px">A program is a block of back-to-back weeks. You can add, duplicate or delete weeks and change each week's type later.</p>
     {% include "programs/_start_form.html" %}
+    <p class="tiny muted" style="margin:14px 0 0">Or start from the library:
+      <button class="btn btn--soft btn--sm" type="button" hx-post="{% url 'coach:apply_start' athlete.pk %}" hx-vals='{"kind": "program"}'>Apply a template</button>
+      <button class="btn btn--soft btn--sm" type="button" hx-post="{% url 'coach:apply_start' athlete.pk %}" hx-vals='{"kind": "week"}'>Apply a saved week</button></p>
   </div>
 {% else %}
   <div x-data="programEditor()" @keydown.escape.window="library = false">

@@ -1,0 +1,44 @@
+{# Apply preview controls (apps/library/apply_views.py). Every change re-posts the draft and redraws the editor. #}
+<form class="apply-bar" hx-post="{% url 'coach:apply_update' athlete.pk %}" hx-trigger="change" hx-target="#programEditor" hx-swap="outerHTML" onsubmit="return false">
+  <input type="hidden" name="days_sent" value="1"><input type="hidden" name="publish_sent" value="1">
+  <div class="row" style="gap:10px;align-items:center">
+    <span class="chip chip--brand">Previewing</span>
+    <select class="input" name="template" aria-label="Template or saved week">
+      <optgroup label="Program templates">{% for t in apply_sources %}{% if t.kind == "program" %}<option value="{{ t.pk }}"{% if t.pk == apply_template.pk %} selected{% endif %}>{{ t.display_name }}</option>{% endif %}{% endfor %}</optgroup>
+      <optgroup label="Saved weeks">{% for t in apply_sources %}{% if t.kind == "week" %}<option value="{{ t.pk }}"{% if t.pk == apply_template.pk %} selected{% endif %}>{{ t.display_name }}</option>{% endif %}{% endfor %}</optgroup>
+    </select>
+    <span class="tiny muted">on</span>
+    <div class="daypick daypick--sm" role="group" aria-label="Training days">
+      {% for d in apply_days %}<label class="daypick-day"><input type="checkbox" name="day" value="{{ d.offset }}"{% if d.on %} checked{% endif %}><span>{{ d.name }}</span></label>{% endfor %}
+    </div>
+    <select class="input" name="mode" aria-label="Tag slot mode">
+      <option value="recent"{% if draft.mode == "recent" %} selected{% endif %}>Tag slots: {{ athlete.user.get_short_name }}'s recent lifts</option>
+      <option value="default"{% if draft.mode == "default" %} selected{% endif %}>Tag slots: template defaults</option>
+    </select>
+    <select class="input" name="start" aria-label="Where it starts">
+      {% for p in apply_placements %}<option value="{{ p.value }}"{% if p.value == apply_placement.value %} selected{% endif %}>{{ p.label }}</option>{% endfor %}
+    </select>
+    <label class="row tiny" style="gap:6px;font-weight:600"><input type="checkbox" name="publish"{% if draft.publish %} checked{% endif %}> Publish now</label>
+  </div>
+  <div class="spread" style="margin-top:8px;gap:12px">
+    <span class="tiny">
+      {% with s=apply_summary %}
+      {% if not draft.days %}<b style="color:var(--bad)">Pick at least one training day.</b>
+      {% elif not s.weeks %}<b style="color:var(--bad)">“{{ apply_template.display_name }}” has no sessions yet.</b>
+      {% else %}
+        <b>{{ s.weeks }} new week{{ s.weeks|pluralize }}</b>{% if ghosts %} ({{ ghosts.0.label }}{% if s.weeks > 1 %}{% with last=ghosts|last %}–{{ last.label }}{% endwith %}{% endif %}){% endif %} at <b>{{ draft.days|length }}×/week</b> · {{ s.sessions }} session{{ s.sessions|pluralize }}
+        {% if s.tag_slots %} · {{ s.tag_slots }} tag slot{{ s.tag_slots|pluralize }} {% if draft.mode == "recent" %}resolved from {{ athlete.user.get_short_name }}'s history{% else %}filled with defaults{% endif %}{% endif %}
+        {% if s.new_program %} · starts a new program{% if program %} (“{{ program.name }}” ends and is kept){% endif %}{% endif %}
+        {% if s.replaced %} · replaces {{ s.replaced }} empty week{{ s.replaced|pluralize }}{% endif %}{% if s.moved %} · {{ s.moved }} scheduled week{{ s.moved|pluralize }} move{{ s.moved|pluralize:"s," }} after{% endif %}
+        · {% if draft.publish %}published straight away{% else %}arrives unpublished{% endif %}
+        {% if s.habits %} · its {{ s.habits }} habit{{ s.habits|pluralize }} aren't copied yet (athlete habits arrive later){% endif %}
+        <span class="muted">— click the dashed weeks to review each one.</span>
+      {% endif %}
+      {% endwith %}
+    </span>
+    <span class="row" style="flex-wrap:nowrap">
+      <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:apply_cancel' athlete.pk %}" hx-target="#programEditor" hx-swap="outerHTML">Cancel</button>
+      <button class="btn btn--good btn--sm" type="button" hx-post="{% url 'coach:apply_confirm' athlete.pk %}" hx-target="#programEditor" hx-swap="outerHTML"{% if not apply_summary.weeks %} disabled{% endif %}>Confirm apply</button>
+    </span>
+  </div>
+</form>

@@ -111,6 +111,9 @@ class Program(models.Model):
     name = models.CharField(max_length=80)
     start_date = models.DateField()
     active = models.BooleanField(default=True)
+    source_template = models.ForeignKey(
+        "library.Template", null=True, blank=True, on_delete=models.SET_NULL, related_name="programs"
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
     )

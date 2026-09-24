@@ -1,0 +1,42 @@
+{% extends "partials/modal.html" %}
+{% block modal_attrs %}style="width:min(94vw,620px)"{% endblock %}
+{% block modal_title %}{{ slot.session.name|default:"Session" }} · slot {{ slot.order|add:1 }}{% endblock %}
+{% block modal_content %}
+{{ custom_fields|json_script:"rxCustom" }}{{ set_rows|json_script:"rxRows" }}{{ parent_values|json_script:"rxParent" }}
+<form hx-post="{% url 'coach:template_slot_edit' template.pk slot.pk %}" hx-target="#modal" hx-swap="innerHTML" novalidate
+      x-data="rxForm(JSON.parse(document.getElementById('rxCustom').textContent), JSON.parse(document.getElementById('rxRows').textContent), JSON.parse(document.getElementById('rxParent').textContent), {{ sets_initial }}, {% if form.vary.value %}true{% else %}false{% endif %}, '{{ form.load_basis.value|default:slot.load_basis }}')">
+  <div class="modal-body" x-data="{ kind: '{{ kind }}', tags: {{ tag_ids }} }">
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="field"><label>Slot type</label>
+      <div class="segmini" role="group" aria-label="Slot type">
+        <button type="button" :aria-pressed="(kind === 'exercise').toString()" @click="kind = 'exercise'">Fixed exercise</button>
+        <button type="button" :aria-pressed="(kind === 'tag').toString()" @click="kind = 'tag'">Tag-based</button>
+      </div>
+      <input type="hidden" name="kind" :value="kind">
+      <span class="tiny muted" x-text="kind === 'exercise' ? 'The same exercise for every athlete this template is applied to.' : 'Resolved per athlete from the tags — their most recent matching lift, or the default below.'"></span>
+    </div>
+    <div class="field" x-show="kind === 'exercise'"><label for="slotExercise">Exercise</label>
+      <select class="input" id="slotExercise" name="exercise">{% for e in exercises %}<option value="{{ e.pk }}"{% if e.pk == exercise_id %} selected{% endif %}>{{ e.name }} — {{ e.category.name }}</option>{% endfor %}</select>
+      {{ kind_form.exercise.errors }}
+    </div>
+    <div class="stack" x-show="kind === 'tag'" x-cloak>
+      <div class="field"><label>Tags <span class="tiny muted" style="font-weight:400">an exercise must carry all of these to qualify</span></label>
+        <div class="tag-filter" style="margin:0">{% for t in tags %}<label class="tagchip"><input type="checkbox" name="tags" value="{{ t.pk }}" x-model.number="tags"{% if t.pk in tag_ids %} checked{% endif %}>{{ t.name }}</label>{% endfor %}</div>
+        {{ kind_form.tags.errors }}
+      </div>
+      <div class="field"><label for="slotDefault">Default exercise <span class="tiny muted" style="font-weight:400" x-text="tags.length ? '— only exercises with every ticked tag' : '— tick tags to narrow the pool'"></span></label>
+        <select class="input" id="slotDefault" name="default">
+          {% for e in exercises %}<option value="{{ e.pk }}" data-tags="{{ e.tag_ids|join:',' }}" x-show="tags.every(t => [{{ e.tag_ids|join:',' }}].includes(t))"{% if e.pk == default_id %} selected{% endif %}>{{ e.name }} — {{ e.category.name }}</option>{% endfor %}
+        </select>
+        {{ kind_form.default.errors }}
+      </div>
+    </div>
+    {% include "programs/_dose_fields.html" %}
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn--danger" type="button" hx-post="{% url 'coach:template_slot_remove' template.pk slot.pk %}" hx-target="#tplEditor" hx-swap="outerHTML">Remove slot</button>
+    <button class="btn btn--ghost" type="button" onclick="closeModal()">Cancel</button>
+    <button class="btn btn--brand" type="submit">Save</button>
+  </div>
+</form>
+{% endblock %}

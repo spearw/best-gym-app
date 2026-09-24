@@ -153,6 +153,24 @@ class InviteForm(InputClassMixin, forms.Form):
         label="Athlete email",
         widget=forms.EmailInput(attrs={"placeholder": "athlete@example.com"}),
     )
+    starting_template = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        label="Starting template",
+        empty_label="None — I'll build their program",
+        help_text="Applied as a draft program from the week after they join, for you to review and publish.",
+    )
+
+    def __init__(self, *args, gym, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.library.models import Template, TemplateKind
+
+        self.fields["starting_template"].queryset = Template.objects.filter(
+            gym=gym, kind__in=[TemplateKind.PROGRAM, TemplateKind.WEEK]
+        ).order_by("kind", "name")
+        self.fields["starting_template"].label_from_instance = lambda t: (
+            f"{t.display_name}{' (saved week)' if t.kind == TemplateKind.WEEK else ''}"
+        )
 
 
 class GymSettingsForm(InputClassMixin, forms.Form):

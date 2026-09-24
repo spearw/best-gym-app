@@ -2,9 +2,16 @@
 <div id="programEditor">
   <div class="spread" style="margin-bottom:12px;flex-wrap:wrap;gap:10px">
     <div class="row">
-      <h3 style="font-size:1.02rem">{{ program.name }}</h3>
-      <span class="tiny muted">started {{ program.start_date|date:"j M Y" }} · {{ weeks|length }} week{{ weeks|length|pluralize }}</span>
-      <button class="btn btn--ghost btn--sm" type="button" hx-get="{% url 'coach:program_start' athlete.pk %}" hx-target="#modal" hx-swap="innerHTML">Start a new program</button>
+      {% if program %}
+        <h3 style="font-size:1.02rem">{{ program.name }}</h3>
+        <span class="tiny muted">started {{ program.start_date|date:"j M Y" }} · {{ weeks|length }} week{{ weeks|length|pluralize }}</span>
+        {% if not applying %}
+          <button class="btn btn--ghost btn--sm" type="button" hx-get="{% url 'coach:program_start' athlete.pk %}" hx-target="#modal" hx-swap="innerHTML">Start a new program</button>
+          <button class="btn btn--ghost btn--sm" type="button" hx-get="{% url 'coach:program_save_template' athlete.pk %}" hx-target="#modal" hx-swap="innerHTML">Save as template</button>
+        {% endif %}
+      {% else %}
+        <h3 style="font-size:1.02rem">New program for {{ athlete.user.get_short_name }}</h3>
+      {% endif %}
     </div>
     <div class="row" style="gap:8px">
     <button class="btn btn--ghost btn--sm lib-toggle" type="button" @click="library = !library" :aria-expanded="library.toString()" aria-controls="libList">Exercise library</button>
@@ -15,20 +22,47 @@
     </div>
   </div>
 
+  {% if applying %}{% include "library/_apply_bar.html" %}{% endif %}
+
   <nav class="month-strip" aria-label="Weeks">
     {% for w in weeks %}
-      <a class="wk-tab{% if w.pk == week.pk %} sel{% endif %}" style="{{ w.week_type.css_vars }}" href="{% url 'coach:program' athlete.pk %}?week={{ w.pk }}">
-        <span class="t">{{ w.week_type.name }}</span>
-        <b>{{ w.label }}{% if w.published %} <span class="chip chip--good" style="padding:0 6px;font-size:.6rem">live</span>{% endif %}</b>
-        <small>{{ w.start_date|date:"j M" }}–{{ w.end_date|date:"j M" }}{% if w.start_date <= today and today <= w.end_date %} · this week{% endif %}</small>
-      </a>
+      {% if applying %}
+        <button class="wk-tab{% if w.pk in replaced_ids %} replaced{% elif w.pk in moved_ids %} moved{% endif %}{% if not ghost_shown and w.pk == week.pk %} sel{% endif %}" type="button" style="{{ w.week_type.css_vars }}"
+                hx-post="{% url 'coach:apply_update' athlete.pk %}" hx-vals='{"view": "week:{{ w.pk }}"}' hx-target="#programEditor" hx-swap="outerHTML">
+          <span class="t">{{ w.week_type.name }}</span><b>{{ w.label }}</b>
+          <small>{{ w.start_date|date:"j M" }}{% if w.pk in replaced_ids %} · replaced{% elif w.pk in moved_ids %} · moves after{% endif %}</small>
+        </button>
+      {% else %}
+        <a class="wk-tab{% if w.pk == week.pk %} sel{% endif %}" style="{{ w.week_type.css_vars }}" href="{% url 'coach:program' athlete.pk %}?week={{ w.pk }}">
+          <span class="t">{{ w.week_type.name }}</span>
+          <b>{{ w.label }}{% if w.published %} <span class="chip chip--good" style="padding:0 6px;font-size:.6rem">live</span>{% endif %}</b>
+          <small>{{ w.start_date|date:"j M" }}–{{ w.end_date|date:"j M" }}{% if w.start_date <= today and today <= w.end_date %} · this week{% endif %}</small>
+        </a>
+      {% endif %}
     {% endfor %}
-    <button class="wk-tab" type="button" style="border-style:dashed" hx-post="{% url 'coach:week_add' athlete.pk %}" hx-target="#programEditor" hx-swap="outerHTML">
-      <span class="t" style="color:var(--ink-4)">+ Week</span><b>Add a week</b><small>at the end, same type</small>
-    </button>
+    {% if applying %}
+      {% for g in ghosts %}
+        <button class="wk-tab ghost{% if ghost_shown.index == g.index %} sel{% endif %}" type="button" style="{{ g.planned.week_type.css_vars }}"
+                hx-post="{% url 'coach:apply_update' athlete.pk %}" hx-vals='{"view": "{{ g.index }}"}' hx-target="#programEditor" hx-swap="outerHTML">
+          <span class="t">{{ g.planned.week_type.name }}</span><b>{{ g.label }}</b><small>{{ g.start|date:"j M" }} · {{ g.planned.session_count }} session{{ g.planned.session_count|pluralize }}</small>
+        </button>
+      {% endfor %}
+    {% else %}
+      <button class="wk-tab" type="button" style="border-style:dashed" hx-post="{% url 'coach:apply_start' athlete.pk %}" hx-vals='{"kind": "program"}' hx-target="#programEditor" hx-swap="outerHTML">
+        <span class="t" style="color:var(--brand)">+ Template</span><b>Add from template</b><small>preview, then confirm</small>
+      </button>
+      <button class="wk-tab" type="button" style="border-style:dashed" hx-post="{% url 'coach:apply_start' athlete.pk %}" hx-vals='{"kind": "week"}' hx-target="#programEditor" hx-swap="outerHTML">
+        <span class="t" style="color:var(--wk-deload)">+ Saved week</span><b>Add a saved week</b><small>preview, then confirm</small>
+      </button>
+      <button class="wk-tab" type="button" style="border-style:dashed" hx-post="{% url 'coach:week_add' athlete.pk %}" hx-target="#programEditor" hx-swap="outerHTML">
+        <span class="t" style="color:var(--ink-4)">+ Week</span><b>Add a week</b><small>at the end, same type</small>
+      </button>
+    {% endif %}
   </nav>
 
-  {% if week %}
+  {% if ghost_shown %}
+    {% include "library/_ghost_board.html" %}
+  {% elif week %}
     <div class="card" style="padding:12px 14px;margin-bottom:12px">
       <div class="spread" style="flex-wrap:wrap;gap:10px">
         <div class="row" style="gap:8px">
@@ -41,6 +75,7 @@
             {% for wt in week_types %}<option value="{{ wt.pk }}"{% if wt.pk == week.week_type_id %} selected{% endif %}>{{ wt.name }}{% if wt.archived %} (archived){% endif %}</option>{% endfor %}
           </select>
           <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:week_duplicate' athlete.pk week.pk %}" hx-target="#programEditor" hx-swap="outerHTML">Duplicate week</button>
+          <button class="btn btn--ghost btn--sm" type="button" hx-get="{% url 'coach:program_save_week' athlete.pk week.pk %}" hx-target="#modal" hx-swap="innerHTML">Save week</button>
           <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:week_clear' athlete.pk week.pk %}" hx-target="#programEditor" hx-swap="outerHTML" hx-confirm="Remove every session from {{ week.label }}?{% if week.published %} {{ athlete.user.get_short_name }} will see the empty week straight away.{% endif %}">Clear week</button>
           <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:week_delete' athlete.pk week.pk %}" hx-target="#programEditor" hx-swap="outerHTML" hx-confirm="Delete {{ week.label }} and everything in it? Later weeks move up a week to close the gap.">Delete week</button>
           {% if week.published %}
@@ -95,7 +130,7 @@
       {% endfor %}
     </div>
     <p class="tiny muted" style="margin-top:10px">Drag exercises from the library onto a day (or click a day, then +). Click an exercise to edit it, drag it to move it, or hover for ✕ to remove it. The coloured edge follows the week type.</p>
-  {% else %}
+  {% elif not applying %}
     <div class="card" style="padding:18px"><p class="tiny muted" style="margin:0">This program has no weeks. Add one above.</p></div>
   {% endif %}
 </div>

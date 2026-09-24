@@ -125,8 +125,17 @@ def editor_context(request, athlete, week_id=None):
     return context
 
 
+def _with_apply_preview(request, athlete, context):
+    """While a template is being previewed on this board (apps/library/apply_views.py)."""
+    from apps.library.apply_views import apply_context
+
+    context.update(apply_context(request, athlete))
+    return context
+
+
 def render_editor(request, athlete, week_id=None, message=None, kind=""):
-    response = TemplateResponse(request, "programs/_editor.html", editor_context(request, athlete, week_id))
+    context = _with_apply_preview(request, athlete, editor_context(request, athlete, week_id))
+    response = TemplateResponse(request, "programs/_editor.html", context)
     return hx.toast(response, message, kind) if message else response
 
 
@@ -160,10 +169,13 @@ def _by_last_done(exercises):
     return done + [e for e in exercises if not e.hist]
 
 
-def rail_context(request, athlete):
+def rail_context(request, athlete=None, template=None):
+    """The exercise library rail. On an athlete's board it shows their history and adds
+    to the selected day; in the template editor (`template`) it adds to the selected
+    session and can add tag slots from the active tag filter."""
     gym = request.coach.gym
     q = request.GET.get("q", "").strip()
-    sort = "az" if request.GET.get("sort") == "az" else "recent"
+    sort = "az" if request.GET.get("sort") == "az" or athlete is None else "recent"
     tag_ids = {t for t in request.GET.getlist("tag") if t.isdigit()}
     exercises = (
         Exercise.objects.filter(gym=gym, archived=False)
@@ -177,10 +189,31 @@ def rail_context(request, athlete):
         ).distinct()
     for tag_id in tag_ids:
         exercises = exercises.filter(tags__pk=tag_id)
-    exercises = _with_history(list(exercises), athlete, gym.units)
+    exercises = list(exercises)
+    if athlete is not None:
+        exercises = _with_history(exercises, athlete, gym.units)
     if sort == "recent":
         exercises = _by_last_done(exercises)
+    if template is not None:
+        where = {
+            "rail_search_url": reverse("coach:template_library", args=[template.pk]),
+            "rail_add_url": reverse("coach:template_add_slot", args=[template.pk]),
+            "rail_tag_slot_url": reverse("coach:template_add_tag_slot", args=[template.pk]),
+            "rail_target": "#tplEditor",
+            "rail_selected": "#selectedSession",
+            "rail_where": "session",
+        }
+    else:
+        where = {
+            "rail_search_url": reverse("coach:program_library", args=[athlete.pk]),
+            "rail_add_url": reverse("coach:day_add_exercise", args=[athlete.pk]),
+            "rail_target": "#programEditor",
+            "rail_selected": "#selectedDay",
+            "rail_where": "day",
+        }
     return {
+        **where,
+        "rail_athlete": athlete,
         "rail_exercises": exercises,
         "rail_tags": Tag.objects.filter(gym=gym),
         "rail_tag_ids": {int(t) for t in tag_ids},
@@ -196,7 +229,7 @@ def program_tab(request, pk):
     context = {
         **_header_context(request, athlete),
         "tab": "program",
-        **editor_context(request, athlete, request.GET.get("week")),
+        **_with_apply_preview(request, athlete, editor_context(request, athlete, request.GET.get("week"))),
         **rail_context(request, athlete),
     }
     if _program(athlete) is None:

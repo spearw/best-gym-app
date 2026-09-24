@@ -8,49 +8,7 @@
   <div class="modal-body">
     {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
     {% if suggested %}<div class="row tiny" style="background:var(--surface-2);border-radius:10px;padding:8px 12px">{{ suggested }}</div>{% endif %}
-    <div class="row" style="gap:12px;align-items:flex-start">
-      <div class="field" style="flex:1"><label for="id_sets">Sets</label><input class="input" type="number" name="sets" id="id_sets" min="1" max="{{ max_sets }}" x-model.number="sets" @input="syncRows()" required>{{ form.sets.errors }}</div>
-      <div class="field" style="flex:1.4"><label for="id_rep_scheme">Reps</label><input class="input" name="rep_scheme" id="id_rep_scheme" maxlength="30" x-model="repScheme" @input="syncRows()" placeholder="5, 1+1, 8/leg, 10 min">{{ form.rep_scheme.errors }}</div>
-      <div class="field" style="flex:1"><label for="id_rir">RIR target</label><input class="input" type="number" name="rir" id="id_rir" min="0" max="10" value="{{ form.rir.value|default_if_none:'' }}">{{ form.rir.errors }}</div>
-    </div>
-    <div class="row" style="gap:12px;align-items:flex-start">
-      <div class="field" style="flex:1"><label for="id_load_basis">Load basis</label>
-        <select class="input" name="load_basis" id="id_load_basis" x-model="basis">
-          {% for value, label in form.load_basis.field.choices %}<option value="{{ value }}"{% if value == form.load_basis.value %} selected{% endif %}>{{ label }}</option>{% endfor %}
-        </select></div>
-      <div class="field" style="flex:1" x-show="basis !== 'none' && basis !== 'bodyweight'">
-        <label for="id_load_value">Load <span class="tiny muted" x-text="basis === 'percent' ? '(% of max)' : basis === 'rpe' ? '(RPE)' : '({{ unit }})'"></span></label>
-        <input class="input" name="load_value" id="id_load_value" inputmode="decimal" x-model="load" @input="syncRows()">{{ form.load_value.errors }}
-      </div>
-    </div>
-    {% include "partials/field.html" with field=form.note %}
-
-    <div class="field">
-      <label class="row" style="gap:8px;justify-content:flex-start;cursor:pointer"><input type="checkbox" name="vary" value="on" x-model="vary" @change="syncRows()"> Vary by set <span class="tiny muted" style="font-weight:400">e.g. 70 / 75 / 80%, or 5-3-1 reps</span></label>
-      <div class="stack" style="gap:6px" x-show="vary" x-cloak>
-        <template x-for="(row, i) in rows" :key="i">
-          <div class="row" style="gap:8px;flex-wrap:nowrap">
-            <span class="tiny muted set-label" x-text="'Set ' + (i + 1)"></span>
-            <input class="input" name="set_reps" x-model="row.reps" @input="row.edited = true" placeholder="reps" maxlength="30" :disabled="!vary" :aria-label="'Reps for set ' + (i + 1)">
-            <input class="input" name="set_load" x-model="row.load" @input="row.edited = true" placeholder="load" inputmode="decimal" :disabled="!vary || basis === 'none' || basis === 'bodyweight'" :aria-label="'Load for set ' + (i + 1)">
-          </div>
-        </template>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Custom fields <span class="tiny muted" style="font-weight:400">anything else — tempo, rest, bar, cue</span></label>
-      <div class="stack" style="gap:8px">
-        <template x-for="(f, i) in fields" :key="i">
-          <div class="row" style="gap:8px;flex-wrap:nowrap">
-            <input class="input" name="cf_key" x-model="f.key" placeholder="Field (e.g. Tempo)" maxlength="30" :aria-label="'Custom field ' + (i + 1) + ' name'">
-            <input class="input" name="cf_value" x-model="f.value" placeholder="Value (e.g. 3-1-0)" maxlength="60" :aria-label="'Custom field ' + (i + 1) + ' value'">
-            <button class="iconbtn" type="button" @click="removeField(i)" :aria-label="'Remove custom field ' + (i + 1)">✕</button>
-          </div>
-        </template>
-      </div>
-      <button class="btn btn--soft btn--sm" type="button" style="align-self:flex-start" @click="addField()" x-show="fields.length < {{ max_custom }}">+ add field</button>
-    </div>
+    {% include "programs/_dose_fields.html" %}
   </div>
   <div class="modal-foot">
     <button class="btn btn--danger" type="button" hx-post="{% url 'coach:rx_remove' athlete.pk rx.pk %}" hx-target="#programEditor" hx-swap="outerHTML">Remove from day</button>

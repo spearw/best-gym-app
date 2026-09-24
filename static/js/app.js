@@ -111,6 +111,20 @@
       };
     });
 
+    // The template editor: which session the library rail adds to, and the rail drawer.
+    // A saved session has only one session, so it's always selected.
+    window.Alpine.data("templateEditor", function (first, single) {
+      return {
+        session: single ? first : null,
+        library: false,
+        pick: function (id) {
+          this.session = id;
+          var search = document.getElementById("railSearch");
+          if (search) search.focus({ preventScroll: true });
+        },
+      };
+    });
+
     // One set row in the session player. Each tick or change saves that set; saves for
     // one row run one at a time, so the last change always wins.
     window.Alpine.data("setRow", function () {
@@ -192,11 +206,11 @@
   // The day being dropped on gets the mockup's .droptarget outline. Dropping posts the
   // new position and the server redraws the editor.
   function clearDropTargets() {
-    document.querySelectorAll(".day-col.droptarget").forEach(function (c) { c.classList.remove("droptarget"); });
+    document.querySelectorAll(".droptarget").forEach(function (c) { c.classList.remove("droptarget"); });
   }
   function markDropTarget(evt) {
     clearDropTargets();
-    var col = evt.to && evt.to.closest(".day-col");
+    var col = evt.to && evt.to.closest(".day-col, .tpl-sess");
     if (col) col.classList.add("droptarget");
     return true;
   }
@@ -209,7 +223,7 @@
     return i;
   }
   function dropValues(to, item) {
-    return { session: to.dataset.session || "", day: to.dataset.day, index: positionIn(item) };
+    return { session: to.dataset.session || "", day: to.dataset.day || "", index: positionIn(item) };
   }
 
   function initSortables(root) {
@@ -226,7 +240,7 @@
           clearDropTargets();
           if (evt.from === evt.to && evt.oldIndex === evt.newIndex) return;
           window.htmx.ajax("POST", evt.item.dataset.moveUrl, {
-            source: evt.item, target: "#programEditor", swap: "outerHTML", values: dropValues(evt.to, evt.item),
+            source: evt.item, target: list.dataset.target || "#programEditor", swap: "outerHTML", values: dropValues(evt.to, evt.item),
           });
         },
       });
@@ -248,7 +262,7 @@
           var source = evt.to;
           evt.item.remove();  // the server redraws the day with the real exercise card
           window.htmx.ajax("POST", lib.dataset.addUrl, {
-            source: source, target: "#programEditor", swap: "outerHTML", values: values,
+            source: source, target: lib.dataset.target || "#programEditor", swap: "outerHTML", values: values,
           });
         },
       });

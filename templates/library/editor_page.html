@@ -1,0 +1,34 @@
+{% extends "base_coach.html" %}
+{% block title %}{{ template.display_name }}{% endblock %}
+{% block page_title %}{{ template.display_name }}{% endblock %}
+{% block topbar_actions %}
+<span class="crumb">{{ template.get_kind_display }}</span>
+<a class="btn btn--soft btn--sm" href="{% url 'coach:programming_'|add:back_tab %}">← Programming</a>
+<button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'coach:template_delete' template.pk %}" hx-confirm="Delete “{{ template.display_name }}”? Programs it was applied to keep their weeks.">Delete</button>
+{% if not is_session %}<button class="btn btn--brand" type="button" hx-get="{% url 'coach:apply_modal' %}?template={{ template.pk }}" hx-target="#modal" hx-swap="innerHTML">{% if is_week %}Add to athlete{% else %}Apply to athlete{% endif %}</button>{% endif %}
+{% endblock %}
+{% block content %}
+<div x-data="templateEditor({{ template.weeks.first.sessions.first.pk|default:'null' }}, {{ is_session|yesno:'true,false' }})" @keydown.escape.window="library = false" @select-session.camel.window="session = $event.detail.value">
+  <input type="hidden" id="selectedSession" name="session" :value="session ?? ''">
+  <div class="tpl-meta">
+    <form class="field" hx-post="{% url 'coach:template_meta' template.pk %}" hx-trigger="change" hx-swap="none" onsubmit="return false">
+      <label for="tplName">{% if is_session %}Session{% elif is_week %}Week{% else %}Template{% endif %} name</label>
+      <input class="input" id="tplName" name="name" value="{{ template.name }}" maxlength="80" placeholder="{% if is_session %}e.g. A — Snatch + Squat{% elif is_week %}e.g. Accumulation — 3 day{% else %}e.g. 12-Week Competition Cycle{% endif %}">
+    </form>
+    <form class="field" hx-post="{% url 'coach:template_meta' template.pk %}" hx-trigger="change" hx-swap="none" onsubmit="return false">
+      <label for="tplDesc">Description</label>
+      <input class="input" id="tplDesc" name="description" value="{{ template.description }}" maxlength="200" placeholder="Who this is for and what it emphasises">
+    </form>
+    {% if is_program %}
+      <form class="field" hx-post="{% url 'coach:template_meta' template.pk %}" hx-trigger="change" hx-target="#tplEditor" hx-swap="outerHTML" onsubmit="return false">
+        <label for="tplFreq">Written for</label>
+        <select class="input" id="tplFreq" name="sessions_per_week">{% for n in frequencies %}<option value="{{ n }}"{% if n == template.sessions_per_week %} selected{% endif %}>{{ n }} session{{ n|pluralize }} / week</option>{% endfor %}</select>
+      </form>
+    {% endif %}
+  </div>
+  <div class="tpl-layout">
+    <div>{% include "library/_editor.html" %}</div>
+    {% include "programs/_rail.html" %}
+  </div>
+</div>
+{% endblock %}

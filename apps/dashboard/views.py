@@ -15,21 +15,6 @@ def dashboard(request):
     return _coach_page(request, "dashboard", "Dashboard")
 
 
-PROGRAMMING_TAB_LABELS = {"templates": "Templates", "weeks": "Saved weeks", "sessions": "Saved sessions"}
-
-
-@coach_required
-def programming_placeholder(request, ptab):
-    return _coach_page(
-        request,
-        "programming",
-        "Programming",
-        template="coach/programming/placeholder.html",
-        ptab=ptab,
-        ptab_label=PROGRAMMING_TAB_LABELS[ptab],
-    )
-
-
 @coach_required
 def ping(request):
     """Tiny HTMX round trip used by the shells and tests: returns a fragment and fires a toast."""

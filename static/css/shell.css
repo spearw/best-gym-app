@@ -95,3 +95,16 @@ label.tagchip:has(input:focus-visible){outline:3px solid var(--brand);outline-of
 .set-row.unsaved{border-color:var(--warn);background:var(--warn-lt)}
 .set-row.unsaved .tick{border-color:var(--warn)}
 .set-row .tick:disabled,.set-row .in:disabled{cursor:default}
+.tpl-sess.droptarget{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-lt)}
+
+/* While a template is previewed on a board, the library rail steps aside. */
+.prog-layout:has(.apply-bar){grid-template-columns:1fr}
+.prog-layout:has(.apply-bar) .lib-rail{display:none}
+
+/* Day pickers built from checkboxes (the mockup toggled aria-pressed buttons). */
+.daypick-day{position:relative;cursor:pointer}
+.daypick-day input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.daypick-day span{display:block;border:1.5px solid var(--line);border-radius:9px;padding:5px 0;min-width:36px;text-align:center;font-size:.64rem;font-weight:700;color:var(--ink-3);background:var(--surface);transition:all .13s}
+.daypick-day:hover span{border-color:var(--brand)}
+.daypick-day input:checked + span{background:var(--brand);border-color:var(--brand);color:#fff}
+.daypick-day input:focus-visible + span{outline:3px solid var(--brand);outline-offset:2px}

@@ -76,17 +76,21 @@ def signup(request):
 
 @coach_required
 def invite_new(request):
-    return TemplateResponse(request, "partials/invite_modal.html", {"form": InviteForm()})
+    return TemplateResponse(
+        request, "partials/invite_modal.html", {"form": InviteForm(gym=request.coach.gym)}
+    )
 
 
 @coach_required
 @require_POST
 def invite_create(request):
-    form = InviteForm(request.POST)
+    form = InviteForm(request.POST, gym=request.coach.gym)
     if not form.is_valid():
         return TemplateResponse(request, "partials/invite_modal.html", {"form": form})
     email = form.cleaned_data["email"]
-    invite = Invite.objects.create(coach=request.coach, email=email)
+    invite = Invite.objects.create(
+        coach=request.coach, email=email, starting_template=form.cleaned_data["starting_template"]
+    )
     join_url = invite_url(request, invite)
     if email:
         send_invite_email(request, invite)
@@ -148,6 +152,8 @@ def join(request, token):
                 user=user, coach=invite.coach, gym=invite.gym, units=invite.gym.units
             )
             copy_defaults_to(athlete)
+            if invite.starting_template_id:
+                _apply_starting_template(invite, athlete)
             invite.status = InviteStatus.ACCEPTED
             invite.accepted_by = user
             invite.accepted_at = timezone.now()
@@ -157,6 +163,26 @@ def join(request, token):
         return redirect("app:welcome_metrics")
 
     return TemplateResponse(request, "accounts/join.html", {"invite": invite, "form": form, "step": 1})
+
+
+def _apply_starting_template(invite, athlete):
+    """The invite's template becomes an unpublished draft program from next week, on the
+    template's default training days, for the coach to review and publish."""
+    from apps.library import apply
+
+    template = invite.starting_template
+    try:
+        apply.confirm(
+            athlete,
+            template,
+            apply.default_days(template),
+            apply.RECENT,
+            "new:next",
+            False,
+            invite.coach.user,
+        )
+    except apply.CannotApply:
+        pass  # an empty template: the coach builds the program by hand
 
 
 @athlete_required

@@ -4,6 +4,8 @@ from django.views.generic import RedirectView
 from apps.accounts import coach_views
 from apps.accounts import views as account_views
 from apps.exercises import tracked_views
+from apps.library import apply_views as av
+from apps.library import views as lv
 from apps.programs import program_views as pv
 from apps.programs import views as week_type_views
 from apps.workouts import question_views as qv
@@ -66,6 +68,12 @@ urlpatterns = [
     path("athletes/<int:pk>/program/rx/<int:rx_id>/remove/", pv.rx_remove, name="rx_remove"),
     path("athletes/<int:pk>/program/rx/<int:rx_id>/swap/", pv.rx_swap, name="rx_swap"),
     path("athletes/<int:pk>/program/rx/<int:rx_id>/move/", pv.rx_move, name="rx_move"),
+    path("athletes/<int:pk>/program/apply/start/", av.apply_start, name="apply_start"),
+    path("athletes/<int:pk>/program/apply/", av.apply_update, name="apply_update"),
+    path("athletes/<int:pk>/program/apply/cancel/", av.apply_cancel, name="apply_cancel"),
+    path("athletes/<int:pk>/program/apply/confirm/", av.apply_confirm, name="apply_confirm"),
+    path("athletes/<int:pk>/program/weeks/<int:week_id>/save/", av.save_week, name="program_save_week"),
+    path("athletes/<int:pk>/program/save/", av.save_program, name="program_save_template"),
     re_path(
         r"^athletes/(?P<pk>\d+)/(?P<tab>overview|program|sessions|metrics|messages)/$",
         coach_views.athlete_detail,
@@ -80,19 +88,42 @@ urlpatterns = [
     *question_patterns("athletes/<int:athlete_pk>/questions/", "athlete_q"),
     # Programming: templates/weeks/sessions (phase 5), exercises, default questions.
     path("programming/", RedirectView.as_view(pattern_name="coach:exercises"), name="programming"),
+    path("programming/templates/", lv.library_page, {"ptab": "templates"}, name="programming_templates"),
+    path("programming/weeks/", lv.library_page, {"ptab": "weeks"}, name="programming_weeks"),
+    path("programming/sessions/", lv.library_page, {"ptab": "sessions"}, name="programming_sessions"),
+    re_path(r"^programming/(?P<ptab>templates|weeks|sessions)/new/$", lv.new, name="template_new"),
+    path("programming/apply/", av.apply_modal, name="apply_modal"),
+    path("library/<int:pk>/", lv.edit, name="template_edit"),
+    path("library/<int:pk>/library/", lv.library, name="template_library"),
+    path("library/<int:pk>/meta/", lv.meta, name="template_meta"),
+    path("library/<int:pk>/delete/", lv.delete, name="template_delete"),
+    path("library/<int:pk>/weeks/add/", lv.week_add, name="template_week_add"),
+    path("library/<int:pk>/weeks/<int:week_id>/type/", lv.week_type, name="template_week_type"),
     path(
-        "programming/templates/",
-        views.programming_placeholder,
-        {"ptab": "templates"},
-        name="programming_templates",
+        "library/<int:pk>/weeks/<int:week_id>/duplicate/", lv.week_duplicate, name="template_week_duplicate"
     ),
-    path("programming/weeks/", views.programming_placeholder, {"ptab": "weeks"}, name="programming_weeks"),
+    path("library/<int:pk>/weeks/<int:week_id>/remove/", lv.week_remove, name="template_week_remove"),
+    path("library/<int:pk>/weeks/<int:week_id>/sessions/add/", lv.session_add, name="template_session_add"),
     path(
-        "programming/sessions/",
-        views.programming_placeholder,
-        {"ptab": "sessions"},
-        name="programming_sessions",
+        "library/<int:pk>/sessions/<int:session_id>/rename/",
+        lv.session_rename,
+        name="template_session_rename",
     ),
+    path(
+        "library/<int:pk>/sessions/<int:session_id>/remove/",
+        lv.session_remove,
+        name="template_session_remove",
+    ),
+    path("library/<int:pk>/slots/add/", lv.slot_add, name="template_add_slot"),
+    path("library/<int:pk>/slots/add-tag/", lv.tag_slot_add, name="template_add_tag_slot"),
+    path("library/<int:pk>/slots/<int:slot_id>/", lv.slot_edit, name="template_slot_edit"),
+    path("library/<int:pk>/slots/<int:slot_id>/move/", lv.slot_move, name="template_slot_move"),
+    path("library/<int:pk>/slots/<int:slot_id>/remove/", lv.slot_remove, name="template_slot_remove"),
+    path("library/<int:pk>/habits/add/", lv.habit_add, name="template_habit_add"),
+    path("library/<int:pk>/habits/<int:habit_id>/remove/", lv.habit_remove, name="template_habit_remove"),
+    path("library/<int:pk>/pick/<str:kind>/", lv.pick, name="template_pick"),
+    path("library/<int:pk>/pick/<str:kind>/<int:source_id>/", lv.pick_use, name="template_pick_use"),
+    path("library/<int:pk>/save/<str:what>/<int:part_id>/", lv.save_part, name="template_save_part"),
     path("", include("apps.exercises.urls")),
     path("programming/questions/", qv.defaults_page, name="questions"),
     path("programming/questions/push/", qv.push_defaults, name="questions_push"),

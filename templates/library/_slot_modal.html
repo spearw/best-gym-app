@@ -4,7 +4,7 @@
 {% block modal_content %}
 {{ custom_fields|json_script:"rxCustom" }}{{ set_rows|json_script:"rxRows" }}{{ parent_values|json_script:"rxParent" }}
 <form hx-post="{% url 'coach:template_slot_edit' template.pk slot.pk %}" hx-target="#modal" hx-swap="innerHTML" novalidate
-      x-data="rxForm(JSON.parse(document.getElementById('rxCustom').textContent), JSON.parse(document.getElementById('rxRows').textContent), JSON.parse(document.getElementById('rxParent').textContent), {{ sets_initial }}, {% if form.vary.value %}true{% else %}false{% endif %}, '{{ form.load_basis.value|default:slot.load_basis }}')">
+      x-data="rxForm(JSON.parse(document.getElementById('rxCustom').textContent), JSON.parse(document.getElementById('rxRows').textContent), JSON.parse(document.getElementById('rxParent').textContent), {{ sets_initial }}, {% if form.vary.value %}true{% else %}false{% endif %}, '{{ basis }}')">
   <div class="modal-body" x-data="{ kind: '{{ kind }}', tags: {{ tag_ids }} }">
     {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
     <div class="field"><label>Slot type</label>

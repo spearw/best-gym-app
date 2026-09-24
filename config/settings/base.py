@@ -127,6 +127,14 @@ SITE_URL = os.environ.get("SITE_URL", os.environ.get("RENDER_EXTERNAL_URL", "htt
     "/"
 )
 
+# The Django admin's address. Set ADMIN_PATH in production to something not guessable
+# (e.g. "manage-7f3k2/"): the default "admin/" is the first place bots try.
+ADMIN_PATH = os.environ.get("ADMIN_PATH", "admin/")
+
+# Temporary: log the address headers of rate-limited requests, to confirm which one
+# Render's proxy guarantees (apps/ratelimit.client_ip). Turn it off again afterwards.
+LOG_CLIENT_IP = os.environ.get("LOG_CLIENT_IP") == "1"
+
 # seed_demo: the password its new demo users get, and whether the demo coach is an admin.
 DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "demo-password-123")
 DEMO_STAFF = True

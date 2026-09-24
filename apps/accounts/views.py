@@ -13,7 +13,7 @@ from apps.exercises.models import MAX_TRACKED_LIFTS, TrackedLift
 from apps.exercises.starter import install_pack
 from apps.exercises.tracked_views import trackable
 from apps.programs.views import card_context as week_type_card_context
-from apps.ratelimit import by_ip, by_user, client_ip, hit, rate_limit
+from apps.ratelimit import by_ip, by_user, client_ip, hit, rate_limit, too_many
 from apps.workouts.models import copy_defaults_to, install_default_questions
 
 from .access import athlete_required, coach_required, home_url_for
@@ -38,12 +38,35 @@ from .models import (
 )
 
 
+def login_allowed(request):
+    """Sign-in attempts in 15 minutes: 10 per address and email, 50 per address (trying
+    many accounts), 30 per email from anywhere (many addresses on one account). Every
+    bucket counts the attempt, so none can be skipped."""
+    email = request.POST.get("username", "").strip().lower()
+    ip = client_ip(request)
+    window = 15 * 60
+    checks = [
+        hit("login", f"{ip}:{email}", 10, window),
+        hit("login-ip", ip, 50, window),
+        hit("login-email", email, 30, window),
+    ]
+    return all(checks)
+
+
+def admin_login(request, extra_context=None):
+    """Django admin's sign-in page, under the same limits as the site's."""
+    from django.contrib import admin
+
+    if request.method == "POST" and not login_allowed(request):
+        return too_many(request, "Too many sign-in attempts. Wait 15 minutes.")
+    return admin.site.login(request, extra_context)
+
+
 class RateLimitedLoginView(auth_views.LoginView):
-    """Sign-in, limited to 10 tries per 15 minutes for each address and email."""
+    """Sign-in, limited by login_allowed()."""
 
     def post(self, request, *args, **kwargs):
-        email = request.POST.get("username", "").strip().lower()
-        if not hit("login", f"{client_ip(request)}:{email}", 10, 15 * 60):
+        if not login_allowed(request):
             form = self.get_form()
             form.is_valid()  # bind it so the page shows what was typed
             form.errors.clear()
@@ -154,6 +177,13 @@ def join(request, token):
     if user and user.athlete_profile:
         messages.warning(request, "You already have an athlete account.")
         return redirect("app:home")
+    if user and hasattr(user, "athlete"):  # an archived athlete profile: one per account
+        messages.error(
+            request,
+            "This account's athlete profile was archived by a coach. Ask them to restore it, "
+            "or sign out and join with a different email.",
+        )
+        return redirect("accounts:no_profile")
 
     form = None if user else JoinForm(request.POST or None, invite_email=invite.email)
     if request.method == "POST" and (user or form.is_valid()):

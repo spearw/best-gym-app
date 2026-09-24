@@ -35,6 +35,12 @@ Setting it up:
 4. Note the database's creation date: Render deletes a free database after 30 days
    (with a 14-day grace period). Move to paid before then if the trial data matters.
 
+**One check on the live site** (security audit, 24 September): the rate limits key on
+the visitor's address, taken from the last `X-Forwarded-For` entry. To confirm that's
+right on Render, set `LOG_CLIENT_IP=1` on the web service, sign in once from your phone
+on mobile data, and copy the `client-ip check:` line from the service's Logs. Then
+remove `LOG_CLIENT_IP`.
+
 The demo's dates are relative to the day it was seeded, so the demo week drifts into the
 past as the trial goes on.
 
@@ -76,6 +82,7 @@ Set these on **both** the web service and the cron job, unless marked otherwise.
 | `STORAGE_BUCKET` | `gymtrainer-videos` | |
 | `STORAGE_ACCESS_KEY` | | R2 API token's access key id |
 | `STORAGE_SECRET` | | R2 API token's secret |
+| `ADMIN_PATH` | `manage-7f3k2/` | web only: the Django admin's address, instead of the guessable `admin/` |
 | `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` | `app.yourdomain.com`, `https://app.yourdomain.com` | web only, once a custom domain is added |
 
 Without the four `STORAGE_*` settings the site works and the athlete app simply has no
@@ -154,7 +161,7 @@ workers. Over a limit a request gets "Slow down" (429).
 
 | What | Limit |
 | --- | --- |
-| Sign-in | 10 tries per 15 minutes per address and email |
+| Sign-in (the site's and the admin's) | 10 tries per 15 minutes per address and email; 50 per address; 30 per email from any address |
 | Password reset | 5 per hour per address |
 | Coach sign-up, joining by invite | 10 per hour per address |
 | Invites | 30 per hour per coach |

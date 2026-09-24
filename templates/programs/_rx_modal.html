@@ -4,7 +4,7 @@
 {% block modal_content %}
 {{ custom_fields|json_script:"rxCustom" }}{{ set_rows|json_script:"rxRows" }}{{ parent_values|json_script:"rxParent" }}
 <form hx-post="{% url 'coach:rx_edit' athlete.pk rx.pk %}" hx-target="#modal" hx-swap="innerHTML" novalidate
-      x-data="rxForm(JSON.parse(document.getElementById('rxCustom').textContent), JSON.parse(document.getElementById('rxRows').textContent), JSON.parse(document.getElementById('rxParent').textContent), {{ sets_initial }}, {% if form.vary.value %}true{% else %}false{% endif %}, '{{ form.load_basis.value|default:rx.load_basis }}')">
+      x-data="rxForm(JSON.parse(document.getElementById('rxCustom').textContent), JSON.parse(document.getElementById('rxRows').textContent), JSON.parse(document.getElementById('rxParent').textContent), {{ sets_initial }}, {% if form.vary.value %}true{% else %}false{% endif %}, '{{ basis }}')">
   <div class="modal-body">
     {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
     {% if suggested %}<div class="row tiny" style="background:var(--surface-2);border-radius:10px;padding:8px 12px">{{ suggested }}</div>{% endif %}

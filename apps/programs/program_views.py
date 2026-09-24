@@ -17,7 +17,7 @@ from apps.exercises.models import Exercise, Tag
 
 from . import services, undo
 from .forms import MAX_CUSTOM_FIELDS, MAX_SETS, PrescriptionForm, StartProgramForm, set_rows_initial
-from .models import Prescription, ProgramDay, ProgramSession, ProgramWeek, WeekType
+from .models import LoadBasis, Prescription, ProgramDay, ProgramSession, ProgramWeek, WeekType
 from .prescriptions import board_items, load_text, suggested_weight, summary
 
 # ------------------------------------------------------ lookups (always scoped to the coach's athlete)
@@ -464,6 +464,13 @@ def session_delete(request, pk, session_id):
 # ---------------------------------------------------------------- prescriptions
 
 
+def load_basis_for(form, rx):
+    """The load basis to show: what was posted if it's a real choice, else the saved one.
+    It goes into a JavaScript string (Alpine), so it must never be arbitrary text."""
+    value = form["load_basis"].value()
+    return value if value in LoadBasis.values else rx.load_basis
+
+
 def _modal_context(request, athlete, rx, form):
     unit = request.coach.gym.units
     rows = set_rows_initial(rx, unit)
@@ -481,6 +488,7 @@ def _modal_context(request, athlete, rx, form):
         "max_custom": MAX_CUSTOM_FIELDS,
         "custom_fields": rx.custom_fields or [],
         "set_rows": rows,
+        "basis": load_basis_for(form, rx),
         "suggested": suggested_weight(rx, athlete, unit),
         "load_now": load_text(rx.load_basis, rx.load_value, unit),
     }

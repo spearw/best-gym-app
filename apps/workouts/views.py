@@ -174,6 +174,7 @@ def start(request, session_id):
         ProgramSession.objects.select_related("day__week__week_type"),
         pk=session_id,
         day__week__program__athlete=athlete,
+        day__week__program__active=True,
         day__week__published=True,
     )
     if session.day.date > athlete.today():

@@ -21,9 +21,13 @@ class MessageForm(forms.Form):
     body = forms.CharField(max_length=4000)
 
 
-def _thread_context(thread, viewer, send_url, poll_url, mobile=False):
+def _thread_context(request, thread, send_url, poll_url, mobile=False):
+    """The thread as `request.user` sees it. Seeing it marks the other side's messages
+    read, unless another site made the browser fetch it (an <img> pointing here, say):
+    that isn't the person reading."""
+    viewer = request.user
     unread = thread.unread_for(viewer)
-    if unread.exists():
+    if unread.exists() and request.headers.get("Sec-Fetch-Site") != "cross-site":
         unread.update(read_at=timezone.now())
         if viewer == thread.coach.user:
             alerts.thread_read(thread)
@@ -63,7 +67,7 @@ def coach_tab(request, athlete):
     context = {
         **_header_context(request, athlete),
         "tab": "messages",
-        **_thread_context(thread, request.user, *_coach_urls(athlete)),
+        **_thread_context(request, thread, *_coach_urls(athlete)),
     }
     return TemplateResponse(request, "messaging/coach_tab.html", context)
 
@@ -73,7 +77,7 @@ def coach_thread(request, pk):
     athlete = coach_athlete(request, pk)
     thread = Thread.for_athlete(athlete)
     return TemplateResponse(
-        request, "messaging/_thread.html", _thread_context(thread, request.user, *_coach_urls(athlete))
+        request, "messaging/_thread.html", _thread_context(request, thread, *_coach_urls(athlete))
     )
 
 
@@ -85,7 +89,7 @@ def coach_send(request, pk):
     thread = Thread.for_athlete(athlete)
     _send(request, thread)
     return TemplateResponse(
-        request, "messaging/_thread.html", _thread_context(thread, request.user, *_coach_urls(athlete))
+        request, "messaging/_thread.html", _thread_context(request, thread, *_coach_urls(athlete))
     )
 
 
@@ -104,7 +108,7 @@ def athlete_tab(request):
     context = {
         "tab": "coach",
         "coach_name": request.athlete.coach.user.get_short_name(),
-        **_thread_context(thread, request.user, *_athlete_urls(), mobile=True),
+        **_thread_context(request, thread, *_athlete_urls(), mobile=True),
     }
     return TemplateResponse(request, "messaging/athlete_tab.html", context)
 
@@ -112,7 +116,7 @@ def athlete_tab(request):
 @athlete_required
 def athlete_thread(request):
     thread = Thread.for_athlete(request.athlete)
-    context = _thread_context(thread, request.user, *_athlete_urls(), mobile=True)
+    context = _thread_context(request, thread, *_athlete_urls(), mobile=True)
     return TemplateResponse(request, "messaging/_thread.html", context)
 
 
@@ -122,7 +126,7 @@ def athlete_thread(request):
 def athlete_send(request):
     thread = Thread.for_athlete(request.athlete)
     _send(request, thread)
-    context = _thread_context(thread, request.user, *_athlete_urls(), mobile=True)
+    context = _thread_context(request, thread, *_athlete_urls(), mobile=True)
     return TemplateResponse(request, "messaging/_thread.html", context)
 
 

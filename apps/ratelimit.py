@@ -10,6 +10,7 @@ Over the limit, a request gets a 429 (an HTMX request gets a toast instead of a 
 import time
 from functools import wraps
 
+from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -19,8 +20,13 @@ from apps import hx
 
 def client_ip(request):
     """Render's proxy appends the address it saw to X-Forwarded-For; the last entry is the
-    one a client can't fake."""
+    one a client can't fake. To be confirmed on the live site: with LOG_CLIENT_IP=1 each
+    rate-limited request writes its address headers to the log (docs/OPERATIONS.md)."""
     forwarded = request.headers.get("X-Forwarded-For", "")
+    if settings.LOG_CLIENT_IP:
+        headers = ("X-Forwarded-For", "True-Client-Ip", "Cf-Connecting-Ip", "X-Real-Ip")
+        seen = {h: request.headers.get(h, "") for h in headers}
+        print(f"client-ip check: {seen} REMOTE_ADDR={request.META.get('REMOTE_ADDR', '')}", flush=True)
     if forwarded:
         return forwarded.split(",")[-1].strip()
     return request.META.get("REMOTE_ADDR", "")

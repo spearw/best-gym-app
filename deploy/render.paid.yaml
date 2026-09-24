@@ -32,6 +32,9 @@ services:
         fromDatabase:
           name: gymtrainer-db
           property: connectionString
+      # The Django admin's address: something not guessable, e.g. manage-7f3k2/ (with the slash).
+      - key: ADMIN_PATH
+        sync: false
       # Email for invites and password resets. Set these in the Render dashboard.
       - key: EMAIL_PROVIDER
         sync: false

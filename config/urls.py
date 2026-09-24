@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
@@ -13,5 +14,7 @@ urlpatterns = [
     path("join/<str:token>/", account_views.join),  # short invite links; same view as accounts:join
     path("coach/", include("apps.dashboard.urls")),
     path("app/", include("apps.workouts.urls")),
-    path("admin/", admin.site.urls),
+    # The admin's sign-in, rate-limited like the site's; listed first so it wins.
+    path(f"{settings.ADMIN_PATH}login/", account_views.admin_login),
+    path(settings.ADMIN_PATH, admin.site.urls),
 ]

@@ -20,7 +20,7 @@ from apps.exercises.models import Exercise, Tag
 from apps.programs.forms import MAX_CUSTOM_FIELDS, MAX_SETS, PrescriptionForm, set_rows_initial
 from apps.programs.models import WeekType
 from apps.programs.prescriptions import board_items, summary
-from apps.programs.program_views import rail_context
+from apps.programs.program_views import load_basis_for, rail_context
 
 from . import services
 from .models import (
@@ -422,6 +422,10 @@ class SlotKindForm(forms.Form):
         return data
 
 
+def _int_or(value, default):
+    return int(value) if str(value).isdigit() else default
+
+
 def _slot_modal_context(request, template, slot, form, kind_form):
     unit = request.coach.gym.units
     raw_sets = form["sets"].value()
@@ -439,15 +443,16 @@ def _slot_modal_context(request, template, slot, form, kind_form):
         "rx": slot,
         "form": form,
         "kind_form": kind_form,
-        "kind": kind_form["kind"].value() or slot.kind,
-        "exercise_id": int(kind_form["exercise"].value() or slot.exercise_id),
-        "default_id": int(kind_form["default"].value() or slot.exercise_id),
+        "kind": kind if (kind := kind_form["kind"].value()) in SlotKind.values else slot.kind,
+        "exercise_id": _int_or(kind_form["exercise"].value(), slot.exercise_id),
+        "default_id": _int_or(kind_form["default"].value(), slot.exercise_id),
         "tag_ids": tag_ids,
         "exercises": exercises,
         "tags": Tag.objects.filter(gym=gym),
         "unit": unit,
         "max_sets": MAX_SETS,
         "sets_initial": sets,
+        "basis": load_basis_for(form, slot),
         "parent_values": {
             "reps": form["rep_scheme"].value() or "",
             "load": str(form["load_value"].value() or ""),

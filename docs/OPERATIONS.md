@@ -44,6 +44,24 @@ remove `LOG_CLIENT_IP`.
 The demo's dates are relative to the day it was seeded, so the demo week drifts into the
 past as the trial goes on.
 
+## Bug reports and the admin
+
+Both headers have a **Report a bug** button (the coach's top bar, and the bug icon in the
+athlete app's header). Reports go to the Django admin under **Dashboard → Bug reports**,
+newest first, with the page, the browser, the screen size, who sent it and their gym.
+Set each one's status (new / seen / fixed / won't fix) as you go; add notes in "Admin note".
+
+The admin account comes from two settings on the web service, applied at every start
+(`manage.py ensure_admin`):
+
+1. In the Render dashboard, open the `gymtrainer` web service → **Environment**, and add
+   `ADMIN_EMAIL` (your email) and `ADMIN_PASSWORD` (at least 12 characters). Optionally
+   `ADMIN_PATH`, e.g. `manage-7f3k2/`, to move the admin away from `/admin/`.
+2. Save; Render restarts the service. Sign in at `https://<your site>/admin/` (or your
+   `ADMIN_PATH`) with that email and password.
+
+Changing `ADMIN_PASSWORD` later changes the password at the next start.
+
 ## Moving to paid
 
 1. Copy `deploy/render.paid.yaml` over `render.yaml`, commit and push; sync the Blueprint

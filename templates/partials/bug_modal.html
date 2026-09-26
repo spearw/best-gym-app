@@ -1,0 +1,18 @@
+{% extends "partials/modal.html" %}
+{% block modal_attrs %}style="width:min(94vw,460px)"{% endblock %}
+{% block modal_title %}Report a bug{% endblock %}
+{% block modal_content %}
+<form hx-post="{% url 'bug_report' %}" hx-target="#modal" hx-swap="innerHTML" novalidate>
+  <div class="modal-body">
+    <p class="tiny muted" style="margin:0">Something broken, confusing or slow? Tell us here. The page you're on and your device are sent along with it.</p>
+    {% include "partials/field.html" with field=form.description %}
+    <input type="hidden" name="side" value="{{ side }}">
+    {{ form.page }}
+    <input type="hidden" name="screen" x-data x-init="$el.value = window.innerWidth + '×' + window.innerHeight">
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn--ghost" type="button" onclick="closeModal()">Cancel</button>
+    <button class="btn btn--brand" type="submit">Send report</button>
+  </div>
+</form>
+{% endblock %}

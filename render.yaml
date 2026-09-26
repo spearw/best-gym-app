@@ -28,6 +28,7 @@ services:
     startCommand: >-
       python manage.py migrate --noinput &&
       python manage.py seed_demo --if-empty &&
+      python manage.py ensure_admin &&
       gunicorn config.wsgi:application --workers 2 --access-logfile -
     healthCheckPath: /healthz
     envVars:
@@ -38,6 +39,14 @@ services:
           property: connectionString
       # The demo users' password. Required: set it in the dashboard, share it with the client.
       - key: DEMO_PASSWORD
+        sync: false
+      # Your admin account (bug reports are read in the admin): created or updated at start-up.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      # The admin's address, e.g. manage-7f3k2/ (with the slash); "admin/" if left unset.
+      - key: ADMIN_PATH
         sync: false
       # Email and form videos stay off for the trial: invites are shared with "Copy link",
       # and the "Add a form video" button doesn't appear without STORAGE_* settings.

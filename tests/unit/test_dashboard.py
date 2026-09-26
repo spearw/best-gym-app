@@ -31,10 +31,11 @@ def kinds(coach):
 
 @pytest.fixture
 def program(athlete, coach):
-    """Two published weeks from last week."""
+    """Three published weeks from last week, so "3 days from today" is inside it whatever
+    the weekday (with two weeks it ran out on Fridays to Sundays)."""
     week_type = WeekType.objects.get(gym=coach.gym, name="Accumulation")
     program = program_services.start_program(
-        athlete, "Block", athlete.today() - 7 * DAY, 2, week_type, by=coach.user
+        athlete, "Block", athlete.today() - 7 * DAY, 3, week_type, by=coach.user
     )
     for week in program.weeks.all():
         program_services.set_published(week, True)

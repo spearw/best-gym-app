@@ -3,13 +3,14 @@ from django.contrib import admin
 from django.urls import include, path
 
 from apps.accounts import views as account_views
-from apps.dashboard import pwa
+from apps.dashboard import bug_views, pwa
 
 urlpatterns = [
     path("", account_views.index, name="index"),
     path("manifest.webmanifest", pwa.manifest, name="manifest"),
     path("sw.js", pwa.service_worker, name="service_worker"),
     path("offline/", pwa.offline, name="offline"),
+    path("feedback/bug/", bug_views.bug_report, name="bug_report"),
     path("accounts/", include("apps.accounts.urls")),
     path("join/<str:token>/", account_views.join),  # short invite links; same view as accounts:join
     path("coach/", include("apps.dashboard.urls")),

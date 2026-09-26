@@ -61,3 +61,38 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.get_kind_display()}: {self.text}"
+
+
+class BugReport(models.Model):
+    """A bug report from the "Report a bug" button in the coach or athlete header. Read and
+    triaged in the Django admin for now. The page, browser and screen size are captured
+    automatically so the reporter only has to say what went wrong."""
+
+    class Side(models.TextChoices):
+        COACH = "coach", "Coach app"
+        ATHLETE = "athlete", "Athlete app"
+
+    class Status(models.TextChoices):
+        NEW = "new", "New"
+        SEEN = "seen", "Seen"
+        FIXED = "fixed", "Fixed"
+        WONT_FIX = "wontfix", "Won't fix"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+")
+    gym = models.ForeignKey(
+        "accounts.Gym", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    side = models.CharField(max_length=10, choices=Side.choices)
+    description = models.TextField()
+    page = models.CharField(max_length=500, blank=True)
+    user_agent = models.CharField(max_length=400, blank=True)
+    screen = models.CharField(max_length=40, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.NEW)
+    admin_note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.get_side_display()}: {self.description[:60]}"

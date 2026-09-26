@@ -23,7 +23,7 @@ services:
     plan: starter
     branch: main
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    preDeployCommand: python manage.py migrate --noinput
+    preDeployCommand: python manage.py migrate --noinput && python manage.py ensure_admin
     startCommand: gunicorn config.wsgi:application --workers 3 --access-logfile -
     healthCheckPath: /healthz
     envVars:
@@ -34,6 +34,11 @@ services:
           property: connectionString
       # The Django admin's address: something not guessable, e.g. manage-7f3k2/ (with the slash).
       - key: ADMIN_PATH
+        sync: false
+      # The admin account (bug reports are read in the admin), created or updated on deploy.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
         sync: false
       # Email for invites and password resets. Set these in the Render dashboard.
       - key: EMAIL_PROVIDER

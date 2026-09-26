@@ -9,7 +9,9 @@ site root so its scope covers /app/.
 
 import hashlib
 import json
+from pathlib import Path
 
+from django.contrib.staticfiles import finders
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.templatetags.static import static
@@ -61,10 +63,22 @@ def manifest(request):
     )
 
 
+def _version(urls):
+    """Changes whenever a cached file changes. In production the URLs carry content hashes
+    already; locally they don't, so the files' contents go in too, or the browser would keep
+    serving old CSS and JavaScript from the worker's cache after an edit."""
+    digest = hashlib.sha1("".join(urls).encode())
+    for path in PRECACHE:
+        found = finders.find(path)
+        if found:
+            digest.update(Path(found).read_bytes())
+    return digest.hexdigest()[:12]
+
+
 @cache_control(no_cache=True)
 def service_worker(request):
     urls = [static(p) for p in PRECACHE] + [reverse("offline")]
-    version = hashlib.sha1("".join(urls).encode()).hexdigest()[:12]
+    version = _version(urls)
     js = (
         SERVICE_WORKER.replace("__VERSION__", version)
         .replace("__URLS__", json.dumps(urls))
@@ -101,8 +115,10 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/static/")) {
     event.respondWith(
       caches.match(request).then((hit) => hit || fetch(request).then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE).then((c) => c.put(request, copy));
+        if (response.ok) {  // never keep an error page in place of a file
+          const copy = response.clone();
+          caches.open(CACHE).then((c) => c.put(request, copy));
+        }
         return response;
       }))
     );

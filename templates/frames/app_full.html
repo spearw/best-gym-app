@@ -9,7 +9,7 @@
     <header class="app-head">
       <span class="avatar">{{ user.initials }}</span>
       <span class="hi"><b>Hi, {{ user.get_short_name }}</b><small>{% block app_subtitle %}{{ current_gym.name }}{% endblock %}</small></span>
-      <button class="iconbtn bug-btn" type="button" aria-label="Report a bug" title="Report a bug" hx-get="{% url 'bug_report' %}?side=athlete" hx-target="#modal" hx-swap="innerHTML"><span class="svgi svgi--bug"></span></button>
+      <button class="btn btn--ghost btn--sm bug-btn" type="button" aria-label="Report a bug" hx-get="{% url 'bug_report' %}?side=athlete" hx-target="#modal" hx-swap="innerHTML"><span class="svgi svgi--bug"></span> Report bug</button>
       <a class="iconbtn" href="{% url 'app:messages' %}" aria-label="Messages{% with n=unread_messages %}{% if n %}, {{ n }} unread{% endif %}{% endwith %}"><span class="svgi svgi--msg"></span>{% with n=unread_messages %}{% if n %}<span class="badge">{{ n }}</span>{% endif %}{% endwith %}</a>
     </header>
     <main class="app-body" id="app-body">

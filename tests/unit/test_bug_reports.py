@@ -92,3 +92,16 @@ def test_ensure_admin(monkeypatch, athlete):
     call_command("ensure_admin")
     admin.refresh_from_db()
     assert admin.check_password("a-new-long-password") and User.objects.filter(is_superuser=True).count() == 1
+
+
+def test_service_worker_cache_changes_with_the_files(tmp_path, monkeypatch):
+    """Locally static URLs carry no hash, so the worker's cache must follow the files'
+    contents, or a changed stylesheet (like a new icon) never reaches the browser."""
+    from apps.dashboard import pwa
+
+    css = tmp_path / "shell.css"
+    css.write_text(".a{}")
+    monkeypatch.setattr(pwa.finders, "find", lambda path: str(css))
+    before = pwa._version(["/static/css/shell.css"])
+    css.write_text(".a{} .svgi--bug{}")
+    assert pwa._version(["/static/css/shell.css"]) != before
